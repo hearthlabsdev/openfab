@@ -1,0 +1,106 @@
+{# templates/layouts/base.tera #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}OpenFab{% endblock title %}</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    {# Global styles #}
+    <link rel="stylesheet" href="/static/css/base.css">
+
+    {# Page-specific styles #}
+    {% block head %}{% endblock head %}
+</head>
+
+<body>
+    <div class="app">
+
+        {# --- Top Bar --- #}
+        <header class="topbar">
+            {% block topbar %}
+                <div class="topbar-inner">
+                    <div class="topbar-left">
+                        <a href="/dashboard" class="logo">OpenFab</a>
+                    </div>
+
+                    <div class="topbar-center">
+                        <input
+                            type="text"
+                            class="global-search"
+                            placeholder="Search devices, jobs, users..."
+                        >
+                    </div>
+
+                    <div class="topbar-right">
+                        {% if user is defined %}
+                            <div class="user-menu">
+                                <span class="user-name">{{ user.name }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endblock topbar %}
+        </header>
+
+
+        {# --- Optional Context Bar (e.g. device context) --- #}
+        {% block context_bar %}{% endblock context_bar %}
+
+
+        <div class="main">
+
+            {# --- Sidebar Navigation --- #}
+            <aside class="sidebar">
+                {% block sidebar %}
+                    <nav class="nav">
+
+                        <a href="/dashboard">Dashboard</a>
+
+                        <div class="nav-section">Devices</div>
+                        <a href="/devices">All Devices</a>
+
+                        <div class="nav-section">Jobs</div>
+                        <a href="/jobs">Queue</a>
+                        <a href="/jobs/history">History</a>
+
+                        <div class="nav-section">Files</div>
+                        <a href="/files">Library</a>
+
+                        <div class="nav-section">Access</div>
+                        <a href="/users">Users</a>
+                        <a href="/groups">Groups</a>
+
+                        <div class="nav-section">System</div>
+                        <a href="/settings">Settings</a>
+
+                    </nav>
+                {% endblock sidebar %}
+            </aside>
+
+
+            {# --- Main Content Area --- #}
+            <main class="content">
+
+                {# Optional sub-navigation (tabs, etc.) #}
+                {% block subnav %}{% endblock subnav %}
+
+                {# Page content #}
+                <div class="page">
+                    {% block content %}{% endblock content %}
+                </div>
+
+            </main>
+
+        </div>
+
+    </div>
+
+    {# Global scripts #}
+    <script src="/static/js/app.js"></script>
+
+    {# Page-specific scripts #}
+    {% block scripts %}{% endblock scripts %}
+</body>
+</html>

@@ -1,0 +1,28 @@
+{# templates/components/device/context.html #}
+
+{% macro status_badge(status) %}
+<span class="badge badge-{{ status }}">
+    {{ status }}
+</span>
+{% endmacro status_badge %}
+
+{% macro bar(workspace, devices, current_device) %}
+<div class="device-context-bar">
+    <div class="left">
+        <span class="workspace">{{ workspace.name }}</span>
+
+        <select onchange="location = this.value">
+            {% for d in devices %}
+                <option value="/devices/{{ d.id }}"
+                    {% if d.id == current_device.id %}selected{% endif %}>
+                    {{ d.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="right">
+        {{ status_badge(current_device.status) }}
+    </div>
+</div>
+{% endmacro bar %}

@@ -1,0 +1,25 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<div class="index-page">
+    <h1>Welcome to OpenFab</h1>
+    <p>Your one-stop solution for managing and monitoring your manufacturing devices.</p>
+
+    <div class="features">
+        <div class="feature">
+            <h2>Device Management</h2>
+            <p>Easily add, remove, and configure your devices from a centralized dashboard.</p>
+        </div>
+
+        <div class="feature">
+            <h2>Real-Time Monitoring</h2>
+            <p>Keep an eye on your device status and performance with real-time updates.</p>
+        </div>
+
+        <div class="feature">
+            <h2>Job Scheduling</h2>
+            <p>Schedule and manage your manufacturing jobs with ease.</p>
+        </div>
+    </div>
+</div>
+{% endblock content %}

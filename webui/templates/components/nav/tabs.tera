@@ -1,0 +1,12 @@
+{# templates/components/nav/tabs.html #}
+
+{% macro tabs(base_url, active, items) %}
+<div class="tabs">
+    {% for item in items %}
+        <a href="{{ base_url ~ item.path }}"
+           class="{% if active == item.key %}active{% endif %}">
+            {{ item.label }}
+        </a>
+    {% endfor %}
+</div>
+{% endmacro tabs %}
