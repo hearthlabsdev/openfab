@@ -1,0 +1,7 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="title">OpenFAB Library</h1>
+</div>
+{% endblock content %}

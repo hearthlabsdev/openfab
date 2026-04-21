@@ -1,0 +1,50 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<div class="container">
+
+    <div class="page-header">
+        <h1 class="title">Print Jobs</h1>
+    </div>
+
+    <table class="print-job-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Submitted</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% if prints is defined and prints | length > 0 %}
+                {% for print in prints %}
+                    <tr class="print-job-row">
+
+                        <td class="print-job-title">
+                            {{ print.title }}
+                        </td>
+
+                        <td class="print-job-submitted">
+                            {{ print.submitted }}
+                        </td>
+
+                        <td class="print-job-status">
+                            <span class="status-badge status-{{ print.status | lower }}">
+                                {{ print.status }}
+                            </span>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3" class="empty-state">
+                        No print jobs found.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock content %}

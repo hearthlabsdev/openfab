@@ -1,16 +1,9 @@
-pub mod discovery;
-pub mod errors;
-pub mod config;
+//! This module handles listing available printers based on discovery, manual add, and user permissions.
 pub mod routes;
-pub mod utils;
 
-/// can this server handle livekit orchestration for per machine live viewing.
-#[cfg(feature = "livekit")]
-pub mod livekit;
-
+use uuid::Uuid;
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
 #[ormlite(table = "printers")]
@@ -18,9 +11,6 @@ pub struct PrinterORM {
     /// Stable internal identifier
     #[ormlite(primary_key)]
     pub uid: Uuid,
-
-    /// Inventory item UID (optional but recommended)
-    pub item: Option<Uuid>,
 
     /// Human-readable name (from IPP or admin override)
     pub name: String,
@@ -49,6 +39,7 @@ pub struct PrinterORM {
     /// Whether this printer is eligible for job dispatch
     pub enabled: bool,
 }
+
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
 #[ormlite(table = "print_queues")]
@@ -109,68 +100,5 @@ pub struct PrinterDiscoveryEventORM {
     /// Whether resolution succeeded
     pub success: bool,
     /// error message to record if verification fails.
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Model, Clone, Serialize, Deserialize)]
-#[ormlite(table = "print_jobs")]
-pub struct PrintJobORM {
-    /// Stable job identifier
-    #[ormlite(primary_key)]
-    pub uid: Uuid,
-
-    /// Owning user
-    pub user: Uuid,
-
-    /// Target queue (capability-based)
-    pub queue: Uuid,
-
-    /// Original filename or description
-    pub title: String,
-
-    /// MIME type (application/pdf, image/png, etc.)
-    pub mime: String,
-
-    /// Logical size (pages, layers, etc.)
-    pub units: Option<f64>,
-
-    /// Estimated cost (computed at submission)
-    pub estimated_cost: Option<f64>,
-
-    /// Job creation timestamp
-    pub created_at: i64,
-
-    /// Terminal lifecycle state
-    pub state: String,
-
-    /// When job entered terminal state
-    pub completed_at: Option<i64>,
-}
-
-#[derive(Debug, Model, Clone, Serialize, Deserialize)]
-#[ormlite(table = "print_job_executions")]
-pub struct PrintJobExecutionORM {
-    #[ormlite(primary_key)]
-    pub uid: Uuid,
-
-    /// Parent job
-    pub job: Uuid,
-
-    /// Assigned printer
-    pub printer: Uuid,
-
-    /// Attempt number (1, 2, 3...)
-    pub attempt: i32,
-
-    /// Execution state
-    pub state: String,
-
-    /// When execution started
-    pub started_at: Option<i64>,
-
-    /// When execution ended
-    pub finished_at: Option<i64>,
-
-    /// Failure reason (if any)
     pub error: Option<String>,
 }

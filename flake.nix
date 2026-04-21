@@ -52,6 +52,7 @@
           PKG_CONFIG_PATH = pkgs.lib.makeSearchPath "lib/pkgconfig" [
             pkgs.openssl
             pkgs.libva
+            pkgs.libclang
           ];
         };
 
@@ -71,7 +72,9 @@
 
           VULKAN_DIR = "${pkgs.vulkan-loader}";
           WAYLAND_DIR= "${pkgs.wayland}";
-          LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.wayland}/lib:${pkgs.libxkbcommon}/lib/:${pkgs.vulkan-loader}/lib/:${pkgs.libva.out}/lib/";
+
+          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+          LD_LIBRARY_PATH = "$LD_LIBRARY_PATH:${pkgs.wayland}/lib:${pkgs.libxkbcommon}/lib/:${pkgs.vulkan-loader}/lib/:${pkgs.libva.out}/lib/:${pkgs.libclang.lib}/lib";
           RUST_BACKTRACE = "1";
         };
       });

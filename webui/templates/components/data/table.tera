@@ -15,7 +15,7 @@
             <tr>
                 {% for col in columns %}
                     <td>
-                        {{ attribute(row, col.key) | safe }}
+                        {{ attribute(row=row, col=col.key) | safe }}
                     </td>
                 {% endfor %}
             </tr>

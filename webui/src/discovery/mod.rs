@@ -1,4 +1,4 @@
-use crate::PrinterDiscoveryEventORM;
+use crate::devices::PrinterDiscoveryEventORM;
 use crate::errors::OpenMPDErr;
 use openfab::IppTxtRecords;
 use openfab::discovery::IppDiscovery;
@@ -23,12 +23,12 @@ pub enum AdvertiseCmd {
     },
 }
 
-pub struct DiscoveryRoute {
+pub struct DiscoveryRouter {
     pool: PgPool,
     advertiser: Sender<AdvertiseCmd>,
 }
 
-impl DiscoveryRoute {
+impl DiscoveryRouter {
     /// Start the discovery → verification → classification → advertise loop.
     ///
     /// Responsibilities:
@@ -74,19 +74,6 @@ impl DiscoveryRoute {
                         continue;
                     }
                 };
-
-                let event = PrinterDiscoveryEventORM {
-                    uid: Uuid::new_v4(),
-                    mdns_instance: discovered.name.clone(),
-                    host: info.host.clone(),
-                    discovered_at: unix_now(),
-                    port: info.port.into(),
-                    txt: info.txt,
-                    success: true,
-                    error: None,
-                };
-
-                event.insert(&mut *conn).await?;
 
                 // 2. Persist / update printer record
                 /*let printer_uid = upsert_printer(&pool, &discovered, &info).await?;

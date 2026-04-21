@@ -13,4 +13,11 @@ pub enum OpenMPDErr {
     OrmLite(#[from] ormlite::Error),
     #[error("sql error: {0}")]
     SQLXErr(#[from] ormlite::SqlxError),
+    #[error("Minio error: {0}")]
+    MinioErr(#[from] minio_rsc::error::Error),
+    #[error("Minio value error: {0}")]
+    ValueErr(#[from] minio_rsc::error::ValueError),
+    #[error("secret fetch error: {0}")]
+    SecretFetchErr(#[from] secret_ref::SecretError),
+
 }

@@ -1,0 +1,51 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<div class="container">
+
+    <div class="page-header">
+        <h1 class="title">Devices</h1>
+    </div>
+
+    <table class="device-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Last Seen</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% if printers is defined and printers | length > 0 %}
+                {% for printer in printers %}
+                    <tr class="device-row">
+
+                        <td class="device-name">
+                            {{ printer.name }}
+                        </td>
+
+                        <td class="device-last-seen">
+                            {{ printer.last_seen }}
+                        </td>
+
+                        <td class="device-status">
+                            <span class="status-badge status-{{ printer.status | lower }}">
+                                {{ printer.status }}
+                            </span>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3" class="empty-state">
+                        No devices found.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock content %}

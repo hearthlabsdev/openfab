@@ -22,7 +22,7 @@
     </div>
 
     <div class="right">
-        {{ status_badge(current_device.status) }}
+        {{ status_badge(status=current_device.status) }}
     </div>
 </div>
 {% endmacro bar %}

@@ -9,6 +9,7 @@
 
     {# Global styles #}
     <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/accounts.css">
 
     {# Page-specific styles #}
     {% block head %}{% endblock head %}
@@ -45,7 +46,7 @@
                                 {{ user.name | slice(start=0, end=1) | upper }}
                             </a>
                         {% else %}
-                            <a href="/accounts/login" class="user-menu" title="Login">
+                            <a href="/login" class="user-menu" title="Login">
                                 Login
                             </a>
                         {% endif %}
@@ -60,35 +61,6 @@
 
 
         <div class="main">
-
-            {# --- Sidebar Navigation --- #}
-            <aside class="sidebar">
-                {% block sidebar %}
-                    <nav class="nav">
-
-                        <a href="/dashboard">Dashboard</a>
-
-                        <div class="nav-section">Devices</div>
-                        <a href="/devices">All Devices</a>
-
-                        <div class="nav-section">Jobs</div>
-                        <a href="/prints">Queue</a>
-                        <a href="/prints/history">History</a>
-
-                        <div class="nav-section">Files</div>
-                        <a href="/library">Library</a>
-
-                        <div class="nav-section">Access</div>
-                        <a href="/users">Users</a>
-                        <a href="/groups">Groups</a>
-
-                        <div class="nav-section">System</div>
-                        <a href="/settings">Settings</a>
-
-                    </nav>
-                {% endblock sidebar %}
-            </aside>
-
 
             {# --- Main Content Area --- #}
             <main class="content">

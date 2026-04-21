@@ -1,0 +1,18 @@
+{% extends "layouts/accounts" %}
+
+{% block content %}
+    <form method="post" action="/register">
+        <h1>Register</h1>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+
+        <button type="submit">Register</button>
+        <a href="/accounts/login">Already have an account? Login here.</a>
+    </form>
+{% endblock content %}

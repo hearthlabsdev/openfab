@@ -1,0 +1,136 @@
+pub mod routes;
+
+use ormlite::Model;
+use serde_derive::{Deserialize, Serialize};
+use uuid::Uuid;
+use secret_ref::*;
+use crate::errors::OpenMPDErr;
+
+use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+
+#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+pub struct Asset {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub name: String,
+    pub mime: String,
+    /// Owning user (for permissions and sharing)
+    pub owner: Uuid,
+
+    /// Size of the file in bytes.
+    pub size: i64,
+
+    pub created_at: i64,
+    pub updated_at: i64,
+    /// Last time this asset was used in a print job or queue.
+    pub last_used_at: Option<i64>,
+
+    /// Whether this asset is publicly accessible (e.g. for embedding or sharing)
+    pub public: bool,
+    /// Optional license or usage terms (e.g. "CC-BY-SA 4.0")
+    pub license: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ObjectStoreConfig {
+    pub endpoint: String,
+    pub access_key: String,
+    pub secret_key: SecretRef,
+    pub bucket: String,
+    pub secure: bool,
+}
+
+impl ObjectStoreConfig {
+    pub fn is_setup(&self) -> bool {
+        self.endpoint != "" && self.access_key != "" && self.bucket != ""
+    }
+
+    pub async fn object_store(&self) -> Result<ObjectStore, OpenMPDErr> {
+        ObjectStore::new(
+            &self.endpoint,
+            &self.access_key,
+            &self
+                .secret_key
+                .fetch(SecretPolicy::default())
+                .await?
+                .expose(),
+            &self.bucket,
+            self.secure,
+        )
+    }
+}
+
+pub struct ObjectStore {
+    client: Minio,
+    bucket: String,
+}
+
+impl ObjectStore {
+    /// Build a new client pointed at your MinIO server.
+    pub fn new(
+        endpoint: &str,
+        access_key: &str,
+        secret_key: &str,
+        bucket: &str,
+        secure: bool,
+    ) -> Result<Self, OpenMPDErr> {
+        let provider = StaticProvider::new(access_key, secret_key, None);
+        let client = Minio::builder()
+            .endpoint(endpoint)
+            .provider(provider)
+            .secure(secure)
+            .build()?;
+
+        Ok(ObjectStore {
+            client,
+            bucket: bucket.to_string(),
+        })
+    }
+
+    /// Upload raw bytes (server‑side upload).
+    pub async fn upload_bytes(
+        &self,
+        key: &str,
+        data: Vec<u8>,
+    ) -> Result<(), minio_rsc::error::Error> {
+        self.client
+            .put_object(&self.bucket, key, data.into())
+            .await?;
+        Ok(())
+    }
+
+    /// Generate a presigned PUT URL.
+    ///
+    /// Frontends can upload using:
+    ///   `PUT <generated_url>` with the file body.
+    pub async fn presigned_put_url(
+        &self,
+        key: &str,
+        expires_secs: usize,
+    ) -> Result<String, OpenMPDErr> {
+        // build presign args
+        let mut args = PresignedArgs::new(&self.bucket, key).expires(expires_secs);
+
+        // generate signed URL
+        let url = self.client.presigned_put_object(args).await?;
+        Ok(url)
+    }
+
+    pub fn generate_key(entity: &str, asset_type: &str, uid: Uuid, file_ext: &str) -> String {
+        format!("/assets/{}/{}/{}.{}", entity, asset_type, uid, file_ext)
+    }
+    /// Generate a presigned GET URL.
+    pub async fn presigned_get_url(
+        &self,
+        key: &str,
+        expires_secs: usize,
+    ) -> Result<String, OpenMPDErr> {
+        let mut args = PresignedArgs::new(&self.bucket, key).expires(expires_secs);
+
+        let url = self.client.presigned_get_object(args).await?;
+        Ok(url)
+    }
+}

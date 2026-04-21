@@ -1,0 +1,173 @@
+/* =========================
+   Auth Pages (Login/Register)
+========================= */
+
+/* Center the auth content */
+.page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Form container */
+.page form {
+    width: 100%;
+    max-width: 360px;
+    background: #151922;
+    border: 1px solid #232938;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Title */
+.page h1 {
+    text-align: center;
+    margin-bottom: 16px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* Labels */
+.page label {
+    font-size: 13px;
+    color: #9aa4b2;
+}
+
+/* Inputs */
+.page input[type="text"],
+.page input[type="password"],
+.page input[type="email"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #2a3040;
+    background: #0f1115;
+    color: #e6e6e6;
+    outline: none;
+    font-size: 14px;
+    transition: border 0.15s, box-shadow 0.15s;
+}
+
+.page input::placeholder {
+    color: #7a8395;
+}
+
+.page input:focus {
+    border-color: #4c8dff;
+    box-shadow: 0 0 0 1px #4c8dff;
+}
+
+/* Button */
+.page button {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #4c8dff;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+}
+
+.page button:hover {
+    background: #3b73d1;
+}
+
+.page button:active {
+    transform: scale(0.98);
+}
+
+/* Register link */
+.page form a {
+    margin-top: 8px;
+    font-size: 13px;
+    text-align: center;
+    color: #7a8395;
+    text-decoration: none;
+}
+
+.page form a:hover {
+    color: #4c8dff;
+}
+
+/* Optional: subtle card hover (desktop only feel) */
+@media (hover: hover) {
+    .page form:hover {
+        border-color: #2f3650;
+    }
+}
+
+/* =========================
+   OIDC Section
+========================= */
+
+.oidc-section {
+    margin-top: 16px;
+    border-top: 1px solid #232938;
+    padding-top: 12px;
+}
+
+/* Toggle button */
+.oidc-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #9aa4b2;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 6px 2px;
+    transition: color 0.15s;
+}
+
+.oidc-toggle:hover {
+    color: #e6e6e6;
+}
+
+/* Chevron animation */
+.oidc-toggle .chevron {
+    transition: transform 0.2s ease;
+}
+
+.oidc-section.open .chevron {
+    transform: rotate(180deg);
+}
+
+/* Hidden by default */
+.oidc-list {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+/* Show when open */
+.oidc-section.open .oidc-list {
+    display: flex;
+}
+
+/* Provider buttons */
+.oidc-provider {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #0f1115;
+    border: 1px solid #2a3040;
+    color: #c9d1d9;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.15s, border 0.15s, color 0.15s;
+}
+
+.oidc-provider:hover {
+    background: #161b26;
+    border-color: #4c8dff;
+    color: #ffffff;
+}

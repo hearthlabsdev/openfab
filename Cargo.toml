@@ -1,0 +1,11 @@
+[workspace]
+members = ["drivers","drivers/bambu","drivers/klipper",
+    "openfab",
+    "webui",
+    "drivers/prusa",
+    "drivers/bambu",
+    "drivers/marlin",
+    "drivers/klipper"
+, "slicers/cura", "slicers/slic3r"]
+
+resolver = "2"

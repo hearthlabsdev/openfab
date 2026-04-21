@@ -1,0 +1,36 @@
+{% extends "layouts/accounts" %}
+
+{% block title %}Login{% endblock title %}
+
+{% block content %}
+    
+    <form method="post" action="/login">
+        <h1>Login</h1>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+
+        <button type="submit">Login</button>
+        <a href="/accounts/register">Don't have an account? Register here.</a>
+    
+        {% if providers is defined and providers | length > 0 %}
+            <div class="oidc-section">
+                <button type="button" class="oidc-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span>Login with SSO</span>
+                    <span class="chevron">▾</span>
+                </button>
+
+                <div class="oidc-list">
+                    {% for provider in providers %}
+                        <a href="/auth/oidc/{{ provider.id }}" class="oidc-provider">
+                            {{ provider.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+    </form>
+{% endblock content %}
