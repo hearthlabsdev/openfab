@@ -4,8 +4,8 @@
 <div class="container">
 
     <div class="page-header flex-between">
-        <h1 class="title">Print Jobs</h1>
-    
+        <h1 class="title">Print History</h1>
+
         <a href="/prints/create" class="btn btn-primary">
             Submit New Print Job
         </a>

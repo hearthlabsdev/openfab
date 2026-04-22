@@ -79,8 +79,8 @@
                         <a href="/library">Library</a>
 
                         <div class="nav-section">Access</div>
-                        <a href="/users">Users</a>
-                        <a href="/groups">Groups</a>
+                        <a href="/admin/users">Users</a>
+                        <a href="/admin/groups">Groups</a>
 
                         <div class="nav-section">System</div>
                         <a href="/settings">Settings</a>

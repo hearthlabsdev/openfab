@@ -3,11 +3,17 @@
 {% block content %}
 <div class="container">
 
-    <div class="page-header">
+    <div class="page-header flex-between">
+
         <h1 class="title">Devices</h1>
+
+        <a href="/devices/create" class="btn btn-primary">
+            Add Device
+        </a>
+
     </div>
 
-    <table class="device-table">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Name</th>
@@ -19,17 +25,17 @@
         <tbody>
             {% if printers is defined and printers | length > 0 %}
                 {% for printer in printers %}
-                    <tr class="device-row">
+                    <tr class="data-row">
 
-                        <td class="device-name">
+                        <td class="data-name">
                             {{ printer.name }}
                         </td>
 
-                        <td class="device-last-seen">
+                        <td class="data-last-seen">
                             {{ printer.last_seen }}
                         </td>
 
-                        <td class="device-status">
+                        <td class="data-status">
                             <span class="status-badge status-{{ printer.status | lower }}">
                                 {{ printer.status }}
                             </span>

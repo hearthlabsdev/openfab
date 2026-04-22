@@ -38,5 +38,6 @@ async fn rocket() -> _ {
         .mount("/devices", webui::devices::routes::get_routes())
         .mount("/prints", webui::prints::routes::get_routes())
         .mount("/accounts", webui::accounts::routes::get_routes())
+        .mount("/admin", webui::admin::get_routes())
         .mount("/static", FileServer::from("static"))
 }

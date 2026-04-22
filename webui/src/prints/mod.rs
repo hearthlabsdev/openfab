@@ -1,4 +1,5 @@
 pub mod routes;
+pub mod forms;
 
 use uuid::Uuid;
 use ormlite::Model;
@@ -39,6 +40,20 @@ pub struct PrintJobORM {
 
     /// When job entered terminal state
     pub completed_at: Option<i64>,
+
+    pub copies: Option<i32>,
+    pub priority: Option<String>,
+
+    // =========================
+    // Advanced Settings
+    // =========================
+    pub material: Option<String>,
+    pub nozzle_temp: Option<i32>,
+    pub bed_temp: Option<i32>,
+    pub layer_height: Option<f32>,
+    pub infill: Option<i32>,
+    pub supports: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]

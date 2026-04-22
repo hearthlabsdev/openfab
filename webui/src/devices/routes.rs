@@ -8,8 +8,15 @@ pub fn index() -> RawHtml<Template> {
     RawHtml(Template::render("pages/devices/index", &context))
 }
 
+#[get("/create")]
+pub fn create() -> RawHtml<Template> {
+    let context = context! {};
+    RawHtml(Template::render("pages/devices/create", &context))
+}
+
 pub fn get_routes() -> Vec<Route> {
     routes![
         crate::devices::routes::index,
+        crate::devices::routes::create,
     ]
 }

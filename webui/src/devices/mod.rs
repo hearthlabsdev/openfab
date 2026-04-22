@@ -1,5 +1,6 @@
 //! This module handles listing available printers based on discovery, manual add, and user permissions.
 pub mod routes;
+pub mod forms;
 
 use uuid::Uuid;
 use ormlite::Model;

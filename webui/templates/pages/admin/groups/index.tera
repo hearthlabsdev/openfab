@@ -1,0 +1,45 @@
+{% extends "layouts/base" %}
+
+{% block title %}Admin - Groups{% endblock title %}
+
+{% block content %}
+    <h1>Admin - Groups</h1>
+    <p>Manage user groups. Groups can be used to organize permissions and access control.</p>
+
+    <h2>Existing Groups</h2>
+    <table class="table data-table group-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if groups is defined and groups | length > 0 %}
+                {% for group in groups %}
+                    <tr>
+                        <td>{{ group.name }}</td>
+                        <td>
+                            {% if group.description %}
+                                {{ group.description }}
+                            {% else %}
+                                <em>No description</em>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/admin/groups/{{ group.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
+                            <form action="/admin/groups/{{ group.id }}/delete" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3">No groups found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+{% endblock content %}

@@ -225,7 +225,7 @@ html, body {
    Device Table Styles
 ========================= */
 
-.device-table, .print-job-table {
+.data-table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #232938;
@@ -233,28 +233,28 @@ html, body {
     overflow: hidden;
 }
 
-.device-table th, .print-job-table th,
-.device-table td, .print-job-table td {
+.data-table th,
+.data-table td {
     padding: 12px 16px;
     text-align: left;
 }
 
-.device-table thead, .print-job-table thead {
+.data-table thead {
     background: #151922;
 }
 
-.device-table th, .print-job-table th {
+.data-table th {
     font-size: 12px;
     text-transform: uppercase;
     color: #7a8395;
     letter-spacing: 0.05em;
 }
 
-.device-table tbody tr, .print-job-table tbody tr {
+.data-table tbody tr {
     border-top: 1px solid #232938;
 }
 
-.device-table tbody tr:hover, .print-job-table tbody tr:hover {
+.data-table tbody tr:hover {
     background: #161b26;
 }
 
@@ -262,4 +262,139 @@ html, body {
     text-align: center;
     padding: 20px;
     color: #7a8395;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background: #4c8dff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #3b73d1;
+}
+
+/* =========================
+   Device Form Layout
+========================= */
+
+.device-form {
+    max-width: 720px;
+}
+
+/* spacing between groups */
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+/* form groups already exist in your system, but ensure consistency */
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #9aa4b2;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #2a3040;
+    background: #0f1115;
+    color: #e6e6e6;
+    outline: none;
+}
+
+.form-group textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+/* =========================
+   Advanced Collapsible Section
+========================= */
+
+.advanced-section {
+    border: 1px solid #232938;
+    border-radius: 10px;
+    background: #12151d;
+    padding: 10px 12px;
+    margin-bottom: 18px;
+}
+
+.advanced-summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: #9aa4b2;
+    user-select: none;
+    padding: 6px 4px;
+}
+
+.advanced-summary:hover {
+    color: #e6e6e6;
+}
+
+.advanced-content {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* native details animation feel */
+details[open] .advanced-summary {
+    color: #ffffff;
+}
+
+/* =========================
+   Actions
+========================= */
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.btn.btn-primary {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #4c8dff;
+    color: white;
+    cursor: pointer;
+}
+
+.btn.btn-primary:hover {
+    background: #3b73d1;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #2a3040;
+    background: #0f1115;
+    color: #e6e6e6;
+    outline: none;
+}
+
+.form-group select:focus {
+    border-color: #4c8dff;
 }
