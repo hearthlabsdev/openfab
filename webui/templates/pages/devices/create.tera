@@ -7,6 +7,7 @@
         <h1 class="title">Create Device</h1>
     </div>
 
+    <div class="device-form">
     <form action="/devices" method="POST" class="device-form">
 
         {# =========================
@@ -165,6 +166,42 @@
         </div>
 
     </form>
+    </div>
+    <div class="device-form">
+        <h2>
+            Discovered Devices
+        </h2>
+        {% if devices is defined and devices | length > 0 %}
+        <table class="device-table">
+            <tr>
+                <th>
+                    Host
+                </th>
+                <th>
+                    Port
+                </th>
+                <th>
+                    Discovered At
+                </th>
+            </tr>
+            {% for device in devices %}
+                <tr>
+                    <th>
+                        {{ device.host }}
+                    </th>
+                    <th>
+                        {{ device.port }}
+                    </th>
+                    <th>
+                        {{ device.discovered_at }}
+                    </th>
+                </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+            <p>No devices discovered</p>
+        {% endif %}
+    </div>
 </div>
 
 <script>

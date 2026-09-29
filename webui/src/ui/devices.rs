@@ -1,10 +1,10 @@
 use rocket_dyn_templates::{context, Template};
 use rocket::response::content::RawHtml;
-use rocket::{get, routes, Route};
 use ormlite::postgres::PgPool;
 use rocket::State;
 use ormlite::Model;
 use crate::devices::PrinterDiscoveryEventORM;
+use rocket::{routes, Route, get, put, post, delete};
 
 #[get("/")]
 pub fn index() -> RawHtml<Template> {
@@ -25,8 +25,5 @@ async fn create(pool: &State<PgPool>) -> RawHtml<Template> {
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![
-        crate::devices::routes::index,
-        crate::devices::routes::create,
-    ]
+    routes![]
 }

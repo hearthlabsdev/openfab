@@ -18,9 +18,5 @@ pub async fn create() -> RawHtml<Template> {
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![
-        crate::prints::routes::index,
-        crate::prints::routes::history,
-        crate::prints::routes::create,
-    ]
+    routes![index, history, create]
 }

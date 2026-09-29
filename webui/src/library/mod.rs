@@ -1,17 +1,18 @@
-pub mod routes;
-
+pub mod ui;
+pub use ui::get_routes;
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 use secret_ref::*;
 use crate::errors::OpenMPDErr;
+use rocket::fs::TempFile;
 
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
-pub struct Asset {
+pub struct AssetORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,
     pub name: String,
@@ -99,6 +100,12 @@ impl ObjectStore {
         self.client
             .put_object(&self.bucket, key, data.into())
             .await?;
+        Ok(())
+    }
+
+    pub async fn upload_temp_file(&self, key: &str, tempfile: &TempFile<'_>) -> Result<(), minio_rsc::error::Error> {
+        let data = tokio::fs::read(tempfile.path().unwrap()).await?;
+        self.upload_bytes(key, data).await?;
         Ok(())
     }
 

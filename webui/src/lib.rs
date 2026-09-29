@@ -1,3 +1,7 @@
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+pub mod ui;
+pub mod api;
 pub mod admin;
 pub mod accounts;
 pub mod config;

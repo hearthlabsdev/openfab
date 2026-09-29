@@ -1,0 +1,7 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<h1>
+Welcome to your OpenFab Dashboard
+</h1>
+{% endblock content %}

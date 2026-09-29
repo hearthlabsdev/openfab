@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     {# Global styles #}
-    <link rel="stylesheet" href="/static/css/base.css">
+    <link id="basetheme" rel="stylesheet" href="/css/base.css">
 
     {# Page-specific styles #}
     {% block head %}{% endblock head %}
@@ -22,7 +22,7 @@
             {% block topbar %}
                 <div class="topbar-inner">
                     <div class="topbar-left">
-                        <a href="/dashboard" class="logo">OpenFab</a>
+                        <a href="/accounts/sdashboard" class="logo">OpenFab</a>
                     </div>
 
                     <div class="topbar-center">
@@ -34,6 +34,7 @@
                     </div>
 
                     <div class="topbar-right">
+                        <a href="/swagger-ui">docs</a>
                         {% if user is defined %}
                             <div class="user-menu">
                                 <span class="user-name">{{ user.name }}</span>
@@ -51,6 +52,7 @@
                         {% endif %}
                     </div>
                 </div>
+                
             {% endblock topbar %}
         </header>
 
@@ -66,7 +68,7 @@
                 {% block sidebar %}
                     <nav class="nav">
 
-                        <a href="/dashboard">Dashboard</a>
+                        <a href="/accounts/dashboard">Dashboard</a>
 
                         <div class="nav-section">Devices</div>
                         <a href="/devices">All Devices</a>

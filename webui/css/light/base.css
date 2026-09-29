@@ -1,0 +1,392 @@
+/* =========================
+   Reset / Base
+========================= */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", sans-serif;
+    background: #f6f8fb;
+    color: #1f2937;
+}
+
+/* =========================
+   App Layout
+========================= */
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* =========================
+   Topbar
+========================= */
+.topbar {
+    height: 56px;
+    background: #ffffff;
+    border-bottom: 1px solid #d8dee8;
+    display: flex;
+    align-items: center;
+    z-index: 10;
+}
+
+.topbar-inner {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    font-weight: 600;
+    font-size: 16px;
+    color: #111827;
+    text-decoration: none;
+}
+
+.logo:hover {
+    opacity: 0.8;
+}
+
+.topbar-center {
+    display: flex;
+    justify-content: center;
+}
+
+.global-search {
+    width: 100%;
+    max-width: 420px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #cfd8e3;
+    background: #ffffff;
+    color: #1f2937;
+    outline: none;
+}
+
+.global-search::placeholder {
+    color: #94a3b8;
+}
+
+.global-search:focus {
+    border-color: #3b82f6;
+}
+
+.topbar-right {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.user-menu {
+    font-size: 14px;
+    color: #475569;
+}
+
+/* =========================
+   Main Layout
+========================= */
+.main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* =========================
+   Sidebar
+========================= */
+.sidebar {
+    width: 220px;
+    background: #ffffff;
+    border-right: 1px solid #d8dee8;
+    padding: 16px 12px;
+    overflow-y: auto;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav a {
+    padding: 8px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #475569;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav a:hover {
+    background: #edf4ff;
+    color: #111827;
+}
+
+.nav-section {
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    padding: 4px 10px;
+}
+
+/* =========================
+   Content Area
+========================= */
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.page {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* =========================
+   Context Bar
+========================= */
+.context-bar {
+    height: 44px;
+    background: #ffffff;
+    border-bottom: 1px solid #d8dee8;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 14px;
+}
+
+/* =========================
+   Scrollbars
+========================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* =========================
+   Utility Classes
+========================= */
+
+.hidden {
+    display: none !important;
+}
+
+.muted {
+    color: #64748b;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* =========================
+   Device Table
+========================= */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #d8dee8;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.data-table thead {
+    background: #f3f6fa;
+}
+
+.data-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.05em;
+}
+
+.data-table tbody tr {
+    border-top: 1px solid #e5eaf0;
+}
+
+.data-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: #64748b;
+}
+
+/* =========================
+   Buttons
+========================= */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+}
+
+/* =========================
+   Device Form
+========================= */
+
+.device-form {
+    max-width: 720px;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #475569;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #cfd8e3;
+    background: #ffffff;
+    color: #1f2937;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #3b82f6;
+}
+
+.form-group textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+/* =========================
+   Advanced Section
+========================= */
+
+.advanced-section {
+    border: 1px solid #d8dee8;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px 12px;
+    margin-bottom: 18px;
+}
+
+.advanced-summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: #475569;
+    user-select: none;
+    padding: 6px 4px;
+}
+
+.advanced-summary:hover {
+    color: #111827;
+}
+
+.advanced-content {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+details[open] .advanced-summary {
+    color: #111827;
+    font-weight: 600;
+}
+
+/* =========================
+   Actions
+========================= */
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.btn.btn-primary {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+}
+
+.btn.btn-primary:hover {
+    background: #2563eb;
+}

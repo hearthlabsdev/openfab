@@ -4,4 +4,22 @@
 <div class="container">
     <h1 class="title">OpenFAB Library</h1>
 </div>
+
+<a href="/library/create" class="button is-primary">Add New Design</a>
+
+<div class="container">
+    <p>Welcome to the OpenFAB Library! This is a collection of open-source designs for fabrication projects. Browse through the categories to find designs for furniture, tools, and more.</p>
+
+    {% if assets is defined and assets | length > 0 %}
+        <h2 class="subtitle">Available Designs</h2>
+        <ul class="design-list">
+            {% for asset in assets %}
+                <li class="design-item">
+                    <a href="{{ asset.url }}">{{ asset.title }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+
 {% endblock content %}

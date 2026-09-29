@@ -1,5 +1,4 @@
-pub mod routes;
-pub mod forms;
+
 
 use uuid::Uuid;
 use ormlite::Model;
@@ -82,4 +81,12 @@ pub struct PrintJobExecutionORM {
 
     /// Failure reason (if any)
     pub error: Option<String>,
+}
+
+
+pub struct PrintQueueORM {
+    pub uid: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub capabilities: Vec<String>, // e.g. ["3d_printing", "color_printing"]
 }
