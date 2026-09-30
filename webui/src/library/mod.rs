@@ -4,7 +4,7 @@ use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 use secret_ref::*;
-use crate::errors::OpenMPDErr;
+use crate::errors::OpenFabErr;
 use rocket::fs::TempFile;
 
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
@@ -49,7 +49,7 @@ impl ObjectStoreConfig {
         self.endpoint != "" && self.access_key != "" && self.bucket != ""
     }
 
-    pub async fn object_store(&self) -> Result<ObjectStore, OpenMPDErr> {
+    pub async fn object_store(&self) -> Result<ObjectStore, OpenFabErr> {
         ObjectStore::new(
             &self.endpoint,
             &self.access_key,
@@ -77,7 +77,7 @@ impl ObjectStore {
         secret_key: &str,
         bucket: &str,
         secure: bool,
-    ) -> Result<Self, OpenMPDErr> {
+    ) -> Result<Self, OpenFabErr> {
         let provider = StaticProvider::new(access_key, secret_key, None);
         let client = Minio::builder()
             .endpoint(endpoint)
@@ -117,7 +117,7 @@ impl ObjectStore {
         &self,
         key: &str,
         expires_secs: usize,
-    ) -> Result<String, OpenMPDErr> {
+    ) -> Result<String, OpenFabErr> {
         // build presign args
         let mut args = PresignedArgs::new(&self.bucket, key).expires(expires_secs);
 
@@ -134,7 +134,7 @@ impl ObjectStore {
         &self,
         key: &str,
         expires_secs: usize,
-    ) -> Result<String, OpenMPDErr> {
+    ) -> Result<String, OpenFabErr> {
         let mut args = PresignedArgs::new(&self.bucket, key).expires(expires_secs);
 
         let url = self.client.presigned_get_object(args).await?;

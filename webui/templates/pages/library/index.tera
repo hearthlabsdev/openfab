@@ -1,25 +1,111 @@
 {% extends "layouts/base" %}
 
 {% block content %}
-<div class="container">
-    <h1 class="title">OpenFAB Library</h1>
+
+<div class="asset-library">
+<div class="asset-library-header">
+    <div>
+        <h1 class="asset-library-title">Asset Library</h1>
+        <p class="asset-library-subtitle">
+            Manage and organize your uploaded assets.
+        </p>
+    </div>
+
+    <div class="asset-library-actions">
+        <a href="/assets/upload" class="btn btn-primary">
+            Upload Asset
+        </a>
+    </div>
 </div>
 
-<a href="/library/create" class="button is-primary">Add New Design</a>
+{% if assets is defined and assets | length > 0 %}
 
-<div class="container">
-    <p>Welcome to the OpenFAB Library! This is a collection of open-source designs for fabrication projects. Browse through the categories to find designs for furniture, tools, and more.</p>
+    <div class="asset-grid">
 
-    {% if assets is defined and assets | length > 0 %}
-        <h2 class="subtitle">Available Designs</h2>
-        <ul class="design-list">
-            {% for asset in assets %}
-                <li class="design-item">
-                    <a href="{{ asset.url }}">{{ asset.title }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+        {% for asset in assets %}
+
+        <article class="asset-card">
+
+            <div class="asset-card-preview">
+                <div class="asset-file-icon">
+                    🖼
+                </div>
+
+                {% if asset.public %}
+                    <span class="asset-badge asset-badge-public">
+                        Public
+                    </span>
+                {% else %}
+                    <span class="asset-badge asset-badge-private">
+                        Private
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="asset-card-body">
+
+                <div class="asset-card-title-row">
+                    <h3 class="asset-card-title" title="{{ asset.name }}">
+                        {{ asset.name }}
+                    </h3>
+                </div>
+
+                <div class="asset-card-meta">
+                    <span>{{ asset.mime }}</span>
+                    <span>•</span>
+                    <span>{{ asset.size }} bytes</span>
+                </div>
+
+                {% if asset.license is defined %}
+                    <div class="asset-license">
+                        <span class="asset-license-label">License</span>
+                        <span>{{ asset.license }}</span>
+                    </div>
+                {% endif %}
+
+                <div class="asset-card-footer">
+
+                    <div class="asset-date">
+                        Added {{ asset.created_at }}
+                    </div>
+
+                    <div class="asset-card-actions">
+                        <a
+                            href="/assets/{{ asset.uid }}"
+                            class="btn btn-secondary"
+                        >
+                            View
+                        </a>
+
+                        <a
+                            href="/assets/{{ asset.uid }}/download"
+                            class="btn btn-primary"
+                        >
+                            Download
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+{% else %}
+    <div class="asset-empty">
+        <div class="asset-empty-icon">📁</div>
+        <h2>No assets yet</h2>
+        <p>Upload an asset to start building your library.</p>
+
+        <a href="/library/upload" class="btn btn-primary">
+            Upload Asset
+        </a>
+    </div>
+{% endif %}
+
 </div>
-
 {% endblock content %}

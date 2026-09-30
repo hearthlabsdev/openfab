@@ -31,7 +31,7 @@ pub async fn login(jar: &CookieJar<'_>, auth: &State<AuthState>, pool: &State<Pg
         panic!("invalid password");
     }
 
-    auth.local_login(jar, "RS512", &user.email.clone(), user.generate_local_user_id(None)).await.unwrap();
+    auth.local_login(jar, "RS512", &user.email).await.unwrap();
     Redirect::to(format!("/"))
 }
 

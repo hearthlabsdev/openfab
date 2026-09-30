@@ -4,7 +4,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 
 #[derive(Debug, Error)]
-pub enum OpenMPDErr {
+pub enum OpenFabErr {
     #[error("failed to send advertisement command: {0}")]
     AdvertiseErr(#[from] SendError<AdvertiseCmd>),
     #[error("failed to discover printers: {0}")]
@@ -19,5 +19,14 @@ pub enum OpenMPDErr {
     ValueErr(#[from] minio_rsc::error::ValueError),
     #[error("secret fetch error: {0}")]
     SecretFetchErr(#[from] secret_ref::SecretError),
+    #[error("authentication failed: {0}")]
+    AuthErr(#[from] AuthErr),
+}
 
+#[derive(Debug, Error)]
+pub enum AuthErr {
+    #[error("invalid password entry")]
+    InvalidPassword,
+    #[error("user not found in database")]
+    UserNotFound,
 }

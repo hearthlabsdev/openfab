@@ -107,24 +107,22 @@ impl User {
         let now = OffsetDateTime::now_utc().unix_timestamp();
 
         UserID {
-            id: self.id,
             sub,
-            iss: "http://localhost".into(),
+            iss: vec!["http://localhost".into()],
             iat: now,
             exp: hour,
-            aud: "self".into(),
+            aud: vec!["self".into()],
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserID {
-    id: Uuid,
     sub: String,
-    iss: String,
+    iss: Vec<String>,
     iat: i64,
     exp: i64,
-    aud: String,
+    aud: Vec<String>,
 }
 
 impl CoreClaims for UserID {
@@ -132,10 +130,10 @@ impl CoreClaims for UserID {
         &self.sub
     }
     fn issuer(&self) -> Vec<String> {
-        vec![self.iss.clone()]
+        self.iss.clone()
     }
     fn audience(&self) -> Vec<String> {
-        vec![self.aud.clone()]
+        self.aud.clone()
     }
     fn issued_at(&self) -> i64 {
         self.iat

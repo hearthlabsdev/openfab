@@ -1,5 +1,5 @@
 use crate::devices::PrinterDiscoveryEventORM;
-use crate::errors::OpenMPDErr;
+use crate::errors::OpenFabErr;
 use openfab::IppTxtRecords;
 use openfab::discovery::IppDiscovery;
 use openfab::discovery::verify::verify_ipp_printer;
@@ -41,7 +41,7 @@ impl DiscoveryRouter {
     pub async fn run_discovery_router(
         pool: PgPool,
         advertise_tx: Sender<AdvertiseCmd>,
-    ) -> Result<(), OpenMPDErr> {
+    ) -> Result<(), OpenFabErr> {
         let discovery = IppDiscovery::new()?;
         discovery.start()?;
 

@@ -57,7 +57,7 @@ pub async fn index(pool: &State<PgPool>) -> RawHtml<Template> {
     RawHtml(Template::render("pages/library/index", context! { assets }))
 }
 
-#[get("/create")]
+#[get("/upload")]
 pub async fn create_form() -> RawHtml<Template> {
     RawHtml(Template::render("pages/library/create", context! {}))
 }

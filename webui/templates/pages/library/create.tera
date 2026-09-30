@@ -1,0 +1,178 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<div class="asset-upload-header">
+    <div>
+        <h1 class="asset-upload-title">Upload Asset</h1>
+        <p class="asset-upload-subtitle">
+            Add a file to your asset library.
+        </p>
+    </div>
+
+    <a href="/library" class="btn btn-secondary">
+        Back to Library
+    </a>
+</div>
+
+<form
+    class="asset-form"
+    method="post"
+    action="/assets/upload"
+    enctype="multipart/form-data"
+>
+
+    <div class="asset-form-section">
+
+        <div class="form-group">
+            <label for="file">Asset file</label>
+
+            <div class="asset-file-dropzone" id="dropzone">
+                <div class="asset-file-dropzone-icon">
+                    ↑
+                </div>
+
+                <div class="asset-file-dropzone-content">
+                    <strong>Choose a file</strong>
+                    <span>or drag and drop it here</span>
+                </div>
+
+                <input
+                    id="file"
+                    name="file"
+                    type="file"
+                    required
+                >
+            </div>
+
+            <div
+                id="file-info"
+                class="asset-file-info hidden"
+            >
+                <span id="selected-file-name"></span>
+                <span id="selected-file-size"></span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="asset-form-section">
+
+        <div class="form-group">
+            <label for="name">Name</label>
+
+            <input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="my-asset.png"
+                required
+            >
+        </div>
+
+        <div class="asset-form-row">
+
+            <div class="form-group">
+                <label for="mime">MIME type</label>
+
+                <input
+                    id="mime"
+                    name="mime"
+                    type="text"
+                    placeholder="image/png"
+                    readonly
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="size">File size</label>
+
+                <input
+                    id="size"
+                    name="size"
+                    type="number"
+                    placeholder="0"
+                    readonly
+                    required
+                >
+            </div>
+
+        </div>
+
+        <div class="form-group">
+            <label for="owner">Owner</label>
+
+            <input
+                id="owner"
+                name="owner"
+                type="text"
+                placeholder="Owner UUID"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="license">License</label>
+
+            <input
+                id="license"
+                name="license"
+                type="text"
+                placeholder="e.g. CC-BY-SA 4.0"
+            >
+
+            <div class="form-help">
+                Optional. Leave blank if the asset has no specified license.
+            </div>
+        </div>
+
+    </div>
+
+    <div class="asset-form-section">
+
+        <div class="asset-visibility">
+
+            <div class="asset-visibility-content">
+                <div class="asset-visibility-title">
+                    Public asset
+                </div>
+
+                <div class="asset-visibility-description">
+                    Allow this asset to be accessed publicly or embedded.
+                </div>
+            </div>
+
+            <label class="toggle">
+                <input
+                    id="public"
+                    name="public"
+                    type="checkbox"
+                    value="true"
+                >
+
+                <span class="toggle-slider"></span>
+            </label>
+
+        </div>
+
+    </div>
+
+    <div class="form-actions asset-form-actions">
+
+        <a href="/assets" class="btn btn-secondary">
+            Cancel
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+            id="upload-button"
+        >
+            Upload Asset
+        </button>
+
+    </div>
+
+</form>
+</div>
+{% endblock content %}

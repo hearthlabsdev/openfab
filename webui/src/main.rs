@@ -37,6 +37,8 @@ async fn rocket() -> _ {
     // Build Rocket
     let tx = VirtualPrinter::new().spawn_advertiser();
 
+    println!("current time UTC: {}", time::OffsetDateTime::now_utc());
+
     let config = Config {
         port: 7777,
         temp_dir: "/tmp/config-example".into(),
@@ -45,7 +47,7 @@ async fn rocket() -> _ {
 
     let store_config = ObjectStoreConfig {
         endpoint: "localhost:9000".to_string(),
-        access_key: "ddMB1Us6EHwA8FrJB5l".to_string(),
+        access_key: "GKaf44ea80663a6b5b5d15cb0d".to_string(),
         secret_key: "file:///home/cardinal/projects/hearthlabs/openfab/keys/store.txt".parse().expect("failed to create secret ref"),
         bucket: "openfab".to_string(),
         secure: false,
@@ -72,7 +74,7 @@ async fn rocket() -> _ {
     key.read_to_string(&mut priv_key_str).await.unwrap();
 
     let working_config = WorkingConfig::new_local("/").expect("failed to create working config");
-    let signer = OidcSigner::from_x509_pem(&priv_key_str, "0").expect("failed to create JWT signer");
+    let signer = OidcSigner::from_rsa_pem(&priv_key_str, "0").expect("failed to create JWT signer");
     let client = LocalClient::new(working_config, signer).expect("failed to create local client");
     AuthState::local_only(client).await.setup(rocket)
 }
