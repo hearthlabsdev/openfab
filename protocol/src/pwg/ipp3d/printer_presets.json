@@ -1,0 +1,49 @@
+{
+  "materials": [
+    {
+      "name": "PLA",
+      "material_type": "filament",
+      "color": null,
+      "density": null,
+      "melting_point": null
+    },
+    {
+      "name": "ABS",
+      "material_type": "filament",
+      "color": null,
+      "density": null,
+      "melting_point": null
+    },
+    {
+      "name": "PETG",
+      "material_type": "filament",
+      "color": null,
+      "density": null,
+      "melting_point": null
+    },
+    {
+      "name": "TPU",
+      "material_type": "filament",
+      "color": null,
+      "density": null,
+      "melting_point": null
+    }
+  ],
+  "printers": [
+    {
+      "model": "Prusa i3 MK3S",
+      "build_volume": { "width": 250, "depth": 210, "height": 210, "max_weight": null },
+      "supported_materials": ["PLA", "ABS", "PETG", "TPU"]
+    },
+    {
+      "model": "Ender 3 V2",
+      "build_volume": { "width": 220, "depth": 220, "height": 250, "max_weight": null },
+      "supported_materials": ["PLA", "PETG", "TPU"]
+    },
+    {
+      "model": "Ultimaker S5",
+      "build_volume": { "width": 330, "depth": 240, "height": 300, "max_weight": null },
+      "supported_materials": ["PLA", "ABS", "PETG", "TPU"]
+    }
+  ]
+}

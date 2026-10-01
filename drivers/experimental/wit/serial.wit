@@ -1,0 +1,42 @@
+package openfab:drivers;
+
+interface serialport {
+    record portinfo {
+        name: string,
+        porttype: u16,
+    }
+    
+    resource serialport {
+        constructor();
+        
+        listports: func() -> result<list<portinfo>, string>;
+        openport: func(name: string) -> result<u64, string>;
+        closeport: func() -> result<bool, string>;
+
+        writeport: func(data: list<u8>) -> result<bool, string>;
+        readport: func(len: u32) -> result<list<u8>, string>;
+    }
+}
+
+interface runtime {
+    record job {
+        id: u64,
+        name: string,
+        format: string,
+        data: list<u8>
+    }
+    
+    resource driver {
+        constructor();
+        init: func() -> result<bool, string>;
+        shutdown: func() -> result<bool, string>;
+
+        startjob: func(job: job) -> result<u64, string>;
+        pausejob: func(id: u64) -> result<bool, string>;
+        stopjob: func(id: u64) -> result<bool, string>;
+    }
+}
+world drivers {
+    import serialport;
+    export runtime;
+}

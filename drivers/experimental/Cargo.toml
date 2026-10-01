@@ -1,0 +1,31 @@
+[package]
+name = "drivers"
+version = "0.1.0"
+edition = "2024"
+crate-type = ["cdylib"]
+
+[dependencies]
+serde = { version = "1.0.228", features = ["derive"]}
+embedded-hal = "1.0.0"
+
+wasmtime = { version = "42.0.1", optional = true }
+wasmtime-wasi = { version = "42.0.1", optional = true }
+wasi = { version = "0.14.7", optional = true }
+
+serialport = { git = "https://github.com/vivianlazaras/serialport-rs", optional = true }
+rppal = { version = "0.22.1", optional = true }
+esp-hal = { version = "1.0.0", optional = true }
+wasmi = { version = "1.0.9" }
+rp2040-hal = "0.12.0"
+wit-bindgen = "0.53.1"
+thiserror = "2.0.18"
+
+[features]
+serialport = [ "dep:serialport" ]
+rpi = [ "dep:rppal" ]
+esp32 = [ "dep:esp-hal" ]
+
+wasi = [ "dep:wasi" ]
+wasmtime-wasi = [ "dep:wasmtime-wasi", "wasi", "wasmtime" ]
+
+default = ["serialport"]
