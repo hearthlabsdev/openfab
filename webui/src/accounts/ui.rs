@@ -3,6 +3,7 @@ use crate::accounts::User;
 use crate::utils::Guard;
 
 use rocket_dyn_templates::{context, Template};
+use rocket_oidc::{config::OIDCConfig};
 use rocket::response::content::RawHtml;
 use rocket::{get, post, routes, State, Route};
 use rocket::http::CookieJar;
@@ -13,8 +14,8 @@ use ormlite::postgres::PgPool;
 use ormlite::Model;
 
 #[get("/login")]
-pub fn login_page(config: &State<AccountConfig>) -> RawHtml<Template> {
-    RawHtml(Template::render("pages/accounts/login", context! { config: config.inner() }))
+pub fn login_page(config: &State<AccountConfig>, oidc: &State<Vec<OIDCConfig>>) -> RawHtml<Template> {
+    RawHtml(Template::render("pages/accounts/login", context! { config: config.inner(), providers: oidc.inner() }))
 }
 
 #[post("/login", data = "<login_form>")]

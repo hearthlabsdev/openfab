@@ -5,6 +5,7 @@ use ormlite::postgres::PgPool;
 use rocket::State;
 use ormlite::Model;
 use crate::devices::PrinterDiscoveryEventORM;
+use crate::utils::Guard;
 
 #[get("/")]
 pub fn index() -> RawHtml<Template> {
@@ -13,7 +14,7 @@ pub fn index() -> RawHtml<Template> {
 }
 
 #[get("/create")]
-async fn create(pool: &State<PgPool>) -> RawHtml<Template> {
+async fn create(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
     
     // within this current model one of two things needs to be the case:
     // either the server is running on a lan where it can discover devices, or a client needs to discover relaying the discovery to the server.

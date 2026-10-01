@@ -9,7 +9,7 @@ use rocket::response::content::RawHtml;
 use rocket::data::{Limits, ToByteUnit};
 use rocket::response::Redirect;
 use rocket_dyn_templates::{Template, context};
-use rocket_oidc::{sign::OidcSigner, auth::AuthState, client::LocalClient, config::WorkingConfig};
+use rocket_oidc::{sign::OidcSigner, config::OIDCConfig, auth::AuthState, client::LocalClient, config::WorkingConfig};
 use std::net::{Ipv4Addr, SocketAddr};
 use webui::VirtualPrinter;
 use ormlite::postgres::PgPool;
@@ -57,6 +57,17 @@ async fn rocket() -> _ {
         bucket: "openfab".to_string(),
         secure: false,
     };
+
+    let oidc = OIDCConfig {
+        name: "LaunchSpace (keycloak)".into(),
+        client_id: "openfab".into(),
+        client_secret: "file:///home/cardinal/projects/hearthlabs/openfab/keys/keycloak.txt".parse().expect("failed to create secret ref"),
+        issuer_url: "http://localhost:3883/realms/master".into(),
+        redirect: "http://localhost:7777".into(),
+        privkey: None,
+        post_login: Some("/accounts/dashboard".into()),
+    };
+
     let store = store_config.object_store().await.unwrap();
     let accounts = AccountConfig::default();
     let pool = PgPool::connect("postgres://openfab:password@localhost:5432/openfab").await.unwrap();
@@ -68,6 +79,7 @@ async fn rocket() -> _ {
         .manage(accounts)
         .manage(ThemePicker::default())
         .manage(pool)
+        .manage(vec![oidc.clone()])
         .manage(store)
         .mount("/static", FileServer::from("static"));
 
@@ -81,5 +93,7 @@ async fn rocket() -> _ {
     let working_config = WorkingConfig::new_local("/").expect("failed to create working config");
     let signer = OidcSigner::from_rsa_pem(&priv_key_str, "0").expect("failed to create JWT signer");
     let client = LocalClient::new(working_config, signer).expect("failed to create local client");
-    AuthState::local_only(client).await.setup(rocket)
+    let state = AuthState::from_oidc_config(oidc).await.unwrap();
+    state.set_local_client(client).await;
+    state.setup(rocket)
 }

@@ -3210,8 +3210,8 @@ dependencies = [
  "language-tags",
  "livekit",
  "mdns-sd",
- "rocket-oidc",
- "secret_ref 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rocket-oidc 0.2.1",
+ "secret_ref",
  "serde",
  "serde_derive",
  "serde_json",
@@ -4300,7 +4300,39 @@ dependencies = [
  "rocket",
  "rpassword",
  "rsa",
- "secret_ref 0.1.1",
+ "secret_ref",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2",
+ "structopt",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "rocket-oidc"
+version = "0.2.1"
+source = "git+https://github.com/vivianlazaras/rocket-oidc#7b486dfc61560a540d4d18e8ae69c17667085f7f"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "cookie",
+ "err-derive",
+ "futures",
+ "hmac",
+ "jsonwebtoken",
+ "openidconnect",
+ "pkcs8",
+ "rand 0.8.6",
+ "reqwest 0.12.28",
+ "rocket",
+ "rpassword",
+ "rsa",
+ "secret_ref",
  "serde",
  "serde_derive",
  "serde_json",
@@ -4660,21 +4692,6 @@ dependencies = [
  "pkcs8",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "secret_ref"
-version = "0.1.1"
-dependencies = [
- "reqwest 0.13.1",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_yaml",
- "thiserror 2.0.18",
- "tokio",
- "toml 0.9.12+spec-1.1.0",
- "url",
 ]
 
 [[package]]
@@ -6397,11 +6414,11 @@ dependencies = [
  "rand 0.9.4",
  "rand_core 0.10.1",
  "rocket",
- "rocket-oidc",
+ "rocket-oidc 0.2.1 (git+https://github.com/vivianlazaras/rocket-oidc)",
  "rocket_dyn_templates",
  "rocket_okapi",
  "schemars 0.8.22",
- "secret_ref 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "secret_ref",
  "serde",
  "serde_derive",
  "serde_json",

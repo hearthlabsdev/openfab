@@ -58,7 +58,7 @@
 
                 <div class="oidc-list">
                     {% for provider in providers %}
-                        <a href="/auth/oidc/{{ provider.id }}" class="oidc-provider">
+                        <a href="/auth/authorize?issuer_url={{ provider.issuer_url }}" class="oidc-provider">
                             {{ provider.name }}
                         </a>
                     {% endfor %}

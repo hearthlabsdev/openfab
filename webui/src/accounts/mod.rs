@@ -3,6 +3,7 @@ pub use ui::get_routes;
 use rocket::form::Form;
 use rocket::FromForm;
 use rocket_oidc::claims::CoreClaims;
+use rocket_oidc::utils::string_or_vec;
 use ormlite::Model;
 use uuid::Uuid;
 use serde_derive::{Serialize, Deserialize};
@@ -119,9 +120,11 @@ impl User {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserID {
     sub: String,
+    #[serde(deserialize_with = "string_or_vec")]
     iss: Vec<String>,
     iat: i64,
     exp: i64,
+    #[serde(deserialize_with = "string_or_vec")]
     aud: Vec<String>,
 }
 
