@@ -1,7 +1,8 @@
 //! This module handles listing available printers based on discovery, manual add, and user permissions.
-pub mod routes;
+pub mod ui;
 pub mod forms;
 
+pub use ui::get_routes;
 use uuid::Uuid;
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};

@@ -10,8 +10,27 @@ use rocket::fs::TempFile;
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+#[ormlite(table = "libraries")]
+pub struct LibraryORM {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub name: String,
+    pub owner: Uuid,
+
+    pub created_at: i64,
+    pub updated_at: i64,
+    /// Last time this asset was used in a print job or queue.
+    pub last_used_at: Option<i64>,
+
+    /// Whether this asset is publicly accessible (e.g. for embedding or sharing)
+    pub public: bool,
+    /// Optional license or usage terms (e.g. "CC-BY-SA 4.0")
+    pub license: Option<String>,
+}
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
+#[ormlite(table = "assets")]
 pub struct AssetORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,
@@ -99,7 +118,7 @@ impl ObjectStore {
     ) -> Result<(), minio_rsc::error::Error> {
         self.client
             .put_object(&self.bucket, key, data.into())
-            .await?;
+            .await.expect("failed to put object");
         Ok(())
     }
 
@@ -126,9 +145,6 @@ impl ObjectStore {
         Ok(url)
     }
 
-    pub fn generate_key(entity: &str, asset_type: &str, uid: Uuid, file_ext: &str) -> String {
-        format!("/assets/{}/{}/{}.{}", entity, asset_type, uid, file_ext)
-    }
     /// Generate a presigned GET URL.
     pub async fn presigned_get_url(
         &self,

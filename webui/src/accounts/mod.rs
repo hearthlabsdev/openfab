@@ -63,7 +63,7 @@ impl RegisterForm {
             .map_err(|e| AccountError::PasswordHash)?;
 
         Ok(User {
-            id: Uuid::new_v4(),
+            uid: Uuid::new_v4(),
             subject: None,
             fname: self.fname,
             lname: self.lname,
@@ -78,7 +78,7 @@ impl RegisterForm {
 #[ormlite(table = "users")]
 pub struct User {
     #[ormlite(primary_key)]
-    id: Uuid,
+    uid: Uuid,
     subject: Option<String>,
     fname: String,
     lname: String,

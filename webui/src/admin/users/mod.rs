@@ -1,5 +1,5 @@
 //! This module is intended to handle listing active users
-pub mod routes;
+pub mod ui;
 pub mod forms;
 
 use serde_derive::{Deserialize, Serialize};
@@ -7,34 +7,6 @@ use uuid::Uuid;
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::{distr::Alphanumeric, Rng};
 use ormlite::Model;
-
-/// defines a user instance for project/loan checkouts.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserORM {
-    /// the unique ID of this user
-    pub uid: Uuid,
-    /// OIDC subject field to map to OIDC provider info.
-    pub subject: Option<String>,
-    /// user first name
-    pub firstname: String,
-    /// user last name
-    pub lastname: String,
-    /// user email address
-    pub email: String,
-    /// phone number of the user
-    pub phone: Option<String>,
-    /// Are they staff or a regular member?
-    pub staff: Option<bool>,
-    
-    /// an identifier for a stripe customer
-    pub stripe_customer_id: Option<String>,
-    /// the timezone of the user
-    pub timezone: Option<String>,
-    /// the regionalization for the user eg en-US
-    pub locale: Option<String>,
-    /// optional url to the user's profile picture
-    pub picture: Option<String>,
-}
 
 /// Represents a single activation code used to link a User → OIDC Subject.
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]

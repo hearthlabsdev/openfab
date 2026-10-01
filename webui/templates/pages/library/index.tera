@@ -12,7 +12,7 @@
     </div>
 
     <div class="asset-library-actions">
-        <a href="/assets/upload" class="btn btn-primary">
+        <a href="/library/upload" class="btn btn-primary">
             Upload Asset
         </a>
     </div>

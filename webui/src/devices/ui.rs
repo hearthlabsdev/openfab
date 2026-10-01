@@ -26,7 +26,7 @@ async fn create(pool: &State<PgPool>) -> RawHtml<Template> {
 
 pub fn get_routes() -> Vec<Route> {
     routes![
-        crate::devices::routes::index,
-        crate::devices::routes::create,
+        crate::devices::ui::index,
+        crate::devices::ui::create,
     ]
 }

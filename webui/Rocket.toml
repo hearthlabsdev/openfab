@@ -1,0 +1,11 @@
+[default.limits]
+form = "100MiB"
+forms = "100MiB"
+data-form = "100MiB"
+
+# Limit for individual files parsed out of data forms (Default: 1MiB)
+file = "100MiB"
+
+# Additional data limits if you accept raw byte streams or JSON
+bytes = "100MiB"
+json = "50MiB"

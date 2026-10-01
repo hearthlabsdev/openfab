@@ -21,8 +21,8 @@
             {% if users is defined and users | length > 0 %}
                 {% for user in users %}
                     <tr>
-                        <td>{{ user.firstname }}</td>
-                        <td>{{ user.lastname }}</td>
+                        <td>{{ user.fname }}</td>
+                        <td>{{ user.lname }}</td>
                         <td>{{ user.email }}</td>
                         <td>
                             {% if user.groups is defined and user.groups | length > 0 %}
@@ -32,8 +32,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="/admin/users/{{ user.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
-                            <form action="/admin/users/{{ user.id }}/delete" method="POST" style="display:inline;">
+                            <a href="/admin/users/{{ user.uid }}/edit" class="btn btn-sm btn-primary">Edit</a>
+                            <form action="/admin/users/{{ user.uid }}/delete" method="POST" style="display:inline;">
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                             </form>
                         </td>

@@ -1,4 +1,4 @@
-pub mod routes;
+pub mod ui;
 pub mod forms;
 
 use uuid::Uuid;

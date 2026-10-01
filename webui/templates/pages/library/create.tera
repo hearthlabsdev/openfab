@@ -1,9 +1,99 @@
 {% extends "layouts/base" %}
 
 {% block content %}
+
+<script>
+    function filePutUpload(event) {
+        event.preventDefault();
+
+        const form = document.querySelector(".asset-form");
+        const uploadButton = document.getElementById("upload-button");
+        const progressBar = document.getElementById("progressBar");
+        const statusText = document.getElementById("statusText");
+        const formContent = document.getElementById("formContent");
+        const uploadProgress = document.getElementById("uploadProgress");
+        const fileInput = document.getElementById("file");
+
+        if (fileInput.files.length > 1) {
+            statusText.textContent =
+                "Only one file upload is currently supported.";
+            return;
+        }
+
+        const file = fileInput.files[0];
+
+        if (!file) {
+            statusText.textContent = "Please select a file first.";
+            window.alert("please select a file first");
+            return;
+        }
+
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
+
+        formContent.classList.add("hidden");
+        uploadProgress.classList.remove("hidden");
+
+        uploadButton.disabled = true;
+        progressBar.value = 0;
+        statusText.textContent = "Starting upload...";
+
+        xhr.open("POST", form.action, true);
+
+        xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable) {
+                return;
+            }
+
+            const percentComplete = Math.round(
+                (event.loaded / event.total) * 100
+            );
+
+            progressBar.value = percentComplete;
+            statusText.textContent = `${percentComplete}% uploaded`;
+        };
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                progressBar.value = 100;
+                statusText.textContent = "Upload complete";
+
+                window.location.href = xhr.responseURL || "/library";
+                return;
+            }
+
+            statusText.textContent =
+                `Upload failed (${xhr.status} ${xhr.statusText})`;
+
+            formContent.classList.remove("hidden");
+            uploadProgress.classList.add("hidden");
+            uploadButton.disabled = false;
+        };
+
+        xhr.onerror = () => {
+            statusText.textContent = "Network error during upload";
+
+            formContent.classList.remove("hidden");
+            uploadProgress.classList.add("hidden");
+            uploadButton.disabled = false;
+        };
+
+        xhr.onabort = () => {
+            statusText.textContent = "Upload cancelled";
+
+            formContent.classList.remove("hidden");
+            uploadProgress.classList.add("hidden");
+            uploadButton.disabled = false;
+        };
+
+        xhr.send(formData);
+    }
+</script>
+
 <div class="asset-upload-header">
     <div>
         <h1 class="asset-upload-title">Upload Asset</h1>
+
         <p class="asset-upload-subtitle">
             Add a file to your asset library.
         </p>
@@ -17,162 +107,161 @@
 <form
     class="asset-form"
     method="post"
-    action="/assets/upload"
+    action="/library/upload"
     enctype="multipart/form-data"
+    onsubmit="filePutUpload(event)"
 >
+    <div id="formContent">
 
-    <div class="asset-form-section">
-
-        <div class="form-group">
-            <label for="file">Asset file</label>
-
-            <div class="asset-file-dropzone" id="dropzone">
-                <div class="asset-file-dropzone-icon">
-                    ↑
-                </div>
-
-                <div class="asset-file-dropzone-content">
-                    <strong>Choose a file</strong>
-                    <span>or drag and drop it here</span>
-                </div>
-
-                <input
-                    id="file"
-                    name="file"
-                    type="file"
-                    required
-                >
-            </div>
-
-            <div
-                id="file-info"
-                class="asset-file-info hidden"
-            >
-                <span id="selected-file-name"></span>
-                <span id="selected-file-size"></span>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="asset-form-section">
-
-        <div class="form-group">
-            <label for="name">Name</label>
-
-            <input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="my-asset.png"
-                required
-            >
-        </div>
-
-        <div class="asset-form-row">
-
+        <div class="asset-form-section">
             <div class="form-group">
-                <label for="mime">MIME type</label>
+                <label for="file">Asset file</label>
+
+                <div class="asset-file-dropzone" id="dropzone">
+                    <div class="asset-file-dropzone-icon">
+                        ↑
+                    </div>
+
+                    <div class="asset-file-dropzone-content">
+                        <strong>Choose a file</strong>
+                        <span>or drag and drop it here</span>
+                    </div>
+
+                    <input
+                        id="file"
+                        name="file"
+                        type="file"/>
+                </div>
+
+                <div
+                    id="file-info"
+                    class="asset-file-info hidden"
+                >
+                    <span id="selected-file-name"></span>
+                    <span id="selected-file-size"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="asset-form-section">
+            <div class="form-group">
+                <label for="name">Name</label>
 
                 <input
-                    id="mime"
-                    name="mime"
+                    id="name"
+                    name="name"
                     type="text"
-                    placeholder="image/png"
-                    readonly
+                    placeholder="my-asset.png"
+                    required
+                >
+            </div>
+
+            <div class="asset-form-row">
+                <div class="form-group">
+                    <label for="mime">MIME type</label>
+
+                    <input
+                        id="mime"
+                        name="mime"
+                        type="text"
+                        placeholder="image/png"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="size">File size</label>
+
+                    <input
+                        id="size"
+                        name="size"
+                        type="number"
+                        placeholder="0"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="owner">Owner</label>
+
+                <input
+                    id="owner"
+                    name="owner"
+                    type="text"
+                    placeholder="Owner UUID"
                     required
                 >
             </div>
 
             <div class="form-group">
-                <label for="size">File size</label>
+                <label for="license">License</label>
 
                 <input
-                    id="size"
-                    name="size"
-                    type="number"
-                    placeholder="0"
-                    readonly
-                    required
-                >
-            </div>
-
-        </div>
-
-        <div class="form-group">
-            <label for="owner">Owner</label>
-
-            <input
-                id="owner"
-                name="owner"
-                type="text"
-                placeholder="Owner UUID"
-                required
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="license">License</label>
-
-            <input
-                id="license"
-                name="license"
-                type="text"
-                placeholder="e.g. CC-BY-SA 4.0"
-            >
-
-            <div class="form-help">
-                Optional. Leave blank if the asset has no specified license.
-            </div>
-        </div>
-
-    </div>
-
-    <div class="asset-form-section">
-
-        <div class="asset-visibility">
-
-            <div class="asset-visibility-content">
-                <div class="asset-visibility-title">
-                    Public asset
-                </div>
-
-                <div class="asset-visibility-description">
-                    Allow this asset to be accessed publicly or embedded.
-                </div>
-            </div>
-
-            <label class="toggle">
-                <input
-                    id="public"
-                    name="public"
-                    type="checkbox"
-                    value="true"
+                    id="license"
+                    name="license"
+                    type="text"
+                    placeholder="e.g. CC-BY-SA 4.0"
                 >
 
-                <span class="toggle-slider"></span>
-            </label>
+                <div class="form-help">
+                    Optional. Leave blank if the asset has no specified license.
+                </div>
+            </div>
+        </div>
 
+        <div class="asset-form-section">
+            <div class="asset-visibility">
+                <div class="asset-visibility-content">
+                    <div class="asset-visibility-title">
+                        Public asset
+                    </div>
+
+                    <div class="asset-visibility-description">
+                        Allow this asset to be accessed publicly or embedded.
+                    </div>
+                </div>
+
+                <label class="toggle">
+                    <input
+                        id="public"
+                        name="public"
+                        type="checkbox"
+                        value="true"
+                    >
+
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions asset-form-actions">
+            <a href="/assets" class="btn btn-secondary">
+                Cancel
+            </a>
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+                id="upload-button"
+            >
+                Upload Asset
+            </button>
         </div>
 
     </div>
 
-    <div class="form-actions asset-form-actions">
+    <div id="uploadProgress" class="upload-section hidden">
+        <progress
+            id="progressBar"
+            value="0"
+            max="100"
+        ></progress>
 
-        <a href="/assets" class="btn btn-secondary">
-            Cancel
-        </a>
-
-        <button
-            type="submit"
-            class="btn btn-primary"
-            id="upload-button"
-        >
-            Upload Asset
-        </button>
-
+        <div id="statusText">
+            0%
+        </div>
     </div>
-
 </form>
-</div>
+
 {% endblock content %}

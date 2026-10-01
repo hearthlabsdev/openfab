@@ -6,6 +6,7 @@
 use rocket::config::Config;
 use rocket::fs::FileServer;
 use rocket::response::content::RawHtml;
+use rocket::data::{Limits, ToByteUnit};
 use rocket::response::Redirect;
 use rocket_dyn_templates::{Template, context};
 use rocket_oidc::{sign::OidcSigner, auth::AuthState, client::LocalClient, config::WorkingConfig};
@@ -39,14 +40,18 @@ async fn rocket() -> _ {
 
     println!("current time UTC: {}", time::OffsetDateTime::now_utc());
 
+    let custom_limits = Limits::default()
+        .limit("data-form", 100.megabytes())
+        .limit("file", 100.megabytes());
+
     let config = Config {
         port: 7777,
-        temp_dir: "/tmp/config-example".into(),
+        limits: custom_limits,
         ..Config::debug_default()
     };
 
     let store_config = ObjectStoreConfig {
-        endpoint: "localhost:9000".to_string(),
+        endpoint: "localhost:3900".to_string(),
         access_key: "GKaf44ea80663a6b5b5d15cb0d".to_string(),
         secret_key: "file:///home/cardinal/projects/hearthlabs/openfab/keys/store.txt".parse().expect("failed to create secret ref"),
         bucket: "openfab".to_string(),
