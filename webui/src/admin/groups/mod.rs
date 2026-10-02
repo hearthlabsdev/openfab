@@ -1,5 +1,5 @@
-pub mod ui;
 pub mod forms;
+pub mod ui;
 
 use uuid::Uuid;
 

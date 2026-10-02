@@ -1,11 +1,11 @@
 pub mod ui;
-pub use ui::get_routes;
-use ormlite::Model;
-use serde_derive::{Deserialize, Serialize};
-use uuid::Uuid;
-use secret_ref::*;
 use crate::errors::OpenFabErr;
+use ormlite::Model;
 use rocket::fs::TempFile;
+use secret_ref::*;
+use serde_derive::{Deserialize, Serialize};
+pub use ui::get_routes;
+use uuid::Uuid;
 
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -118,11 +118,16 @@ impl ObjectStore {
     ) -> Result<(), minio_rsc::error::Error> {
         self.client
             .put_object(&self.bucket, key, data.into())
-            .await.expect("failed to put object");
+            .await
+            .expect("failed to put object");
         Ok(())
     }
 
-    pub async fn upload_temp_file(&self, key: &str, tempfile: &TempFile<'_>) -> Result<(), minio_rsc::error::Error> {
+    pub async fn upload_temp_file(
+        &self,
+        key: &str,
+        tempfile: &TempFile<'_>,
+    ) -> Result<(), minio_rsc::error::Error> {
         let data = tokio::fs::read(tempfile.path().unwrap()).await?;
         self.upload_bytes(key, data).await?;
         Ok(())

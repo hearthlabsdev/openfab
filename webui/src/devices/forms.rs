@@ -58,6 +58,11 @@ pub struct DeviceUploadForm {
     pub ip_address: Option<String>,
     pub serial_port: Option<String>,
 
+    pub access_code: Option<String>,
+    pub mqtt_port: Option<u16>,
+    pub camera_port: Option<u16>,
+    pub ftps_port: Option<u16>,
+    pub detect_port: Option<u16>,
     // =========================
     // Protocol / Driver
     // =========================

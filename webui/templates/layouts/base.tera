@@ -83,6 +83,7 @@
                         <div class="nav-section">Access</div>
                         <a href="/admin/users">Users</a>
                         <a href="/admin/groups">Groups</a>
+                        <a href="/admin/keys">API Keys</a>
 
                         <div class="nav-section">System</div>
                         <a href="/settings">Settings</a>

@@ -1,0 +1,46 @@
+{% extends "layouts/base" %}
+
+{% block title %}Admin - API Keys{% endblock title %}
+
+{% block content %}
+<h1>Admin - API Keys</h1>
+<p>This is the API key management page. Here you can view and manage API keys.</p>
+
+<h2>Existing API Keys</h2>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Key ID</th>
+            <th>Owner</th>
+            <th>Access Key</th>
+            <th>Expires</th>
+            <th>Created</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if api_keys is defined and api_keys | length > 0 %}
+            {% for key in api_keys %}
+                <tr>
+                    <td>{{ key.keyid }}</td>
+                    <td>{{ key.owner }}</td>
+                    <td>{{ key.access_key }}</td>
+                    <td>{{ key.expires }}</td>
+                    <td>{{ key.created }}</td>
+                    <td>
+                        <form action="/admin/api-keys/{{ key.keyid }}/delete" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="6">No API keys found.</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+
+{% endblock content %}

@@ -1,8 +1,6 @@
-
-
-use uuid::Uuid;
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
 #[ormlite(table = "print_jobs")]
@@ -82,7 +80,6 @@ pub struct PrintJobExecutionORM {
     /// Failure reason (if any)
     pub error: Option<String>,
 }
-
 
 pub struct PrintQueueORM {
     pub uid: Uuid,

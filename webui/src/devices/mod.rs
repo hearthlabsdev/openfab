@@ -1,11 +1,11 @@
 //! This module handles listing available printers based on discovery, manual add, and user permissions.
-pub mod ui;
 pub mod forms;
+pub mod ui;
 
-pub use ui::get_routes;
-use uuid::Uuid;
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
+pub use ui::get_routes;
+use uuid::Uuid;
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
 #[ormlite(table = "printers")]
@@ -41,7 +41,6 @@ pub struct PrinterORM {
     /// Whether this printer is eligible for job dispatch
     pub enabled: bool,
 }
-
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
 #[ormlite(table = "print_queues")]

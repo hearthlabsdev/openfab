@@ -1,17 +1,17 @@
-use rocket_dyn_templates::{context, Template};
-use rocket::response::content::RawHtml;
-use rocket::{get, routes, Route, post};
 use crate::library::AssetORM;
-use rocket::State;
+use crate::library::ObjectStore;
+use crate::utils::Guard;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
+use rocket::State;
 use rocket::form::{Form, FromForm};
 use rocket::fs::TempFile;
-use crate::library::ObjectStore;
 use rocket::response::Redirect;
-use serde::{Serialize, Deserialize};
+use rocket::response::content::RawHtml;
+use rocket::{Route, get, post, routes};
+use rocket_dyn_templates::{Template, context};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::utils::Guard;
 
 #[derive(Debug, FromForm)]
 pub struct AssetForm<'r> {
@@ -28,7 +28,10 @@ impl AssetForm<'_> {
     pub async fn into_asset(self, store: &ObjectStore) -> Result<AssetORM, String> {
         let uid = uuid::Uuid::new_v4();
         let filename = format!("/assets/{}", uid);
-        store.upload_temp_file(&filename, &self.file).await.map_err(|e| e.to_string())?;
+        store
+            .upload_temp_file(&filename, &self.file)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Ok(AssetORM {
             uid,
@@ -62,11 +65,18 @@ pub async fn create_form(guard: Guard, store: &State<ObjectStore>) -> RawHtml<Te
     let uid = Uuid::new_v4();
     let key = format!("/assets/{}", uid);
     let url = store.presigned_put_url(&key, 3600).await.unwrap();
-    RawHtml(Template::render("pages/library/create", context! { uid, url }))
+    RawHtml(Template::render(
+        "pages/library/create",
+        context! { uid, url },
+    ))
 }
 
 #[post("/upload", data = "<asset_form>")]
-pub async fn create_asset(store: &State<ObjectStore>, asset_form: Form<AssetForm<'_>>, pool: &State<PgPool>) -> Redirect {
+pub async fn create_asset(
+    store: &State<ObjectStore>,
+    asset_form: Form<AssetForm<'_>>,
+    pool: &State<PgPool>,
+) -> Redirect {
     let mut conn = pool.acquire().await.unwrap();
     let asset_form = asset_form.into_inner();
     let asset = asset_form.into_asset(&store).await.unwrap();

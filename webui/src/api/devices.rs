@@ -1,7 +1,7 @@
 use crate::devices::*;
+use rocket::{delete, get, post, put};
+use rocket_okapi::openapi;
 use uuid::Uuid;
-use rocket::{get, put, post, delete};
-use rocket_okapi::{openapi};
 
 #[openapi(tag = "Devices")]
 #[get("/devices")]

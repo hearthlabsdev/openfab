@@ -1,8 +1,8 @@
-use openfab::config::{DatabaseConfig, ServerConfig};
-use serde_derive::{Deserialize, Serialize};
-use rocket_oidc::config::OIDCConfig;
-use crate::library::ObjectStoreConfig;
 use crate::accounts::AccountConfig;
+use crate::library::ObjectStoreConfig;
+use openfab::config::{DatabaseConfig, ServerConfig};
+use rocket_oidc::config::OIDCConfig;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetupConfig {

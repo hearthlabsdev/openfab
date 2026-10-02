@@ -1,6 +1,6 @@
-use rocket_dyn_templates::{context, Template};
 use rocket::response::content::RawHtml;
-use rocket::{get, routes, Route};
+use rocket::{Route, get, routes};
+use rocket_dyn_templates::{Template, context};
 
 #[get("/")]
 pub async fn index() -> RawHtml<Template> {

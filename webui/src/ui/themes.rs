@@ -1,10 +1,10 @@
+use rocket::http::CookieJar;
+use rocket::{Route, State, get, put, response::content::RawCss, routes};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::default::Default;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
-use rocket::{get, put, Route, routes, State, response::content::RawCss};
-use serde::{Serialize, Deserialize};
-use std::default::Default;
-use rocket::http::{CookieJar};
 
 pub struct ThemePicker {
     current: Arc<RwLock<String>>,
@@ -35,7 +35,7 @@ impl ThemePicker {
     pub async fn by_name(&self, name: &str) -> Theme {
         match self.themes.get(name) {
             Some(theme) => theme.clone(),
-            None => self.select().await
+            None => self.select().await,
         }
     }
 }
@@ -52,14 +52,14 @@ impl Theme {
         Theme {
             name: "default",
             base: include_str!("../../css/light/base.css"),
-            accounts: include_str!("../../css/light/accounts.css")
+            accounts: include_str!("../../css/light/accounts.css"),
         }
     }
     pub fn dark() -> Self {
         Theme {
             name: "default",
             base: include_str!("../../css/dark/base.css"),
-            accounts: include_str!("../../css/dark/accounts.css")
+            accounts: include_str!("../../css/dark/accounts.css"),
         }
     }
 }
@@ -74,12 +74,9 @@ impl Default for Theme {
 #[get("/base.css")]
 pub async fn base_theme(jar: &CookieJar<'_>, themes: &State<ThemePicker>) -> RawCss<String> {
     RawCss(match jar.get("theme") {
-        Some(value) => {
-            themes.by_name(value.value()).await.base.to_string()
-        },
-        None => themes.select().await.base.to_string()
+        Some(value) => themes.by_name(value.value()).await.base.to_string(),
+        None => themes.select().await.base.to_string(),
     })
-    
 }
 
 // this provides the default / currently set server side acount pages theme

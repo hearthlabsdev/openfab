@@ -1,12 +1,12 @@
 //! This module is intended to handle listing active users
-pub mod ui;
 pub mod forms;
+pub mod ui;
 
-use serde_derive::{Deserialize, Serialize};
-use uuid::Uuid;
-use std::time::{SystemTime, UNIX_EPOCH};
-use rand::{distr::Alphanumeric, Rng};
 use ormlite::Model;
+use rand::{Rng, distr::Alphanumeric};
+use serde_derive::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 /// Represents a single activation code used to link a User → OIDC Subject.
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]

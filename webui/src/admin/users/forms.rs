@@ -1,12 +1,11 @@
-use std::collections::HashMap;
 use rocket::{form::FromForm, fs::TempFile};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, FromForm)]
 pub struct ActivationForm {
     pub subject: String,
     pub code: String,
 }
-
 
 #[derive(Debug, FromForm)]
 pub struct UserForm<'r> {

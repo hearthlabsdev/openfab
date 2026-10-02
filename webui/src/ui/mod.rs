@@ -1,12 +1,11 @@
 pub mod dashboard;
 pub mod prints;
 pub mod themes;
-use rocket::{Build, Rocket};
 use crate::admin;
+use rocket::{Build, Rocket};
 
 pub fn register_routes(r: Rocket<Build>) -> Rocket<Build> {
-    r
-        .mount("/library", crate::library::get_routes())
+    r.mount("/library", crate::library::get_routes())
         .mount("/devices", crate::devices::get_routes())
         .mount("/prints", prints::get_routes())
         .mount("/accounts", crate::accounts::get_routes())

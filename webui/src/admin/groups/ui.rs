@@ -1,6 +1,8 @@
-use rocket_dyn_templates::{context, Template};
-use rocket::{get, post, routes, form::Form, response::Redirect, response::content::RawHtml, State};
 use crate::admin::groups::forms::GroupForm;
+use rocket::{
+    State, form::Form, get, post, response::Redirect, response::content::RawHtml, routes,
+};
+use rocket_dyn_templates::{Template, context};
 
 #[get("/groups")]
 pub fn index() -> RawHtml<Template> {

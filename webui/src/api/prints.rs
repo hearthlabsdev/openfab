@@ -1,8 +1,7 @@
-
 use crate::prints::*;
-use rocket_okapi::{openapi};
+use rocket::{delete, get, post, put};
+use rocket_okapi::openapi;
 use uuid::Uuid;
-use rocket::{get, put, post, delete};
 
 #[openapi(tag = "Prints")]
 #[get("/prints")]
@@ -48,9 +47,7 @@ pub(crate) async fn pause_print(id: Uuid) {
 
 #[openapi(tag = "Prints")]
 #[put("/prints/<id>/resume")]
-pub(crate) async fn resume_print(id: Uuid) {
-
-}
+pub(crate) async fn resume_print(id: Uuid) {}
 
 #[openapi(tag = "Prints")]
 #[put("/prints/<id>/stop")]
