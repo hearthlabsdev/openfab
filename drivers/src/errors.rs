@@ -14,4 +14,39 @@ pub enum DriverError {
 
     #[error("couldn't find driver")]
     DriverNotFound,
+
+    #[error("configuration wasn't the expected type expect: {0} found {1}")]
+    InvalidConfigType(String, String),
+
+    #[error("missing a required configuration option: {0}")]
+    MissingConfigValue(String),
+
+    #[error("serialization error: {0}")]
+    SerializationError(#[from] serde_json::Error),
+
+    #[error("error occured in driver runtime")]
+    Runtime(String),
+}
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error("missing required configuration field: {0}")]
+    MissingField(String),
+
+    #[error("invalid value for configuration field '{0}'")]
+    InvalidField(String),
+
+    #[error("configuration field '{0}' is below the minimum value")]
+    BelowMinimum(String),
+
+    #[error("configuration field '{0}' is above the maximum value")]
+    AboveMaximum(String),
+
+    #[error("unknown configuration field: {0}")]
+    UnknownField(String),
+
+    #[error("unknown configuration field type: {0}")]
+    UnknownFieldType(String),
 }

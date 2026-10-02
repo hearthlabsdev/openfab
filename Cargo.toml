@@ -1,6 +1,6 @@
 [workspace]
 members = ["drivers","drivers/bambu","drivers/klipper",
-    "openfab",
+    "core",
     "webui",
     "drivers/prusa",
     "drivers/bambu",

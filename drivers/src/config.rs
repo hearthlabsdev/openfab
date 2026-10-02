@@ -23,6 +23,36 @@ pub struct ConfigSchema {
     pub fields: Vec<ConfigField>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DriverMeta {
+    id: String,
+    name: String,
+    version: String,
+    schema: ConfigSchema,
+}
+
+impl<T: DriverMetadata> From<T> for DriverMeta {
+    fn from(m: T) -> DriverMeta {
+        DriverMeta {
+            id: m.id().to_string(),
+            name: m.name().to_string(),
+            version: m.version().to_string(),
+            schema: m.config_schema(),
+        }
+    }
+}
+
+impl From<&dyn DriverMetadata> for DriverMeta {
+    fn from(m: &dyn DriverMetadata) -> DriverMeta {
+        DriverMeta {
+            id: m.id().to_string(),
+            name: m.name().to_string(),
+            version: m.version().to_string(),
+            schema: m.config_schema(),
+        }
+    }
+}
+
 /// Information exposed by a driver to the registry/UI.
 pub trait DriverMetadata {
     fn id(&self) -> &'static str;
