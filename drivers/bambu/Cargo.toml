@@ -4,4 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bambu-rs = { git = "https://github.com/vivianlazaras/bambu-rs" }
 bambulab = "0.4.29"
+serde_json = "1.0.151"
+tokio = { version = "1.53.1", features = ["full"] }
+openfab-drivers = { path = "../" }
