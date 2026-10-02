@@ -1,5 +1,10 @@
-use openfab_drivers::config::{ConfigSchema, ConfigField, DriverMetadata};
+use openfab_drivers::config::{ConfigSchema, DeviceStatus, DeviceDriver, ConfigField, DriverMetadata};
+use openfab_drivers::errors::{DriverError};
+use openfab_drivers::capabilities::{DriverCapabilities};
+use serde_json::Value;
+use std::collections::HashMap;
 
+use bambu_rs::client::LanMqttClient;
 pub struct BambuMeta;
 
 impl DriverMetadata for BambuMeta {
@@ -55,5 +60,43 @@ impl DriverMetadata for BambuMeta {
                 },
             ],
         }
+    }
+}
+
+pub struct BambuDriver {
+    client: LanMqttClient,
+}
+
+#[async_trait::async_trait]
+impl DeviceDriver for BambuDriver {
+    fn metadata(&self) -> &dyn DriverMetadata {
+        &BambuMeta {}
+    }
+
+    /// Connect using configuration supplied by the user.
+    async fn connect(&mut self, config: Value) -> Result<(), DriverError> {
+        unimplemented!();
+    }
+
+    async fn disconnect(&mut self) -> Result<(), DriverError> {
+        unimplemented!();
+    }
+
+    async fn status(&self) -> Result<DeviceStatus, DriverError> {
+        unimplemented!();
+    }
+
+    /// Generic capability discovery.
+    fn capabilities(&self) -> DriverCapabilities {
+        unimplemented!();
+    }
+
+    /// Optional generic command interface.
+    async fn command(
+        &mut self,
+        command: &str,
+        parameters: HashMap<String, Value>,
+    ) -> Result<Value, DriverError> {
+        unimplemented!();
     }
 }
