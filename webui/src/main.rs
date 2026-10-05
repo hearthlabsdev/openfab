@@ -12,6 +12,7 @@ use rocket::data::{Limits, ToByteUnit};
 use rocket::fs::FileServer;
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
+use rocket_dyn_templates::tera::{Error as TeraError, Value};
 use rocket_dyn_templates::{Template, context};
 use rocket_oidc::{
     auth::AuthState, client::LocalClient, config::OIDCConfig, config::WorkingConfig,
@@ -90,7 +91,18 @@ async fn rocket() -> _ {
     let rocket = rocket::custom(&config)
         .register("/", catchers![unauthorized])
         .mount("/", routes![index])
-        .attach(Template::fairing())
+        .attach(Template::custom(|engine| {
+            // Register a custom "none" tester
+            engine.tera.register_tester(
+                "none",
+                |value: Option<&Value>, _args: &[Value]| -> Result<bool, TeraError> {
+                    Ok(match value {
+                        Some(Value::Null) => true,
+                        _ => false,
+                    })
+                },
+            );
+        }))
         .manage(tx)
         .manage(accounts)
         .manage(ThemePicker::default())

@@ -1,0 +1,17 @@
+{% extends "layouts/device" %}
+
+{% block title %}
+    {{ device.name }} — Device Configuration
+{% endblock title %}
+
+{% block content %}
+
+<div class="device-page">
+
+    <h1>Device Configuration</h1>
+
+    {# Device-specific queue goes here. #}
+
+</div>
+
+{% endblock content %}

@@ -2,29 +2,38 @@
 pub mod forms;
 pub mod ui;
 
+use openfab_drivers::native::NativeRuntime;
+use openfab_drivers::runtime::DriverRuntime;
+use openfab_drivers::utils::config_to_json;
 use ormlite::Model;
+use ormlite::postgres::PgConnection;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 pub use ui::get_routes;
 use uuid::Uuid;
 
+/*
+#{ormlite(table = "print_jobs")}
+pub struct DevicePrintsORM {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub user: Join<User>,
+    pub queue: Uuid,
+    pub asset: Join<AssetORM>,
+
+}*/
+
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
-#[ormlite(table = "printers")]
-pub struct PrinterORM {
+#[ormlite(table = "devices")]
+pub struct DeviceORM {
     /// Stable internal identifier
     #[ormlite(primary_key)]
     pub uid: Uuid,
 
+    pub serial: String,
+    pub queue: Option<Uuid>,
     /// Human-readable name (from IPP or admin override)
     pub name: String,
-
-    /// mDNS instance name (used for correlation)
-    pub mdns_instance: String,
-
-    /// Hostname or IP at last discovery
-    pub host: String,
-
-    /// IPP port (usually 631, but not assumed)
-    pub port: i32,
 
     /// When this printer was first observed
     pub first_seen: i64,
@@ -32,14 +41,54 @@ pub struct PrinterORM {
     /// Last successful discovery or IPP query
     pub last_seen: i64,
 
-    /// Last successful IPP handshake
-    pub last_verified: Option<i64>,
-
     /// Operational status
     pub status: String,
 
     /// Whether this printer is eligible for job dispatch
     pub enabled: bool,
+
+    pub driver_id: String,
+
+    pub driver_version: String,
+}
+
+impl DeviceORM {
+    async fn list_configs(
+        &self,
+        conn: &mut PgConnection,
+    ) -> Result<HashMap<String, String>, ormlite::Error> {
+        let configs = DeviceConfigORM::select()
+            .where_("device = ?")
+            .bind(self.uid)
+            .fetch_all(&mut *conn)
+            .await?;
+
+        Ok(configs
+            .into_iter()
+            .map(|config| (config.key, config.value))
+            .collect())
+    }
+
+    pub async fn get_config(
+        &self,
+        rt: &NativeRuntime,
+        conn: &mut PgConnection,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let driver_id = &self.driver_id;
+        let schema = rt.config_schema(&driver_id).await?;
+        let configs = self.list_configs(conn).await?;
+        Ok(config_to_json(&schema, &configs)?)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[ormlite(table = "device_configs")]
+pub struct DeviceConfigORM {
+    #[ormlite(primary_key)]
+    uid: Uuid,
+    device: Uuid,
+    key: String,
+    value: String,
 }
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]

@@ -1,0 +1,108 @@
+{% extends "layouts/device" %}
+
+{% block title %}
+    {{ device.name }} — Print Queue
+{% endblock title %}
+
+{% block content %}
+
+<div class="device-page">
+
+    <h1>Print Queue</h1>
+
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+                <th class="result-table__header result-table__header--job">
+                    Job
+                </th>
+                <th class="result-table__header result-table__header--user">
+                    User
+                </th>
+                <th class="result-table__header result-table__header--asset">
+                    Asset
+                </th>
+                <th class="result-table__header result-table__header--copies">
+                    Copies
+                </th>
+                <th class="result-table__header result-table__header--priority">
+                    Priority
+                </th>
+                <th class="result-table__header result-table__header--state">
+                    State
+                </th>
+                <th class="result-table__header result-table__header--created">
+                    Created
+                </th>
+            </tr>
+        </thead>
+
+        <tbody class="result-table__body">
+            {% if queue is defined and queue | length > 0 %}
+                {% for print in queue %}
+                    <tr class="result-table__row">
+                        <td class="result-table__cell result-table__cell--job">
+                            {{ print.name }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--user">
+                            {{ print.user.fname }} {{ print.user.lname }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--asset">
+                            {{ print.asset.name }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--copies">
+                            {{ print.copies | default(value=1) }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--priority">
+                            {% if print.priority is defined and print.priority is not none %}
+                                {{ print.priority }}
+                            {% else %}
+                                Normal
+                            {% endif %}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--state">
+                            {{ print.state }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--created">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ print.created_at }}"
+                                data-unix="{{ print.created_at }}"
+                            >
+                                {{ print.created_at }}
+                            </time>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        class="result-table__cell result-table__cell--empty"
+                        colspan="7"
+                    >
+                        No print jobs in the queue.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    document.querySelectorAll(".local-time").forEach(function (element) {
+        const unix = Number(element.dataset.unix);
+
+        if (!Number.isNaN(unix)) {
+            element.textContent = new Date(unix * 1000).toLocaleString();
+        }
+    });
+</script>
+
+{% endblock content %}

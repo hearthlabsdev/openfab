@@ -1,57 +1,94 @@
 {% extends "layouts/base" %}
 
 {% block content %}
-<div class="container">
 
-    <div class="page-header flex-between">
+<div class="device-library">
 
-        <h1 class="title">Devices</h1>
+    <div class="device-library-header">
 
-        <a href="/devices/create" class="btn btn-primary">
-            Add Device
-        </a>
+        <div>
+            <h1 class="device-library-title">Devices</h1>
+            <p class="device-library-subtitle">
+                Manage and monitor your connected 3D printers.
+            </p>
+        </div>
+
+        <div class="device-library-actions">
+            <a href="/devices/create" class="btn btn-primary">
+                Add Device
+            </a>
+        </div>
 
     </div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Last Seen</th>
-                <th>Status</th>
-            </tr>
-        </thead>
+    {% if devices is defined and devices | length > 0 %}
 
-        <tbody>
-            {% if printers is defined and printers | length > 0 %}
-                {% for printer in printers %}
-                    <tr class="data-row">
+        <div class="device-grid">
 
-                        <td class="data-name">
-                            {{ printer.name }}
-                        </td>
+            {% for printer in devices %}
 
-                        <td class="data-last-seen">
-                            {{ printer.last_seen }}
-                        </td>
+            <article class="device-card">
 
-                        <td class="data-status">
-                            <span class="status-badge status-{{ printer.status | lower }}">
-                                {{ printer.status }}
-                            </span>
-                        </td>
+                <div class="device-card-header">
 
-                    </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="3" class="empty-state">
-                        No devices found.
-                    </td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
+                    <div class="device-card-icon">
+                        🖨
+                    </div>
+
+                    <span class="status-badge status-{{ printer.status | lower }}">
+                        {{ printer.status }}
+                    </span>
+
+                </div>
+
+                <div class="device-card-body">
+
+                    <h3 class="device-card-title" title="{{ printer.name }}">
+                        {{ printer.name }}
+                    </h3>
+
+                    <div class="device-card-meta">
+                        <span>Last seen</span>
+                        <span>{{ printer.last_seen }}</span>
+                    </div>
+
+                    <div class="device-card-footer">
+
+                        <a
+                            href="/devices/{{ printer.uid }}"
+                            class="btn btn-secondary"
+                        >
+                            View
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="device-empty">
+            <div class="device-empty-icon">🖨</div>
+
+            <h2>No devices yet</h2>
+
+            <p>
+                Add a 3D printer to start monitoring and managing your devices.
+            </p>
+
+            <a href="/devices/create" class="btn btn-primary">
+                Add Device
+            </a>
+        </div>
+
+    {% endif %}
 
 </div>
+
 {% endblock content %}

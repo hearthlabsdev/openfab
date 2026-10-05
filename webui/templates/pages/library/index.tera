@@ -83,6 +83,12 @@
                         >
                             Download
                         </a>
+                        <a 
+                            href="/prints/create?asset={{ asset.uid }}"
+                            class="btn btn-primary"    
+                        >
+                            Print
+                        </a>
                     </div>
 
                 </div>

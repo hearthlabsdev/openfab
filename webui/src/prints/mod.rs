@@ -1,8 +1,18 @@
+pub mod forms;
+pub mod ui;
+pub use ui::get_routes;
+
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+use crate::utils::unix_epoch_seconds;
+use crate::accounts::User;
+use crate::library::AssetORM;
+use ormlite::model::Join;
+use ormlite::model::JoinMeta;
+
+#[derive(Debug, Model, Serialize, Deserialize)]
 #[ormlite(table = "print_jobs")]
 pub struct PrintJobORM {
     /// Stable job identifier
@@ -10,21 +20,17 @@ pub struct PrintJobORM {
     pub uid: Uuid,
 
     /// Owning user
-    pub user: Uuid,
+    #[ormlite(column = "user")]
+    pub user: Join<User>,
 
     /// Target queue (capability-based)
     pub queue: Uuid,
 
     /// Original filename or description
-    pub title: String,
+    pub name: String,
     /// the file being printed (PDF, SVG, STL, OBJ, GCODE, etc.)
-    pub asset: Uuid,
-
-    /// MIME type (application/pdf, image/png, etc.)
-    pub mime: String,
-
-    /// Logical size (pages, layers, etc.)
-    pub units: Option<f64>,
+    #[ormlite(column = "asset")]
+    pub asset: Join<AssetORM>,
 
     /// Estimated cost (computed at submission)
     pub estimated_cost: Option<f64>,
@@ -81,9 +87,33 @@ pub struct PrintJobExecutionORM {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Model)]
 pub struct PrintQueueORM {
+    #[ormlite(primary_key)]
     pub uid: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub capabilities: Vec<String>, // e.g. ["3d_printing", "color_printing"]
+    pub created_at: i64,
+    pub last_active: i64,
+    /// has the queue been advertised to the network
+    pub advertised: bool,
+}
+
+impl PrintQueueORM {
+    pub fn new(name: String) -> Self {
+        Self {
+            uid: Uuid::new_v4(),
+            name,
+            description: None,
+            created_at: unix_epoch_seconds(),
+            last_active: unix_epoch_seconds(),
+            advertised: false,
+        }
+    }
+
+    pub fn with_description(name: String, description: String) -> Self {
+        let mut queue = Self::new(name);
+        queue.description = Some(description);
+        queue
+    }
 }

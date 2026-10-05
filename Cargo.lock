@@ -4876,6 +4876,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket_ws"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25f1877668c937b701177c349f21383c556cd3bb4ba8fa1d07fa96ccb3a8782e"
+dependencies = [
+ "rocket",
+ "tokio-tungstenite 0.21.0",
+]
+
+[[package]]
 name = "rpassword"
 version = "7.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6243,6 +6253,18 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c83b561d025642014097b66e6c1bb422783339e0909e4429cde4749d1990bc38"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite 0.21.0",
+]
+
+[[package]]
+name = "tokio-tungstenite"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f72a05e828585856dacd553fba484c242c46e391fb0e58917c942ee9202915c"
@@ -6518,6 +6540,25 @@ dependencies = [
  "bytes",
  "data-encoding",
  "http 0.2.12",
+ "httparse",
+ "log",
+ "rand 0.8.6",
+ "sha1",
+ "thiserror 1.0.69",
+ "url",
+ "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ef1a641ea34f399a848dea702823bbecfb4c486f911735368f1f137cb8257e1"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
+ "http 1.4.0",
  "httparse",
  "log",
  "rand 0.8.6",
@@ -6997,6 +7038,7 @@ dependencies = [
  "rocket-oidc 0.2.1 (git+https://github.com/vivianlazaras/rocket-oidc)",
  "rocket_dyn_templates",
  "rocket_okapi",
+ "rocket_ws",
  "schemars 0.8.22",
  "secret_ref",
  "serde",

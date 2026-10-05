@@ -1,0 +1,35 @@
+{% extends "layouts/device" %}
+
+{% block title %}
+    {{ device.name }} — OpenFab
+{% endblock title %}
+
+{% block content %}
+
+<div class="device-page">
+
+    <div class="device-page-header">
+        <div>
+            <h1>{{ device.name }}</h1>
+            <p class="muted">Device overview and live status.</p>
+        </div>
+    </div>
+
+    {# Live camera, status, temperatures, current print, etc. #}
+
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+
+<script>
+    window.addEventListener("device-event", (event) => {
+        const data = event.detail;
+
+        // Update the overview UI.
+        console.log(data);
+    });
+</script>
+
+{% endblock scripts %}

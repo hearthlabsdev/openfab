@@ -49,4 +49,7 @@ pub enum ConfigError {
 
     #[error("unknown configuration field type: {0}")]
     UnknownFieldType(String),
+
+    #[error("not an object")]
+    InvalidConfig,
 }

@@ -1,0 +1,16 @@
+{% extends "layouts/device" %}
+
+{% block title %}
+    {{ device.name }} — Video Captures
+{% endblock title %}
+
+{% block content %}
+
+<div class="device-page">
+
+    <h1>Print Captures</h1>
+
+
+</div>
+
+{% endblock content %}

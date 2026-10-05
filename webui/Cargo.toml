@@ -32,5 +32,6 @@ serde_json = "1.0.151"
 argon2 = "0.6.0"
 rand_core = "0.10.1"
 time = "0.3.55"
+rocket_ws = "0.1.1"
 [features]
 livekit = [ "dep:livekit" ]

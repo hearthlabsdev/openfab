@@ -1,0 +1,318 @@
+{# templates/layouts/device.tera #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>
+        {% block title %}OpenFab{% endblock title %}
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    {# Global styles #}
+    <link
+        id="basetheme"
+        rel="stylesheet"
+        href="/css/base.css"
+    >
+
+    {# Device-specific styles #}
+    <link
+        rel="stylesheet"
+        href="/css/device.css"
+    >
+
+    {# Page-specific head content #}
+    {% block head %}{% endblock head %}
+</head>
+
+<body>
+    <div class="app">
+
+        {# =====================================================
+           Top Bar
+        ====================================================== #}
+
+        <header class="topbar">
+
+            {% block topbar %}
+
+                <div class="topbar-inner">
+
+                    <div class="topbar-left">
+                        <a
+                            href="/accounts/dashboard"
+                            class="logo"
+                        >
+                            OpenFab
+                        </a>
+                    </div>
+
+                    <div class="topbar-center">
+                        <input
+                            type="text"
+                            class="global-search"
+                            placeholder="Search devices, jobs, users..."
+                        >
+                    </div>
+
+                    <div class="topbar-right">
+
+                        <a href="/swagger-ui">
+                            docs
+                        </a>
+
+                        {% if user is defined %}
+
+                            <div class="user-menu">
+                                <span class="user-name">
+                                    {{ user.name }}
+                                </span>
+                            </div>
+
+                            <a
+                                href="/account"
+                                class="user-menu"
+                                title="Account"
+                            >
+                                {{ user.name
+                                    | slice(start=0, end=1)
+                                    | upper
+                                }}
+                            </a>
+
+                        {% else %}
+
+                            <a
+                                href="/accounts/login"
+                                class="user-menu"
+                                title="Login"
+                            >
+                                Login
+                            </a>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            {% endblock topbar %}
+
+        </header>
+
+
+        {# =====================================================
+           Device Context
+        ====================================================== #}
+
+        {% block context_bar %}
+
+            <div class="context-bar device-context-bar">
+
+                <div class="device-context">
+
+                    <a
+                        href="/devices"
+                        class="device-context-back"
+                    >
+                        ← Devices
+                    </a>
+
+                    <span class="device-context-separator">
+                        /
+                    </span>
+
+                    {% if device is defined %}
+
+                        <span class="device-context-name">
+                            {{ device.name }}
+                        </span>
+
+                        {% if device.status is defined %}
+
+                            <span
+                                class="status-badge status-{{ device.status | lower }}"
+                            >
+                                {{ device.status }}
+                            </span>
+
+                        {% endif %}
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        {% endblock context_bar %}
+
+
+        <div class="main">
+
+            {# =================================================
+               Device Navigation
+            ================================================== #}
+
+            <aside class="sidebar device-sidebar">
+
+                {% block sidebar %}
+
+                    <nav class="nav">
+
+                        <a href="/accounts/dashboard">
+                            Dashboard
+                        </a>
+
+
+                        <div class="nav-section">
+                            Device
+                        </div>
+
+                        <a
+                            href="/devices/{{ device.uid }}"
+                            class=""
+                        >
+                            Overview
+                        </a>
+
+                        <a
+                            href="/devices/{{ device.uid }}/queue"
+                            class=""
+                        >
+                            Print Queue
+                        </a>
+
+                        <a
+                            href="/devices/{{ device.uid }}/captures"
+                            class=""
+                        >
+                            Captures
+                        </a>
+
+                        <a
+                            href="/devices/{{ device.uid }}/files"
+                            class=""
+                        >
+                            Files
+                        </a>
+
+
+                        <div class="nav-section">
+                            Management
+                        </div>
+
+                        <a
+                            href="/devices/{{ device.uid }}/configuration"
+                            class=""
+                        >
+                            Configuration
+                        </a>
+
+                        <a
+                            href="/devices/{{ device.uid }}/logs"
+                            class=""
+                        >
+                            Logs
+                        </a>
+
+
+                        <div class="nav-section">
+                            Other
+                        </div>
+
+                        <a href="/devices">
+                            All Devices
+                        </a>
+
+                    </nav>
+
+                {% endblock sidebar %}
+
+
+                {# Allow pages to add content at the bottom of
+                   the device sidebar. #}
+
+                {% block sidebar_footer %}{% endblock sidebar_footer %}
+
+            </aside>
+
+
+            {# =================================================
+               Device Content
+            ================================================== #}
+
+            <main class="content">
+
+                {% block content %}{% endblock content %}
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    {# =========================================================
+       Global Scripts
+    ========================================================== #}
+
+    <script src="/static/js/app.js"></script>
+
+
+    {# =========================================================
+       Device Events
+    ========================================================== #}
+
+    {% block device_scripts %}
+
+        <script>
+            const deviceUid = "{{ device.uid }}";
+
+            const protocol =
+                window.location.protocol === "https:"
+                    ? "wss:"
+                    : "ws:";
+
+            const deviceSocket = new WebSocket(
+                `${protocol}//${window.location.host}/devices/${deviceUid}/events`
+            );
+
+            deviceSocket.addEventListener("open", () => {
+                console.log("Connected to device events");
+            });
+
+            deviceSocket.addEventListener("message", (event) => {
+                const data = JSON.parse(event.data);
+
+                window.dispatchEvent(
+                    new CustomEvent("device-event", {
+                        detail: data
+                    })
+                );
+            });
+
+            deviceSocket.addEventListener("close", () => {
+                console.log("Disconnected from device events");
+            });
+
+            deviceSocket.addEventListener("error", (error) => {
+                console.error(
+                    "Device event connection error",
+                    error
+                );
+            });
+        </script>
+
+    {% endblock device_scripts %}
+
+
+    {# =========================================================
+       Page-Specific Scripts
+    ========================================================== #}
+
+    {% block scripts %}{% endblock scripts %}
+
+</body>
+</html>
