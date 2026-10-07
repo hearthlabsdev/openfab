@@ -1,0 +1,160 @@
+{% extends "layouts/settings" %}
+
+{% block content %}
+
+<div class="device-library">
+
+<div class="device-library-header">
+    <div class="form-group">
+        <h1 class="device-library-title">
+            {{ device.name }}
+        </h1>
+
+        <p class="device-library-subtitle">
+            Device model information and specifications.
+        </p>
+    </div>
+
+    <div class="device-library-actions">
+        <a
+            href="/settings/devices"
+            class="btn btn-secondary"
+        >
+            Back to Device Models
+        </a>
+    </div>
+</div>
+
+<div class="device-detail">
+
+    <section class="device-detail-preview">
+
+        {% if device.url is defined
+           and device.url is not none %}
+
+            <img
+                class="device-preview"
+                src="{{ device.url }}"
+                alt="{{ device.name }}"
+            />
+
+        {% else %}
+
+            <div class="device-card-icon">
+                🖨
+            </div>
+
+        {% endif %}
+
+    </section>
+
+    <section class="device-detail-info">
+
+        <div class="device-detail-header">
+            <h2>Device Information</h2>
+        </div>
+
+        <dl class="device-detail-fields">
+
+            <div class="device-detail-field">
+                <dt>Name</dt>
+                <dd>{{ device.name }}</dd>
+            </div>
+
+            <div class="device-detail-field">
+                <dt>UID</dt>
+                <dd>{{ device.uid }}</dd>
+            </div>
+
+            {% if device.family is defined
+               and device.family is not none %}
+
+                <div class="device-detail-field">
+                    <dt>Family</dt>
+                    <dd>{{ device.family }}</dd>
+                </div>
+
+            {% endif %}
+
+            {% if device.technology is defined
+               and device.technology is not none %}
+
+                <div class="device-detail-field">
+                    <dt>Technology</dt>
+                    <dd>{{ device.technology }}</dd>
+                </div>
+
+            {% endif %}
+
+            {% if device.variants is defined
+               and device.variants | length > 0 %}
+
+                <div class="device-detail-field">
+                    <dt>Variants</dt>
+                    <dd>
+                        <ul class="device-detail-list">
+                            {% for variant in device.variants %}
+                                <li>{{ variant }}</li>
+                            {% endfor %}
+                        </ul>
+                    </dd>
+                </div>
+
+            {% endif %}
+
+            {% if device.bed_model is defined
+               and device.bed_model is not none %}
+
+                <div class="device-detail-field">
+                    <dt>Bed Model</dt>
+                    <dd>{{ device.bed_model }}</dd>
+                </div>
+
+            {% endif %}
+
+            {% if device.bed_texture is defined
+               and device.bed_texture is not none %}
+
+                <div class="device-detail-field">
+                    <dt>Bed Texture</dt>
+                    <dd>{{ device.bed_texture }}</dd>
+                </div>
+
+            {% endif %}
+
+            {% if device.thumbnail is defined
+               and device.thumbnail is not none %}
+
+                <div class="device-detail-field">
+                    <dt>Thumbnail</dt>
+                    <dd>{{ device.thumbnail }}</dd>
+                </div>
+
+            {% endif %}
+
+            {% if device.default_materials is defined
+               and device.default_materials | length > 0 %}
+
+                <div class="device-detail-field">
+                    <dt>Default Materials</dt>
+                    <dd>
+                        <ul class="device-detail-list">
+                            {% for material in device.default_materials %}
+                                <li>{{ material }}</li>
+                            {% endfor %}
+                        </ul>
+                    </dd>
+                </div>
+
+            {% endif %}
+
+        </dl>
+
+    </section>
+
+</div>
+
+
+</div>
+
+{% endblock content %}

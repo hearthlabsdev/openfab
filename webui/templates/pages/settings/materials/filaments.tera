@@ -1,0 +1,139 @@
+{# templates/settings/materials.tera #}
+{% extends "layouts/settings" %}
+
+{% block content %}
+
+<div class="device-library">
+
+    <div class="device-library-header">
+        <div class="form-group">
+            <h1 class="device-library-title">Materials</h1>
+            <p class="device-library-subtitle">
+                Browse available filament materials.
+            </p>
+        </div>
+
+        <div class="device-library-actions">
+            <a href="/settings/materials/create" class="btn btn-primary">
+                Add Material
+            </a>
+        </div>
+    </div>
+
+    <div class="device-library-table-container">
+        <table class="device-library-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Vendor</th>
+                    <th>Type</th>
+                    <th>Colour</th>
+                    <th>Density</th>
+                    <th>Spool Weight</th>
+                    <th>Cost</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% if filaments is defined and filaments | length > 0 %}
+
+                    {% for filament in filaments %}
+                    <tr>
+                        <td>
+                            <a href="/settings/materials/{{ filament.uid }}">
+                                <strong>{{ filament.name }}</strong>
+                            </a>
+                        </td>
+
+                        <td>
+                            {% if filament.vendor %}
+                                {{ filament.vendor }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if filament.filament_type %}
+                                {{ filament.filament_type }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="filament-colour-cell">
+                            {% if filament.colour %}
+                                <span
+                                    class="filament-colour-swatch"
+                                    style="background-color: {{ filament.colour }};"
+                                    title="{{ filament.colour }}"
+                                ></span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if filament.density %}
+                                {{ filament.density }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if filament.spool_weight %}
+                                {{ filament.spool_weight }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if filament.cost %}
+                                ${{ filament.cost }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="device-library-table-actions">
+                            <a
+                                href="/settings/materials/{{ filament.uid }}"
+                                class="btn btn-secondary"
+                            >
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                {% else %}
+
+                    <tr>
+                        <td colspan="8" class="device-library-empty">
+                            <div class="device-library-empty-content">
+                                <h3>No materials found</h3>
+                                <p>
+                                    Add a filament material to your library to get started.
+                                </p>
+
+                                <a
+                                    href="/settings/materials/create"
+                                    class="button button-primary"
+                                >
+                                    Add Material
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{% endblock content %}

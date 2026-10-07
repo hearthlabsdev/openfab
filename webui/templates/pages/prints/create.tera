@@ -16,18 +16,24 @@
         <div class="form-section form-section-core">
 
             <div class="form-group">
-                <label for="device_id">Device *</label>
-                <select id="device_id" name="device" required>
-                    <option value="" disabled selected>Select a device</option>
+                {% if device is defined and device is not none %}
+                    <input type="hidden" value="{{ device }}"/>
+                {% elif queue is defined and queue is not none %}
+                    <input type="hidden" value="{{ queue }}"/>
+                {% else %}
+                    <label for="device_id">Device *</label>
+                    <select id="device_id" name="device" required>
+                        <option value="" disabled selected>Select a device</option>
 
-                    {% if devices is defined %}
-                        {% for device in devices %}
-                            <option value="{{ device.uid }}">
-                                {{ device.name }}
-                            </option>
-                        {% endfor %}
-                    {% endif %}
-                </select>
+                        {% if devices is defined %}
+                            {% for device in devices %}
+                                <option value="{{ device.uid }}">
+                                    {{ device.name }}
+                                </option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                {% endif %}
             </div>
 
             {% if asset is defined and asset is not none %}

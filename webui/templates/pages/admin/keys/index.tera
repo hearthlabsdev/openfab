@@ -3,44 +3,99 @@
 {% block title %}Admin - API Keys{% endblock title %}
 
 {% block content %}
+
 <h1>Admin - API Keys</h1>
-<p>This is the API key management page. Here you can view and manage API keys.</p>
+
+<p>
+    This is the API key management page. Here you can view and manage API keys.
+</p>
 
 <h2>Existing API Keys</h2>
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>Key ID</th>
-            <th>Owner</th>
-            <th>Access Key</th>
-            <th>Expires</th>
-            <th>Created</th>
-            <th>Actions</th>
+
+<table class="result-table">
+    <thead class="result-table__head">
+        <tr class="result-table__row">
+            <th class="result-table__header result-table__header--key-id">
+                Key ID
+            </th>
+
+            <th class="result-table__header result-table__header--owner">
+                Owner
+            </th>
+
+            <th class="result-table__header result-table__header--access-key">
+                Access Key
+            </th>
+
+            <th class="result-table__header result-table__header--expires">
+                Expires
+            </th>
+
+            <th class="result-table__header result-table__header--created">
+                Created
+            </th>
+
+            <th class="result-table__header result-table__header--actions">
+                Actions
+            </th>
         </tr>
     </thead>
-    <tbody>
+
+    <tbody class="result-table__body">
         {% if api_keys is defined and api_keys | length > 0 %}
             {% for key in api_keys %}
-                <tr>
-                    <td>{{ key.keyid }}</td>
-                    <td>{{ key.owner }}</td>
-                    <td>{{ key.access_key }}</td>
-                    <td>{{ key.expires }}</td>
-                    <td>{{ key.created }}</td>
-                    <td>
-                        <form action="/admin/api-keys/{{ key.keyid }}/delete" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                        </form>
+                <tr class="result-table__row">
+
+                    <td class="result-table__cell result-table__cell--key-id">
+                        {{ key.keyid }}
                     </td>
+
+                    <td class="result-table__cell result-table__cell--owner">
+                        {{ key.owner }}
+                    </td>
+
+                    <td class="result-table__cell result-table__cell--access-key">
+                        {{ key.access_key }}
+                    </td>
+
+                    <td class="result-table__cell result-table__cell--expires">
+                        {{ key.expires }}
+                    </td>
+
+                    <td class="result-table__cell result-table__cell--created">
+                        {{ key.created }}
+                    </td>
+
+                    <td class="result-table__cell result-table__cell--actions">
+                        <div class="result-table__actions">
+                            <form
+                                action="/admin/api-keys/{{ key.keyid }}/delete"
+                                method="POST"
+                                class="result-table__action-form"
+                            >
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-danger"
+                                >
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+
                 </tr>
             {% endfor %}
         {% else %}
-            <tr>
-                <td colspan="6">No API keys found.</td>
+            <tr class="result-table__row result-table__row--empty">
+                <td
+                    class="result-table__cell result-table__cell--empty"
+                    colspan="6"
+                >
+                    No API keys found.
+                </td>
             </tr>
         {% endif %}
     </tbody>
 </table>
-
 
 {% endblock content %}

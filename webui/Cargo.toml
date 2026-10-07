@@ -18,6 +18,7 @@ rocket-oidc = { git = "https://github.com/vivianlazaras/rocket-oidc" }
 tracing = "0.1.44"
 openfab-drivers = { path = "../drivers" }
 openfab-bambu = { path = "../drivers/bambu" }
+prusa-rs = { git = "https://github.com/vivianlazaras/prusa-rs" }
 
 livekit = { version = "0.7.32", optional = true }
 rocket_dyn_templates = { version = "0.2.0", features = ["tera"]}
@@ -33,5 +34,7 @@ argon2 = "0.6.0"
 rand_core = "0.10.1"
 time = "0.3.55"
 rocket_ws = "0.1.1"
+structopt = "0.3.26"
+anyhow = "1.0.104"
 [features]
 livekit = [ "dep:livekit" ]

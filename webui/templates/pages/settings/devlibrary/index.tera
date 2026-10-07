@@ -1,0 +1,106 @@
+{% extends "layouts/settings" %}
+
+{% block content %}
+
+<div class="device-library">
+
+```
+<div class="device-library-header">
+    <div class="form-group">
+        <h1 class="device-library-title">Device Models</h1>
+        <p class="device-library-subtitle">
+            Browse available 3D printer device models.
+        </p>
+    </div>
+
+    <div class="device-library-actions">
+        <a href="/devices" class="btn btn-secondary">
+            Devices
+        </a>
+    </div>
+</div>
+
+{% if device_models is defined and device_models | length > 0 %}
+
+    <div class="device-grid">
+
+        {% for model in device_models %}
+
+            <article class="device-card">
+
+                <div class="device-card-header">
+
+                    {% if model.url is defined and model.url is not none %}
+                        <img
+                            class="device-url"
+                            src="{{ model.url }}"
+                            alt="{{ model.name }}"
+                        />
+                    {% else %}
+                        <div class="device-card-icon">
+                            🖨
+                        </div>
+                    {% endif %}
+
+                </div>
+
+                <div class="device-card-body">
+
+                    <h2 class="device-card-title">
+                        {{ model.name }}
+                    </h2>
+
+                    {% if model.family is defined and model.family is not none %}
+                        <div class="device-card-meta">
+                            <span>Family</span>
+                            <span>{{ model.family }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if model.technology is defined and model.technology is not none %}
+                        <div class="device-card-meta">
+                            <span>Technology</span>
+                            <span>{{ model.technology }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if model.variants is defined and model.variants | length > 0 %}
+                        <div class="device-card-meta">
+                            <span>Variants</span>
+                            <span>{{ model.variants | join(sep=", ") }}</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="device-card-footer">
+                        <a
+                            href="/settings/devices/{{ model.uid }}"
+                            class="btn btn-secondary"
+                        >
+                            View
+                        </a>
+                    </div>
+
+                </div>
+
+            </article>
+
+        {% endfor %}
+
+    </div>
+
+{% else %}
+
+    <div class="device-empty">
+        <div class="device-empty-icon">🖨</div>
+        <h2>No device models</h2>
+        <p>
+            No device models are currently available.
+        </p>
+    </div>
+
+{% endif %}
+```
+
+</div>
+
+{% endblock content %}

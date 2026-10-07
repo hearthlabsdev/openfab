@@ -6,9 +6,9 @@ use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::utils::unix_epoch_seconds;
 use crate::accounts::User;
 use crate::library::AssetORM;
+use crate::utils::unix_epoch_seconds;
 use ormlite::model::Join;
 use ormlite::model::JoinMeta;
 
@@ -88,6 +88,7 @@ pub struct PrintJobExecutionORM {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[ormlite(table = "print_queues")]
 pub struct PrintQueueORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,

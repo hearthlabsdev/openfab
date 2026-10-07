@@ -1,0 +1,79 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="page-header flex-between">
+        <h1 class="title">Print Queues</h1>
+    </div>
+
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+                <th class="result-table__header result-table__header--name">
+                    Name
+                </th>
+
+                <th class="result-table__header result-table__header--last-used">
+                    Last Used
+                </th>
+
+                <th class="result-table__header result-table__header--created">
+                    Created
+                </th>
+            </tr>
+        </thead>
+
+        <tbody class="result-table__body">
+            {% if queues is defined and queues | length > 0 %}
+                {% for queue in queues %}
+                    <tr class="result-table__row">
+
+                        <td class="result-table__cell result-table__cell--name">
+                            <a
+                                href="/prints/queues/{{ queue.uid }}"
+                                class="result-table__primary-link"
+                            >
+                                {{ queue.name }}
+                            </a>
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--last-used">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ queue.last_active }}"
+                                data-unix="{{ queue.last_active }}"
+                            >
+                                {{ queue.last_active }}
+                            </time>
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--created">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ queue.created_at }}"
+                                data-unix="{{ queue.created_at }}"
+                            >
+                                {{ queue.created_at }}
+                            </time>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        colspan="3"
+                        class="result-table__cell result-table__cell--empty"
+                    >
+                        No print queues found.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock content %}

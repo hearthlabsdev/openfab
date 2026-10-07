@@ -1,54 +1,84 @@
 {% extends "layouts/base" %}
 
 {% block content %}
+
 <div class="container">
 
     <div class="page-header flex-between">
         <h1 class="title">Print Jobs</h1>
-    
-        <a href="/prints/create" class="btn btn-primary">
+
+        <a href="/prints/create?queue={{ queue.uid }}" class="btn btn-primary">
             Submit New Print Job
         </a>
     </div>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Submitted</th>
-                <th>Status</th>
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+
+                <th class="result-table__header result-table__header--name">
+                    Name
+                </th>
+
+                <th class="result-table__header result-table__header--submitted">
+                    Submitted
+                </th>
+
+                <th class="result-table__header result-table__header--status">
+                    Status
+                </th>
+
             </tr>
         </thead>
 
-        <tbody>
+        <tbody class="result-table__body">
+
             {% if prints is defined and prints | length > 0 %}
+
                 {% for print in prints %}
-                    <tr class="data-row">
 
-                        <td class="data-title">
-                            {{ print.title }}
+                    <tr class="result-table__row">
+
+                        <td class="result-table__cell result-table__cell--name">
+                            {{ print.name }}
                         </td>
 
-                        <td class="data-submitted">
-                            {{ print.submitted }}
+                        <td class="result-table__cell result-table__cell--submitted">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ print.created_at }}"
+                                data-unix="{{ print.created_at }}"
+                            >
+                                {{ print.created_at }}
+                            </time>
                         </td>
 
-                        <td class="data-status">
-                            <span class="status-badge status-{{ print.status | lower }}">
-                                {{ print.status }}
+                        <td class="result-table__cell result-table__cell--status">
+                            <span class="status-badge status-{{ print.state | lower }}">
+                                {{ print.state }}
                             </span>
                         </td>
 
                     </tr>
+
                 {% endfor %}
+
             {% else %}
-                <tr>
-                    <td colspan="3" class="empty-state">
+
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        colspan="3"
+                        class="result-table__cell result-table__cell--empty"
+                    >
                         No print jobs found.
                     </td>
                 </tr>
+
             {% endif %}
+
         </tbody>
     </table>
+
 </div>
+
 {% endblock content %}

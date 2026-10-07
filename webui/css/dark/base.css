@@ -26,7 +26,7 @@
     --result-table-background: #12151d;
     --result-table-header-background: #151922;
     --result-table-hover-background: #1a2030;
-
+    --border-color: white;
     /* Borders */
     --result-table-border: #232938;
     --result-table-header-border: #2a3040;
@@ -88,6 +88,27 @@
 
 .result-table__body .result-table__row:hover {
     background-color: var(--result-table-hover-background);
+}
+
+/* =========================================================
+   Primary Row Links
+========================================================= */
+
+.result-table__primary-link {
+    color: var(--color-text-bright);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.result-table__primary-link:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.result-table__primary-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 
@@ -195,6 +216,32 @@
         padding: 0.6rem 0.75rem;
     }
 }
+
+/* =========================================================
+   Result Table Actions
+========================================================= */
+
+.result-table__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-table__action-form {
+    display: inline;
+    margin: 0;
+}
+
+.result-table__cell--actions {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.result-table__muted {
+    color: var(--result-table-muted-text);
+}
+
+
 /* =========================================================
    Reset / Base
 ========================================================= */
@@ -681,7 +728,7 @@ details[open] .advanced-summary {
     border-bottom: 1px solid #232938;
 }
 
-.asset-card-preview {
+.asset-card-preview, .asset-preview {
     position: relative;
     height: 150px;
 }
@@ -1028,3 +1075,461 @@ details[open] .advanced-summary {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================================
+   Asset Detail
+========================================================= */
+
+.asset-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
+}
+
+.asset-detail-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 24px;
+    background: #12151d;
+    border: 1px solid #232938;
+    border-radius: 10px;
+}
+
+.asset-detail-preview .asset-preview {
+    width: 100%;
+    height: auto;
+    max-height: 600px;
+    object-fit: contain;
+}
+
+.asset-detail-info {
+    min-width: 0;
+}
+
+.asset-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.asset-detail-header h2 {
+    color: #e6e6e6;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.asset-detail-fields {
+    display: flex;
+    flex-direction: column;
+}
+
+.asset-detail-field {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #232938;
+}
+
+.asset-detail-field:first-child {
+    padding-top: 0;
+}
+
+.asset-detail-field dt {
+    color: #7a8395;
+    font-size: 13px;
+}
+
+.asset-detail-field dd {
+    min-width: 0;
+    overflow: hidden;
+    color: #e6e6e6;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+@media (max-width: 800px) {
+    .asset-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .asset-detail-preview {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 500px) {
+    .asset-detail-field {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}
+
+/* =========================================================
+   Device Detail
+   ========================================================= */
+
+.device-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
+}
+
+
+/* =========================================================
+   Device Preview
+   ========================================================= */
+
+.device-detail-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 24px;
+
+    background: #12151d;
+    border: 1px solid #232938;
+    border-radius: 10px;
+}
+
+.device-preview {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 600px;
+
+    object-fit: contain;
+}
+
+
+/* =========================================================
+   Device Placeholder
+   ========================================================= */
+
+.device-detail-preview .device-card-icon {
+    width: 96px;
+    height: 96px;
+
+    background: #1a2030;
+    border: 1px solid #2a3040;
+    border-radius: 18px;
+
+    font-size: 42px;
+}
+
+
+/* =========================================================
+   Device Information
+   ========================================================= */
+
+.device-detail-info {
+    min-width: 0;
+}
+
+.device-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-bottom: 18px;
+}
+
+.device-detail-header h2 {
+    color: #e6e6e6;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+
+/* =========================================================
+   Device Fields
+   ========================================================= */
+
+.device-detail-fields {
+    display: flex;
+    flex-direction: column;
+}
+
+.device-detail-field {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+
+    padding: 12px 0;
+
+    border-bottom: 1px solid #232938;
+}
+
+.device-detail-field:first-child {
+    padding-top: 0;
+}
+
+.device-detail-field:last-child {
+    border-bottom: none;
+}
+
+.device-detail-field dt {
+    color: #7a8395;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.device-detail-field dd {
+    min-width: 0;
+
+    overflow: hidden;
+
+    color: #e6e6e6;
+    font-size: 14px;
+    line-height: 1.5;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   Device Detail Lists
+   ========================================================= */
+
+.device-detail-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.device-detail-list li {
+    padding: 4px 8px;
+
+    background: #1a2030;
+    border: 1px solid #2a3040;
+    border-radius: 6px;
+
+    color: #c9d1d9;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+
+/* =========================================================
+   Device UID
+   ========================================================= */
+
+.device-detail-field dd:first-letter {
+    /* Keeps normal text rendering while allowing the
+       UID field to remain compact on narrow layouts. */
+}
+
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 800px) {
+    .device-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .device-detail-preview {
+        min-height: 300px;
+    }
+
+    .device-preview {
+        max-height: 450px;
+    }
+}
+
+@media (max-width: 500px) {
+    .device-detail-field {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .device-detail-field dt {
+        font-size: 12px;
+    }
+
+    .device-detail-field dd {
+        font-size: 14px;
+    }
+
+    .device-detail-preview {
+        min-height: 240px;
+        padding: 16px;
+    }
+}
+
+.filament-colour-cell {
+    width: 56px;
+    text-align: center;
+    border: 4px solid white;
+}
+
+.filament-colour-swatch {
+    display: inline-block;
+    min-width: 80px;
+    height: 28px;
+    border-radius: 6px;
+    border: 4px solid var(--border-color);
+    vertical-align: middle;
+}
+
+```css
+/* =========================================================
+ * Settings Library Tables
+ * ========================================================= */
+
+.device-library-table-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.device-library-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+/* Header */
+
+.device-library-table thead {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.device-library-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Rows */
+
+.device-library-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.15s ease;
+}
+
+.device-library-table tbody tr:hover {
+    background-color: var(--background-secondary);
+}
+
+.device-library-table td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+/* Primary name */
+
+.device-library-table td:first-child {
+    min-width: 180px;
+}
+
+.device-library-table td:first-child a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.device-library-table td:first-child a:hover {
+    text-decoration: underline;
+}
+
+/* Muted values */
+
+.device-library-table .text-muted {
+    color: var(--text-secondary);
+}
+
+/* Actions */
+
+.device-library-table-actions {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.device-library-table-actions .button {
+    white-space: nowrap;
+}
+
+/* =========================================================
+ * Filament Colour
+ * ========================================================= */
+
+.filament-colour-cell {
+    width: 56px;
+    min-width: 56px;
+    text-align: center;
+}
+
+.filament-colour-swatch {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    vertical-align: middle;
+    box-sizing: border-box;
+}
+
+/* =========================================================
+ * Empty State
+ * ========================================================= */
+
+.device-library-empty {
+    padding: 0 !important;
+}
+
+.device-library-empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.device-library-empty-content h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.device-library-empty-content p {
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary);
+}
+
+/* =========================================================
+ * Responsive
+ * ========================================================= */
+
+@media (max-width: 768px) {
+    .device-library-table th,
+    .device-library-table td {
+        padding: 0.7rem 0.75rem;
+    }
+
+    .device-library-table th:nth-child(5),
+    .device-library-table td:nth-child(5),
+    .device-library-table th:nth-child(6),
+    .device-library-table td:nth-child(6) {
+        display: none;
+    }
+}
+```

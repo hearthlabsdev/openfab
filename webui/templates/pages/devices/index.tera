@@ -47,18 +47,30 @@
                         {{ printer.name }}
                     </h3>
 
-                    <div class="device-card-meta">
+                    <div class="device-card-meta local-time">
                         <span>Last seen</span>
-                        <span>{{ printer.last_seen }}</span>
+                        <time
+                                class="result-table__time local-time"
+                                datetime="{{ printer.last_seen }}"
+                                data-unix="{{ printer.last_seen }}"
+                            >
+                                {{ printer.last_seen }}
+                            </time>    
                     </div>
 
                     <div class="device-card-footer">
-
+                        
                         <a
                             href="/devices/{{ printer.uid }}"
                             class="btn btn-secondary"
                         >
                             View
+                        </a>
+
+                        <a 
+                            href="/prints/create?device={{ printer.uid }}"
+                            class="btn btn-primary">
+                            Submit a Print
                         </a>
 
                     </div>
@@ -90,5 +102,13 @@
     {% endif %}
 
 </div>
+<script>
+    document.querySelectorAll(".local-time").forEach(function (element) {
+        const unix = Number(element.dataset.unix);
 
+        if (!Number.isNaN(unix)) {
+            element.textContent = new Date(unix * 1000).toLocaleString();
+        }
+    });
+</script>
 {% endblock content %}

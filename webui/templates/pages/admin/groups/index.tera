@@ -3,43 +3,91 @@
 {% block title %}Admin - Groups{% endblock title %}
 
 {% block content %}
-    <h1>Admin - Groups</h1>
-    <p>Manage user groups. Groups can be used to organize permissions and access control.</p>
 
-    <h2>Existing Groups</h2>
-    <table class="table data-table group-table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if groups is defined and groups | length > 0 %}
-                {% for group in groups %}
-                    <tr>
-                        <td>{{ group.name }}</td>
-                        <td>
-                            {% if group.description %}
-                                {{ group.description }}
-                            {% else %}
-                                <em>No description</em>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="/admin/groups/{{ group.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
-                            <form action="/admin/groups/{{ group.id }}/delete" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+<h1>Admin - Groups</h1>
+
+<p>
+    Manage user groups. Groups can be used to organize permissions
+    and access control.
+</p>
+
+<h2>Existing Groups</h2>
+
+<table class="result-table">
+    <thead class="result-table__head">
+        <tr class="result-table__row">
+            <th class="result-table__header result-table__header--name">
+                Name
+            </th>
+
+            <th class="result-table__header result-table__header--description">
+                Description
+            </th>
+
+            <th class="result-table__header result-table__header--actions">
+                Actions
+            </th>
+        </tr>
+    </thead>
+
+    <tbody class="result-table__body">
+        {% if groups is defined and groups | length > 0 %}
+            {% for group in groups %}
+                <tr class="result-table__row">
+
+                    <td class="result-table__cell result-table__cell--name">
+                        {{ group.name }}
+                    </td>
+
+                    <td class="result-table__cell result-table__cell--description">
+                        {% if group.description %}
+                            {{ group.description }}
+                        {% else %}
+                            <span class="result-table__muted">
+                                No description
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="result-table__cell result-table__cell--actions">
+                        <div class="result-table__actions">
+
+                            <a
+                                href="/admin/groups/{{ group.id }}/edit"
+                                class="btn btn-sm btn-primary"
+                            >
+                                Edit
+                            </a>
+
+                            <form
+                                action="/admin/groups/{{ group.id }}/delete"
+                                method="POST"
+                                class="result-table__action-form"
+                            >
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-danger"
+                                >
+                                    Delete
+                                </button>
                             </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="3">No groups found.</td>
+
+                        </div>
+                    </td>
+
                 </tr>
-            {% endif %}
-        </tbody>
-    </table>
+            {% endfor %}
+        {% else %}
+            <tr class="result-table__row result-table__row--empty">
+                <td
+                    class="result-table__cell result-table__cell--empty"
+                    colspan="3"
+                >
+                    No groups found.
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
 {% endblock content %}

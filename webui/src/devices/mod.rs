@@ -12,6 +12,23 @@ use std::collections::HashMap;
 pub use ui::get_routes;
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[ormlite(table = "device_models")]
+pub struct DeviceModelORM {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub name: String,
+    pub variants: Vec<String>,
+    pub technology: Option<String>,
+    pub family: Option<String>,
+    pub bed_model: Option<Uuid>,
+    pub bed_texture: Option<Uuid>,
+    pub thumbnail: Option<Uuid>,
+    pub default_materials: Vec<String>,
+}
+
+impl DeviceModelORM {}
+
 /*
 #{ormlite(table = "print_jobs")}
 pub struct DevicePrintsORM {

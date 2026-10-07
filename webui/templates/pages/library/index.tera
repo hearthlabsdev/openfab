@@ -4,22 +4,42 @@
 
 <div class="asset-library">
 <div class="asset-library-header">
-    <div>
+    <div class="form-group">
         <h1 class="asset-library-title">Asset Library</h1>
         <p class="asset-library-subtitle">
             Manage and organize your uploaded assets.
         </p>
+    
     </div>
 
-    <div class="asset-library-actions">
+    <div class="asset-library-actions form-group">
+        {% if libraries is defined and libraries | length > 0 %}
+            <select onchange="if (this.value) window.location.href = this.value;">
+                <option value="">Select a library...</option>
+                {% for lib in libraries %}
+                    <option value="/library/{{ lib.uid }}" {% if library is defined and library == lib.uid %}selected{% endif %}>
+                        {{ lib.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% endif %}
+        
         <a href="/library/upload" class="btn btn-primary">
             Upload Asset
+        </a>
+        <a href="/library/create" class="btn btn-primary">
+            Create a Library
         </a>
     </div>
 </div>
 
-{% if assets is defined and assets | length > 0 %}
-
+{% if assets is defined and assets is not none and assets | length > 0 %}
+    {% if library is defined and page is defined %}
+        <div class="page-switch">
+            <a class="btn btn-secondary" href="/library/{{ library }}?page={{ page - 1 }}">Previous</a>
+            <a class="btn btn-secondary" href="/library/{{ library }}?page={{ page + 1 }}">Next</a>
+        </div>
+    {% endif %}
     <div class="asset-grid">
 
         {% for asset in assets %}
@@ -27,9 +47,17 @@
         <article class="asset-card">
 
             <div class="asset-card-preview">
+                {% if asset.mime == "image/png" %}
+                    <img class="asset-preview" src="{{ asset.url }}"/>
+                {% elif asset.mime == "image/svg+xml" %}
+                    <svg class="asset-preview" src="{{ asset.url }}">
+
+                    </svg>
+                {% else %}
                 <div class="asset-file-icon">
                     🖼
                 </div>
+                {% endif %}
 
                 {% if asset.public %}
                     <span class="asset-badge asset-badge-public">
@@ -71,14 +99,14 @@
 
                     <div class="asset-card-actions">
                         <a
-                            href="/assets/{{ asset.uid }}"
+                            href="/library/assets/{{ asset.uid }}"
                             class="btn btn-secondary"
                         >
                             View
                         </a>
 
                         <a
-                            href="/assets/{{ asset.uid }}/download"
+                            href="/library/assets/{{ asset.uid }}/download"
                             class="btn btn-primary"
                         >
                             Download
@@ -101,6 +129,15 @@
 
     </div>
 
+{% elif assets is defined and assets is none %}
+    <div class="asset-empty">
+        <div class="asset-empty-icon">📁</div>
+        <h2>Please Select or Create a Library</h2>
+
+        <a href="/library/create" class="btn btn-primary">
+            Create Library
+        </a>
+    </div>
 {% else %}
     <div class="asset-empty">
         <div class="asset-empty-icon">📁</div>

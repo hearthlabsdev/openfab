@@ -1,0 +1,151 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+
+<div class="asset-library">
+
+```
+<div class="asset-library-header">
+    <div class="form-group">
+        <h1 class="asset-library-title">{{ asset.name }}</h1>
+        <p class="asset-library-subtitle">
+            Asset information and details.
+        </p>
+    </div>
+
+    <div class="asset-library-actions">
+        <a
+            href="/library/{{ asset.library }}"
+            class="btn btn-secondary"
+        >
+            Back to Library
+        </a>
+
+        <a
+            href="/library/assets/{{ asset.uid }}/download"
+            class="btn btn-primary"
+        >
+            Download
+        </a>
+
+        <a
+            href="/prints/create?asset={{ asset.uid }}"
+            class="btn btn-primary"
+        >
+            Print
+        </a>
+    </div>
+</div>
+
+<div class="asset-detail">
+
+    <section class="asset-detail-preview">
+
+        {% if asset.mime == "image/png"
+           or asset.mime == "image/jpeg"
+           or asset.mime == "image/webp"
+           or asset.mime == "image/svg+xml" %}
+
+            <img
+                class="asset-preview"
+                src="{{ asset.url }}"
+                alt="{{ asset.name }}"
+            />
+
+        {% else %}
+
+            <div class="asset-file-icon">
+                🖼
+            </div>
+
+        {% endif %}
+
+    </section>
+
+    <section class="asset-detail-info">
+
+        <div class="asset-detail-header">
+            <h2>Asset Information</h2>
+
+            {% if asset.public %}
+                <span class="asset-badge asset-badge-public">
+                    Public
+                </span>
+            {% else %}
+                <span class="asset-badge asset-badge-private">
+                    Private
+                </span>
+            {% endif %}
+        </div>
+
+        <dl class="asset-detail-fields">
+
+            <div class="asset-detail-field">
+                <dt>Name</dt>
+                <dd>{{ asset.name }}</dd>
+            </div>
+
+            <div class="asset-detail-field">
+                <dt>MIME Type</dt>
+                <dd>{{ asset.mime }}</dd>
+            </div>
+
+            <div class="asset-detail-field">
+                <dt>Size</dt>
+                <dd>{{ asset.size }} bytes</dd>
+            </div>
+
+            <div class="asset-detail-field">
+                <dt>UID</dt>
+                <dd>{{ asset.uid }}</dd>
+            </div>
+
+            <div class="asset-detail-field">
+                <dt>Created</dt>
+                <dd>{{ asset.created_at }}</dd>
+            </div>
+
+            <div class="asset-detail-field">
+                <dt>Updated</dt>
+                <dd>{{ asset.updated_at }}</dd>
+            </div>
+
+            {% if asset.last_used_at is defined and asset.last_used_at is not none %}
+                <div class="asset-detail-field">
+                    <dt>Last Used</dt>
+                    <dd>{{ asset.last_used_at }}</dd>
+                </div>
+            {% endif %}
+
+            {% if asset.license is defined and asset.license is not none %}
+                <div class="asset-detail-field">
+                    <dt>License</dt>
+                    <dd>{{ asset.license }}</dd>
+                </div>
+            {% endif %}
+
+            <div class="asset-detail-field">
+                <dt>Visibility</dt>
+                <dd>
+                    {% if asset.public %}
+                        <span class="asset-badge asset-badge-public">
+                            Public
+                        </span>
+                    {% else %}
+                        <span class="asset-badge asset-badge-private">
+                            Private
+                        </span>
+                    {% endif %}
+                </dd>
+            </div>
+
+        </dl>
+
+    </section>
+
+</div>
+```
+
+</div>
+
+{% endblock content %}

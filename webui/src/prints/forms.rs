@@ -1,16 +1,18 @@
-use crate::prints::PrintJobORM;
-use crate::utils::unix_epoch_seconds;
-use crate::prints::User;
 use crate::prints::AssetORM;
-use rocket::form::FromForm;
+use crate::prints::PrintJobORM;
+use crate::prints::User;
+use crate::utils::unix_epoch_seconds;
 use ormlite::model::Join;
+use rocket::form::FromForm;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromForm)]
 pub struct PrintForm {
     pub asset: Option<Uuid>,
-    pub device: Uuid,
+    //pub upload: Option<TempFile<'r>>,
+    pub device: Option<Uuid>,
+    pub queue: Option<Uuid>,
     pub name: String,
     pub copies: i32,
     pub priority: String,

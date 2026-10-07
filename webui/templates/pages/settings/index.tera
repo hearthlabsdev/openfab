@@ -1,0 +1,7 @@
+{% extends "layouts/settings" %}
+
+{% block content %}
+<h2>
+Printing Settings
+</h2>
+{% endblock content %}

@@ -1,10 +1,13 @@
 pub mod ui;
 use crate::errors::OpenFabErr;
-use ormlite::Model;
+use crate::utils::unix_epoch_seconds;
+use ormlite::model::JoinMeta;
+use ormlite::{Model, model::Join};
 use rocket::fs::TempFile;
 use secret_ref::*;
 use serde_derive::{Deserialize, Serialize};
 pub use ui::get_routes;
+
 use uuid::Uuid;
 
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
@@ -20,13 +23,44 @@ pub struct LibraryORM {
 
     pub created_at: i64,
     pub updated_at: i64,
-    /// Last time this asset was used in a print job or queue.
-    pub last_used_at: Option<i64>,
 
     /// Whether this asset is publicly accessible (e.g. for embedding or sharing)
     pub public: bool,
-    /// Optional license or usage terms (e.g. "CC-BY-SA 4.0")
-    pub license: Option<String>,
+}
+
+impl LibraryORM {
+    pub fn new(name: &str, owner: Uuid, public: bool) -> Self {
+        Self {
+            uid: Uuid::new_v4(),
+            name: name.into(),
+            owner,
+            created_at: unix_epoch_seconds(),
+            updated_at: unix_epoch_seconds(),
+            public,
+        }
+    }
+}
+
+/// resource represents the actual model assets are anything associated with the model
+#[derive(Debug, Serialize, Deserialize, Model)]
+#[ormlite(table = "resources")]
+pub struct ResourceORM {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub name: String,
+    /// ormlite has yet to impl one to many joins, so for now this has to be done manually
+    pub images: Vec<Uuid>,
+
+    #[ormlite(column = "asset")]
+    pub asset: Join<AssetORM>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Resource {
+    pub uid: Uuid,
+    pub name: String,
+    pub images: Vec<AssetORM>,
+    pub asset: AssetORM,
 }
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
@@ -35,7 +69,9 @@ pub struct AssetORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,
     pub name: String,
+    pub library: Uuid,
     pub mime: String,
+    pub key: String,
     /// Owning user (for permissions and sharing)
     pub owner: Uuid,
 

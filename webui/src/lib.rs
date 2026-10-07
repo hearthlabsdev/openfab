@@ -8,6 +8,7 @@ pub mod dashboard;
 pub mod devices;
 pub mod library;
 pub mod prints;
+pub mod settings;
 pub mod ui;
 
 pub mod discovery;

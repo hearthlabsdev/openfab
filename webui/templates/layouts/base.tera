@@ -115,5 +115,14 @@
 
     {# Page-specific scripts #}
     {% block scripts %}{% endblock scripts %}
+    <script>
+    document.querySelectorAll(".local-time").forEach(function (element) {
+        const unix = Number(element.dataset.unix);
+
+        if (!Number.isNaN(unix)) {
+            element.textContent = new Date(unix * 1000).toLocaleString();
+        }
+    });
+</script>
 </body>
 </html>

@@ -124,23 +124,6 @@
                         /
                     </span>
 
-                    {% if device is defined %}
-
-                        <span class="device-context-name">
-                            {{ device.name }}
-                        </span>
-
-                        {% if device.status is defined %}
-
-                            <span
-                                class="status-badge status-{{ device.status | lower }}"
-                            >
-                                {{ device.status }}
-                            </span>
-
-                        {% endif %}
-
-                    {% endif %}
 
                 </div>
 
@@ -167,63 +150,21 @@
 
 
                         <div class="nav-section">
-                            Device
+                            Settings
                         </div>
 
                         <a
-                            href="/devices/{{ device.uid }}"
+                            href="/settings/devices/"
                             class=""
                         >
-                            Overview
+                            Device Profiles
                         </a>
 
                         <a
-                            href="/devices/{{ device.uid }}/queue"
+                            href="/settings/materials/filaments"
                             class=""
                         >
-                            Print Queue
-                        </a>
-
-                        <a
-                            href="/devices/{{ device.uid }}/captures"
-                            class=""
-                        >
-                            Captures
-                        </a>
-
-                        <a
-                            href="/devices/{{ device.uid }}/files"
-                            class=""
-                        >
-                            Files
-                        </a>
-
-
-                        <div class="nav-section">
-                            Management
-                        </div>
-
-                        <a
-                            href="/devices/{{ device.uid }}/configuration"
-                            class=""
-                        >
-                            Configuration
-                        </a>
-
-                        <a
-                            href="/devices/{{ device.uid }}/logs"
-                            class=""
-                        >
-                            Logs
-                        </a>
-
-
-                        <div class="nav-section">
-                            Other
-                        </div>
-
-                        <a href="/devices">
-                            All Devices
+                            Filament Profiles
                         </a>
 
                     </nav>
@@ -244,9 +185,9 @@
             ================================================== #}
 
             <main class="content">
-
+                <div class="page">
                 {% block content %}{% endblock content %}
-
+                </div>
             </main>
 
         </div>
@@ -259,53 +200,6 @@
     ========================================================== #}
 
     <script src="/static/js/app.js"></script>
-
-
-    {# =========================================================
-       Device Events
-    ========================================================== #}
-
-    {% block device_scripts %}
-
-        <script>
-            const deviceUid = "{{ device.uid }}";
-
-            const protocol =
-                window.location.protocol === "https:"
-                    ? "wss:"
-                    : "ws:";
-
-            const deviceSocket = new WebSocket(
-                `${protocol}//${window.location.host}/devices/${deviceUid}/events`
-            );
-
-            deviceSocket.addEventListener("open", () => {
-                console.log("Connected to device events");
-            });
-
-            deviceSocket.addEventListener("message", (event) => {
-                const data = JSON.parse(event.data);
-
-                window.dispatchEvent(
-                    new CustomEvent("device-event", {
-                        detail: data
-                    })
-                );
-            });
-
-            deviceSocket.addEventListener("close", () => {
-                console.log("Disconnected from device events");
-            });
-
-            deviceSocket.addEventListener("error", (error) => {
-                console.error(
-                    "Device event connection error",
-                    error
-                );
-            });
-        </script>
-
-    {% endblock device_scripts %}
 
 
     {# =========================================================

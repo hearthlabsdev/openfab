@@ -3,47 +3,105 @@
 {% block title %}Admin - Users{% endblock title %}
 
 {% block content %}
+
     <h1>Admin - Users</h1>
-    <p>This is the user management page. Here you can create, edit, and delete user accounts.</p>
+
+    <p>
+        This is the user management page. Here you can create, edit,
+        and delete user accounts.
+    </p>
 
     <h2>Existing Users</h2>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Groups</th>
-                <th>Actions</th>
+
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+                <th class="result-table__header result-table__header--first-name">
+                    First Name
+                </th>
+
+                <th class="result-table__header result-table__header--last-name">
+                    Last Name
+                </th>
+
+                <th class="result-table__header result-table__header--email">
+                    Email
+                </th>
+
+                <th class="result-table__header result-table__header--groups">
+                    Groups
+                </th>
+
+                <th class="result-table__header result-table__header--actions">
+                    Actions
+                </th>
             </tr>
         </thead>
-        <tbody>
+
+        <tbody class="result-table__body">
             {% if users is defined and users | length > 0 %}
                 {% for user in users %}
-                    <tr>
-                        <td>{{ user.fname }}</td>
-                        <td>{{ user.lname }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>
+                    <tr class="result-table__row">
+
+                        <td class="result-table__cell result-table__cell--first-name">
+                            {{ user.fname }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--last-name">
+                            {{ user.lname }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--email">
+                            {{ user.email }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--groups">
                             {% if user.groups is defined and user.groups | length > 0 %}
                                 {{ user.groups }}
                             {% else %}
-                                None
+                                <span class="result-table__muted">
+                                    None
+                                </span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="/admin/users/{{ user.uid }}/edit" class="btn btn-sm btn-primary">Edit</a>
-                            <form action="/admin/users/{{ user.uid }}/delete" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                            </form>
+
+                        <td class="result-table__cell result-table__cell--actions">
+                            <div class="result-table__actions">
+                                <a
+                                    href="/admin/users/{{ user.uid }}/edit"
+                                    class="btn btn-sm btn-primary"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    action="/admin/users/{{ user.uid }}/delete"
+                                    method="POST"
+                                    class="result-table__action-form"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-danger"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
                         </td>
+
                     </tr>
                 {% endfor %}
             {% else %}
-                <tr>
-                    <td colspan="4">No users found.</td>
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        class="result-table__cell result-table__cell--empty"
+                        colspan="5"
+                    >
+                        No users found.
+                    </td>
                 </tr>
             {% endif %}
         </tbody>
     </table>
+
 {% endblock content %}

@@ -1,8 +1,8 @@
 use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
 use crate::devices::{DeviceConfigORM, DeviceORM};
+use crate::prints::{PrintJobORM, PrintQueueORM};
 use crate::utils::{Guard, unix_epoch_seconds};
-use crate::prints::{PrintQueueORM, PrintJobORM};
 
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
@@ -70,7 +70,7 @@ async fn create(
     let mut queue_opt: Option<Uuid> = form.get("queue").map(|v| v.parse().unwrap());
 
     let mut conn = pool.acquire().await.unwrap();
-    
+
     if queue_opt.is_none() {
         let queue = PrintQueueORM::new(format!("{} Default Queue", name));
         let queue = queue.insert(&mut *conn).await.unwrap();
@@ -141,7 +141,10 @@ pub async fn device_queue(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> 
         .await
         .unwrap();
 
-    RawHtml(Template::render("pages/devices/queue", context! { device, queue: print_jobs }))
+    RawHtml(Template::render(
+        "pages/devices/queue",
+        context! { device, queue: print_jobs },
+    ))
 }
 
 #[get("/<uid>/configuration")]
