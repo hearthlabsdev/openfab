@@ -21,6 +21,8 @@ pub enum OpenFabErr {
     SecretFetchErr(#[from] secret_ref::SecretError),
     #[error("authentication failed: {0}")]
     AuthErr(#[from] AuthErr),
+    #[error("failed to parse string to uuid: {0}")]
+    UuidParseErr(#[from] uuid::Error),
 }
 
 #[derive(Debug, Error)]

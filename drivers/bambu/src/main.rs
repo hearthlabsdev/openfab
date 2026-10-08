@@ -26,10 +26,5 @@ fn main() {
     let st = PrinterStatus::from_state(state.get());
 
     eprintln!("state={:?}", st.state());
-    eprintln!("gcode_state={:?}", st.gcode_state);
-    eprintln!("nozzle={:?}°C bed={:?}°C", st.nozzle_temper, st.bed_temper);
-    eprintln!(
-        "percent={:?} layer={:?}/{:?}",
-        st.mc_percent, st.layer_num, st.total_layer_num
-    );
+    eprintln!("status: {:?}", st);
 }

@@ -24,7 +24,6 @@ use tokio::io::AsyncReadExt;
 use webui::VirtualPrinter;
 use webui::accounts::AccountConfig;
 use webui::library::ObjectStoreConfig;
-use webui::ui::themes::ThemePicker;
 
 #[macro_use]
 extern crate rocket;
@@ -105,7 +104,6 @@ async fn rocket() -> _ {
         }))
         .manage(tx)
         .manage(accounts)
-        .manage(ThemePicker::default())
         .manage(pool)
         .manage(runtime)
         .manage(vec![oidc.clone()])

@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use std::sync::{Arc};
 use tokio::sync::Mutex;
 
-use crate::config::{DriverMeta, DeviceDriver};
+use crate::config::{DriverMeta};
+use crate::DeviceDriver;
 use crate::errors::DriverError;
 use crate::runtime::{DriverHandle, DriverRuntime};
-use crate::config::DriverMetadata;
 
 pub struct NativeRuntime {
     pub drivers: HashMap<String, DriverHandle>,
@@ -47,7 +47,7 @@ impl DriverRuntime for NativeRuntime {
         let mut metadata = Vec::new();
         for (_, driver) in self.drivers.iter() {
             let dr = driver.lock().await;
-            metadata.push((*dr.metadata()).into());
+            metadata.push((dr.metadata()).into());
             drop(dr);
         }
         Ok(metadata)

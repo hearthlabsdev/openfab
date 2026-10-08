@@ -11,3 +11,4 @@ tokio = { version = "1.53.1", features = ["full"] }
 openfab-drivers = { path = "../" }
 async-trait = "0.1.92"
 serde = { version = "1.0.229", features = ["derive"] }
+uuid = "1.27.0"

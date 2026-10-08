@@ -21,6 +21,8 @@ pub struct ApiKeyORM {
     uid: Uuid,
     keyid: String,
     owner: Uuid,
+    /// the user's who's permissions this key is allowed to inherit
+    account: Option<Uuid>,
     access_key: String,
     // expiration as unix epoch
     expires: i64,

@@ -1,4 +1,4 @@
-{% extends "layouts/base" %}
+{% extends "layouts/admin" %}
 
 {% block title %}Admin - Users{% endblock title %}
 

@@ -1,0 +1,229 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+
+<div class="profile-edit">
+
+```
+{# =========================================================
+   Page Header
+   ========================================================= #}
+
+<div class="profile-edit-header">
+    <div>
+        <h1 class="profile-edit-title">
+            Edit Profile
+        </h1>
+
+        <p class="profile-edit-subtitle">
+            Update your personal information and account credentials.
+        </p>
+    </div>
+</div>
+
+
+{# =========================================================
+   Profile Form
+   ========================================================= #}
+
+<form
+    class="profile-edit-form"
+    method="post"
+    action="/settings/profile"
+    enctype="multipart/form-data"
+>
+
+    {# ---------------------------------------------------------
+       Personal Information
+       --------------------------------------------------------- #}
+
+    <section class="profile-edit-section">
+
+        <div class="profile-edit-section-header">
+            <h2>Personal Information</h2>
+            <p>
+                Update the name and email address associated with
+                your OpenFab account.
+            </p>
+        </div>
+
+        <div class="profile-edit-section-body">
+
+            <div class="profile-edit-avatar-row">
+
+                <div class="dashboard-avatar profile-edit-avatar">
+                    {% if user.profile_image is defined and user.profile_image %}
+                        <img
+                            src="/assets/{{ user.profile_image }}"
+                            alt="{{ user.fname }} {{ user.lname }}"
+                            class="dashboard-avatar-image"
+                        >
+                    {% else %}
+                        <span class="dashboard-avatar-initials">
+                            {{ user.fname }}{{ user.lname }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="profile-edit-avatar-content">
+
+                    <label
+                        for="profile_image"
+                        class="profile-edit-label"
+                    >
+                        Profile image
+                    </label>
+
+                    <input
+                        id="profile_image"
+                        name="profile_image"
+                        type="file"
+                        accept="image/*"
+                        class="profile-edit-file"
+                    >
+
+                    <p class="profile-edit-help">
+                        Choose an image to use as your profile picture.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="profile-edit-fields">
+
+                <div class="form-group">
+                    <label for="fname">
+                        First name
+                    </label>
+
+                    <input
+                        id="fname"
+                        name="fname"
+                        type="text"
+                        value="{{ user.fname }}"
+                        autocomplete="given-name"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="lname">
+                        Last name
+                    </label>
+
+                    <input
+                        id="lname"
+                        name="lname"
+                        type="text"
+                        value="{{ user.lname }}"
+                        autocomplete="family-name"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value="{{ user.email }}"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    {# ---------------------------------------------------------
+       Password
+       --------------------------------------------------------- #}
+
+    <section class="profile-edit-section">
+
+        <div class="profile-edit-section-header">
+            <h2>Password</h2>
+            <p>
+                Change your password. Leave these fields blank
+                to keep your current password.
+            </p>
+        </div>
+
+        <div class="profile-edit-section-body">
+
+            <div class="profile-edit-fields">
+
+                <div class="form-group">
+                    <label for="password">
+                        New password
+                    </label>
+
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autocomplete="new-password"
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="password_confirmation">
+                        Confirm new password
+                    </label>
+
+                    <input
+                        id="password_confirmation"
+                        name="password_confirmation"
+                        type="password"
+                        autocomplete="new-password"
+                    >
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    {# =========================================================
+       Form Actions
+       ========================================================= #}
+
+    <div class="profile-edit-actions">
+
+        <a
+            href="/"
+            class="btn btn-secondary"
+        >
+            Cancel
+        </a>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            Save Changes
+        </button>
+
+    </div>
+
+</form>
+```
+
+</div>
+
+{% endblock content %}

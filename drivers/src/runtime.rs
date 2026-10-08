@@ -1,9 +1,9 @@
 //! Driver orchestration: configuring, loading/unloading drivers,
 //! and managing driver connections.
 
-use crate::config::{ConfigSchema, DriverMeta, DeviceDriver};
+use crate::config::{ConfigSchema, DriverMeta};
+use crate::DeviceDriver;
 use crate::errors::DriverError;
-use crate::config::DriverMetadata;
 
 use async_trait::async_trait;
 use serde_json::Value;
@@ -29,7 +29,7 @@ pub trait DriverRuntime: Send + Sync {
         let driver = driver
             .lock().await;
 
-        Ok(driver.metadata().config_schema())
+        Ok(driver.metadata().config_schema().clone())
     }
 
     async fn add_device(

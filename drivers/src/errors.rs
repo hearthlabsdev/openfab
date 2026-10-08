@@ -1,3 +1,6 @@
+use thiserror::Error;
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug, thiserror::Error)]
 pub enum DriverError {
     #[error("configuration error: {0}")]
@@ -28,8 +31,6 @@ pub enum DriverError {
     Runtime(String),
 }
 
-use thiserror::Error;
-
 #[derive(Debug, Error)]
 pub enum ConfigError {
     #[error("missing required configuration field: {0}")]
@@ -53,3 +54,7 @@ pub enum ConfigError {
     #[error("not an object")]
     InvalidConfig,
 }
+
+/// serialization and deserialization may be required to pass the wasm boundary in the future.
+#[derive(Debug, Error, Clone, Serialize, Deserialize)]
+pub enum PrintError {}

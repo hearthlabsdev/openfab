@@ -4,11 +4,21 @@ pub mod ui;
 use crate::devices::DeviceModelORM;
 use crate::errors::OpenFabErr;
 use crate::library::{AssetORM, ObjectStore};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use ormlite::postgres::PgPool;
-pub use ui::get_routes;
 use ormlite::Model;
+use ormlite::postgres::PgPool;
+use serde::{Deserialize, Serialize};
+pub use ui::get_routes;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[ormlite(table = "settings")]
+pub struct SettingsORM {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub user: Option<Uuid>,
+    pub key: String,
+    pub value: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeviceModelInfo {
@@ -29,14 +39,14 @@ impl DeviceModelInfo {
     ) -> Result<Self, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let url = match orm.thumbnail {
-                Some(asset_id) => {
-                    let asset = AssetORM::select()
-                        .where_("uid = ?")
-                        .bind(asset_id)
-                        .fetch_one(&mut *conn)
-                        .await?;
-                    Some(store.presigned_get_url(&asset.key, 60 * 60).await?)
-            },
+            Some(asset_id) => {
+                let asset = AssetORM::select()
+                    .where_("uid = ?")
+                    .bind(asset_id)
+                    .fetch_one(&mut *conn)
+                    .await?;
+                Some(store.presigned_get_url(&asset.key, 60 * 60).await?)
+            }
             None => None,
         };
 

@@ -1,7 +1,212 @@
 {% extends "layouts/base" %}
 
 {% block content %}
-<h1>
-Welcome to your OpenFab Dashboard
-</h1>
+
+<div class="dashboard">
+
+```
+{# =========================================================
+   Dashboard Header
+   ========================================================= #}
+
+<div class="dashboard-header">
+    <div>
+        <h1 class="dashboard-title">
+            Welcome back{% if user.fname %}, {{ user.fname }}{% endif %}
+        </h1>
+
+        <p class="dashboard-subtitle">
+            Manage your OpenFab account and printer workspace.
+        </p>
+    </div>
+
+    <div class="dashboard-actions">
+        <a href="/settings/profile" class="btn btn-secondary">
+            Edit Profile
+        </a>
+    </div>
+</div>
+
+
+{# =========================================================
+   Dashboard Content
+   ========================================================= #}
+
+<div class="dashboard-grid">
+
+    {# ---------------------------------------------------------
+       Profile Card
+       --------------------------------------------------------- #}
+
+    <section class="dashboard-card dashboard-profile">
+
+        <div class="dashboard-profile-header">
+
+            <div class="dashboard-avatar">
+                {% if user.profile_image is defined and user.profile_image %}
+                    <img
+                        src="/assets/{{ user.profile_image }}"
+                        alt="{{ user.fname }} {{ user.lname }}"
+                        class="dashboard-avatar-image"
+                    >
+                {% else %}
+                    <span class="dashboard-avatar-initials">
+                        {{ user.fname }}{{ user.lname }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="dashboard-profile-name">
+                <h2>
+                    {{ user.fname }} {{ user.lname }}
+                </h2>
+
+                <p>
+                    {{ user.email }}
+                </p>
+            </div>
+
+        </div>
+
+        <div class="dashboard-card-divider"></div>
+
+        <dl class="dashboard-fields">
+
+            <div class="dashboard-field">
+                <dt>First name</dt>
+                <dd>{{ user.fname }}</dd>
+            </div>
+
+            <div class="dashboard-field">
+                <dt>Last name</dt>
+                <dd>{{ user.lname }}</dd>
+            </div>
+
+            <div class="dashboard-field">
+                <dt>Email</dt>
+                <dd>{{ user.email }}</dd>
+            </div>
+
+            {% if user.subject is defined and user.subject %}
+            <div class="dashboard-field">
+                <dt>Subject</dt>
+                <dd class="dashboard-field-mono">
+                    {{ user.subject }}
+                </dd>
+            </div>
+            {% endif %}
+
+        </dl>
+
+    </section>
+
+
+    {# ---------------------------------------------------------
+       Account Information
+       --------------------------------------------------------- #}
+
+    <section class="dashboard-card">
+
+        <div class="dashboard-card-header">
+            <div>
+                <h2>Account</h2>
+                <p>Your OpenFab account information.</p>
+            </div>
+        </div>
+
+        <dl class="dashboard-fields">
+
+            <div class="dashboard-field">
+                <dt>Account ID</dt>
+                <dd class="dashboard-field-mono">
+                    {{ user.uid }}
+                </dd>
+            </div>
+
+            <div class="dashboard-field">
+                <dt>Created</dt>
+                <dd>
+                    <time class="local-time" datetime="{{ user.created }}" data-unix="{{ user.created }}">
+                        {{ user.created }}
+                    </time>
+                </dd>
+            </div>
+
+            <div class="dashboard-field">
+                <dt>Password</dt>
+                <dd>
+                    {% if user.password is defined and user.password %}
+                        <span class="dashboard-status dashboard-status--enabled">
+                            Configured
+                        </span>
+                    {% else %}
+                        <span class="dashboard-status dashboard-status--muted">
+                            Not configured
+                        </span>
+                    {% endif %}
+                </dd>
+            </div>
+
+        </dl>
+
+    </section>
+
+
+    {# ---------------------------------------------------------
+       Quick Actions
+       --------------------------------------------------------- #}
+
+    <section class="dashboard-card dashboard-card--wide">
+
+        <div class="dashboard-card-header">
+            <div>
+                <h2>Quick Actions</h2>
+                <p>Common account and workspace actions.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-actions-grid">
+
+            <a href="/accounts/profile" class="dashboard-action">
+                <div class="dashboard-action-icon">
+                    👤
+                </div>
+
+                <div>
+                    <strong>Edit Profile</strong>
+                    <span>Update your name, email, and profile image.</span>
+                </div>
+            </a>
+
+            <a href="/accounts/security" class="dashboard-action">
+                <div class="dashboard-action-icon">
+                    🔒
+                </div>
+
+                <div>
+                    <strong>Security</strong>
+                    <span>Manage your password and authentication.</span>
+                </div>
+            </a>
+
+            <a href="/settings" class="dashboard-action">
+                <div class="dashboard-action-icon">
+                    ⚙
+                </div>
+
+                <div>
+                    <strong>Settings</strong>
+                    <span>Configure your OpenFab workspace.</span>
+                </div>
+            </a>
+
+        </div>
+
+    </section>
+
+</div>
+```
+
+</div>
+
 {% endblock content %}

@@ -154,29 +154,29 @@
                         </div>
 
                         <a
-                            href="/settings/devices/"
+                            href="/admin/users"
                             class=""
                         >
-                            Device Profiles
+                            Users
                         </a>
 
                         <a
-                            href="/settings/materials/filaments"
+                            href="/admin/groups"
                             class=""
                         >
-                            Filament Profiles
+                            Groups
                         </a>
                         <a 
-                            href="/settings/stylus"
+                            href="/admin/keys"
                             class=""
                         >
-                            User Interface Styles
+                            API Keys
                         </a>
                         <a
-                            href="/settings/payments"
+                            href="/admin/activation-codes"
                             class=""
                         >
-                            Payments
+                            Activation Codes
                         </a>
                     </nav>
 

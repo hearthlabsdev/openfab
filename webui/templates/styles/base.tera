@@ -1,0 +1,2153 @@
+/* =========================================================
+    Pretty Result Table FOrmatting
+========================================================== */
+
+/* =========================================================
+   Pretty Result Table Formatting
+========================================================= */
+
+/*
+ * Generic result/data table
+ *
+ * Intended for tables that display lists of records, results,
+ * queues, search results, etc.
+ *
+ * All table colors are defined below so the table can easily
+ * be adapted to a lighter or alternate theme.
+ */
+
+
+/* =========================================================
+   Result Table Theme
+========================================================= */
+
+:root {
+
+    --background: {{ theme.background }};
+    --surface: {{ theme.surface }};
+    --surface-hover: {{ theme.surface_hover }};
+    --surface-header: {{ theme.surface_header }};
+
+    --border: {{ theme.border }};
+    --border-subtle: {{ theme.border_subtle }};
+
+    --text: {{ theme.text }};
+    --text-strong: {{ theme.text_strong }};
+    --text-muted: {{ theme.text_muted }};
+
+    --accent: {{ theme.accent }};
+
+    --result-table-background: var(--surface);
+    --result-table-header-background: var(--surface-header);
+    --result-table-hover-background: var(--surface-hover);
+
+    --result-table-border: var(--border);
+    --result-table-header-border: var(--border-subtle);
+
+    --result-table-text: var(--text);
+    --result-table-header-text: var(--text-strong);
+    --result-table-muted-text: var(--text-muted);
+
+    --result-table-accent: var(--accent);
+    --result-table-empty-text: var(--text-muted);
+}
+
+
+/* =========================================================
+   Table
+========================================================= */
+
+.result-table {
+    width: 100%;
+
+    border-collapse: collapse;
+    border-spacing: 0;
+
+    background-color: var(--result-table-background);
+    color: var(--result-table-text);
+
+    font-size: 0.95rem;
+}
+
+
+/* =========================================================
+   Table Sections
+========================================================= */
+
+.result-table__head {
+    background-color: var(--result-table-header-background);
+}
+
+.result-table__body {
+    background-color: var(--result-table-background);
+}
+
+
+/* =========================================================
+   Rows
+========================================================= */
+
+.result-table__row {
+    border-bottom: 1px solid var(--result-table-border);
+}
+
+.result-table__body .result-table__row {
+    transition: background-color 0.15s ease;
+}
+
+.result-table__body .result-table__row:hover {
+    background-color: var(--result-table-hover-background);
+}
+
+/* =========================================================
+   Primary Row Links
+========================================================= */
+
+.result-table__primary-link {
+    color: var(--color-text-bright);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.result-table__primary-link:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+.result-table__primary-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+
+/* =========================================================
+   Headers
+========================================================= */
+
+.result-table__header {
+    padding: 0.75rem 1rem;
+
+    border-bottom: 2px solid var(--result-table-header-border);
+
+    color: var(--result-table-header-text);
+
+    font-weight: 600;
+    text-align: left;
+    vertical-align: middle;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   Cells
+========================================================= */
+
+.result-table__cell {
+    padding: 0.75rem 1rem;
+
+    color: var(--result-table-text);
+
+    vertical-align: middle;
+    text-align: left;
+}
+
+
+/* =========================================================
+   Column Alignment / Sizing
+========================================================= */
+
+.result-table__header--copies,
+.result-table__cell--copies {
+    width: 1%;
+
+    text-align: center;
+    white-space: nowrap;
+}
+
+.result-table__header--priority,
+.result-table__cell--priority {
+    white-space: nowrap;
+}
+
+.result-table__header--state,
+.result-table__cell--state {
+    white-space: nowrap;
+}
+
+.result-table__header--created,
+.result-table__cell--created {
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   Time Values
+========================================================= */
+
+.result-table__time {
+    color: var(--result-table-muted-text);
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   Empty State
+========================================================= */
+
+.result-table__row--empty {
+    border-bottom: 0;
+}
+
+.result-table__cell--empty {
+    padding: 2rem 1rem;
+
+    color: var(--result-table-empty-text);
+
+    text-align: center;
+    font-style: italic;
+}
+
+
+/* =========================================================
+   Responsive Behaviour
+========================================================= */
+
+@media (max-width: 768px) {
+    .result-table {
+        font-size: 0.875rem;
+    }
+
+    .result-table__header,
+    .result-table__cell {
+        padding: 0.6rem 0.75rem;
+    }
+}
+
+/* =========================================================
+   Result Table Actions
+========================================================= */
+
+.result-table__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-table__action-form {
+    display: inline;
+    margin: 0;
+}
+
+.result-table__cell--actions {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.result-table__muted {
+    color: var(--result-table-muted-text);
+}
+
+
+/* =========================================================
+   Reset / Base
+========================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Oxygen,
+        Ubuntu,
+        Cantarell,
+        "Open Sans",
+        sans-serif;
+
+    background: #0f1115;
+    color: #e6e6e6;
+}
+
+
+/* =========================================================
+   App Layout
+========================================================= */
+
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.page {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+
+/* =========================================================
+   Topbar
+========================================================= */
+
+.topbar {
+    display: flex;
+    align-items: center;
+
+    height: 56px;
+
+    background: #151922;
+    border-bottom: 1px solid #232938;
+
+    z-index: 10;
+}
+
+.topbar-inner {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    align-items: center;
+
+    width: 100%;
+    padding: 0 16px;
+
+    gap: 12px;
+}
+
+.topbar-left,
+.topbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.topbar-right {
+    justify-content: flex-end;
+}
+
+.topbar-center {
+    display: flex;
+    justify-content: center;
+}
+
+.logo {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.logo:hover {
+    opacity: 0.8;
+}
+
+.user-menu {
+    color: #c9d1d9;
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   Search
+========================================================= */
+
+.global-search {
+    width: 100%;
+    max-width: 420px;
+    padding: 8px 12px;
+
+    background: #0f1115;
+    border: 1px solid #2a3040;
+    border-radius: 8px;
+
+    color: #e6e6e6;
+    outline: none;
+}
+
+.global-search::placeholder {
+    color: #7a8395;
+}
+
+.global-search:focus {
+    border-color: #4c8dff;
+}
+
+
+/* =========================================================
+   Sidebar
+========================================================= */
+
+.sidebar {
+    width: 220px;
+    padding: 16px 12px;
+
+    background: #12151d;
+    border-right: 1px solid #232938;
+
+    overflow-y: auto;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav a {
+    padding: 8px 10px;
+
+    border-radius: 6px;
+
+    color: #c9d1d9;
+    font-size: 14px;
+    text-decoration: none;
+
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.nav a:hover {
+    background: #1a2030;
+    color: #ffffff;
+}
+
+.nav-section {
+    margin-top: 12px;
+    margin-bottom: 4px;
+    padding: 4px 10px;
+
+    color: #7a8395;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   Context Bar
+========================================================= */
+
+.context-bar {
+    display: flex;
+    align-items: center;
+
+    height: 44px;
+    padding: 0 16px;
+
+    background: #10131a;
+    border-bottom: 1px solid #232938;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   Utility Classes
+========================================================= */
+
+.hidden {
+    display: none !important;
+}
+
+.muted {
+    color: #7a8395;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+/* =========================================================
+   Buttons
+========================================================= */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 12px;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    font-size: 14px;
+    text-decoration: none;
+
+    cursor: pointer;
+}
+
+.btn-primary {
+    padding: 10px 16px;
+
+    background: #4c8dff;
+    border: none;
+
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #3b73d1;
+}
+
+.btn-secondary {
+    background: #1a2030;
+    border-color: #2a3040;
+
+    color: #c9d1d9;
+}
+
+.btn-secondary:hover {
+    background: #202739;
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   Shared Page Header
+========================================================= */
+
+.asset-library-header,
+.device-library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.asset-library-title,
+.device-library-title {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.asset-library-subtitle,
+.device-library-subtitle {
+    margin-top: 5px;
+
+    color: #7a8395;
+    font-size: 14px;
+}
+
+.asset-library-actions,
+.device-library-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+
+/* =========================================================
+   Forms
+========================================================= */
+
+.device-form {
+    max-width: 720px;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #9aa4b2;
+    font-size: 13px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+
+    background: #0f1115;
+    border: 1px solid #2a3040;
+    border-radius: 8px;
+
+    color: #e6e6e6;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #4c8dff;
+}
+
+.form-group textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 12px;
+}
+
+
+/* =========================================================
+   Advanced Form Section
+========================================================= */
+
+.advanced-section {
+    margin-bottom: 18px;
+    padding: 10px 12px;
+
+    background: #12151d;
+    border: 1px solid #232938;
+    border-radius: 10px;
+}
+
+.advanced-summary {
+    padding: 6px 4px;
+
+    color: #9aa4b2;
+    font-size: 13px;
+
+    cursor: pointer;
+    user-select: none;
+}
+
+.advanced-summary:hover,
+details[open] .advanced-summary {
+    color: #ffffff;
+}
+
+.advanced-content {
+    display: flex;
+    flex-direction: column;
+
+    gap: 14px;
+    margin-top: 12px;
+}
+
+
+/* =========================================================
+   Shared Card
+========================================================= */
+
+.asset-card,
+.device-card {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+    overflow: hidden;
+
+    background: #12151d;
+    border: 1px solid #232938;
+    border-radius: 10px;
+
+    transition:
+        border-color 0.15s,
+        background 0.15s,
+        transform 0.15s;
+}
+
+.asset-card:hover,
+.device-card:hover {
+    background: #151922;
+    border-color: #30384b;
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   Asset Library
+========================================================= */
+
+.asset-library {
+    width: 100%;
+}
+
+.asset-grid,
+.device-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(250px, 1fr));
+
+    gap: 16px;
+}
+
+
+/* =========================================================
+   Asset Card Preview
+========================================================= */
+
+.asset-card-preview,
+.device-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: linear-gradient(
+        135deg,
+        #151922,
+        #10131a
+    );
+
+    border-bottom: 1px solid #232938;
+}
+
+.asset-card-preview, .asset-preview {
+    position: relative;
+    height: 150px;
+}
+
+.device-card-header {
+    position: relative;
+
+    min-height: 130px;
+    padding: 20px;
+
+    justify-content: space-between;
+}
+
+.asset-file-icon,
+.device-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 64px;
+    height: 64px;
+
+    background: #1a2030;
+    border: 1px solid #2a3040;
+    border-radius: 14px;
+
+    font-size: 30px;
+}
+
+
+/* =========================================================
+   Badges
+========================================================= */
+
+.asset-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+
+    padding: 4px 8px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.asset-badge-public {
+    background: #183524;
+    border: 1px solid #245a38;
+    color: #77d69a;
+}
+
+.asset-badge-private {
+    background: #1b1f29;
+    border: 1px solid #303747;
+    color: #9aa4b2;
+}
+
+
+/* =========================================================
+   Device Status
+========================================================= */
+
+.device-card-header .status-badge {
+    align-self: flex-start;
+
+    padding: 4px 9px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-online,
+.status-connected {
+    background: #183524;
+    border: 1px solid #245a38;
+    color: #77d69a;
+}
+
+.status-printing {
+    background: #192f52;
+    border: 1px solid #28558d;
+    color: #79adff;
+}
+
+.status-idle {
+    background: #1b1f29;
+    border: 1px solid #303747;
+    color: #9aa4b2;
+}
+
+.status-offline {
+    background: #321b1f;
+    border: 1px solid #633039;
+    color: #e58b95;
+}
+
+.status-error {
+    background: #3a2118;
+    border: 1px solid #70402d;
+    color: #f0a17b;
+}
+
+
+/* =========================================================
+   Card Body
+========================================================= */
+
+.asset-card-body,
+.device-card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+
+    min-width: 0;
+    padding: 14px;
+}
+
+.asset-card-title,
+.device-card-title {
+    overflow: hidden;
+
+    color: #e6e6e6;
+    font-size: 14px;
+    font-weight: 600;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.asset-card-meta,
+.device-card-meta {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+    margin-top: 7px;
+
+    color: #7a8395;
+    font-size: 12px;
+}
+
+.asset-card-meta {
+    overflow: hidden;
+}
+
+.asset-card-meta span {
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   Device Metadata
+========================================================= */
+
+.device-card-meta {
+    justify-content: space-between;
+}
+
+.device-card-meta span:first-child {
+    color: #7a8395;
+}
+
+.device-card-meta span:last-child {
+    min-width: 0;
+
+    overflow: hidden;
+
+    color: #9aa4b2;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   Asset License
+========================================================= */
+
+.asset-license {
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+    margin-top: 12px;
+    padding-top: 10px;
+
+    border-top: 1px solid #232938;
+
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.asset-license-label {
+    color: #7a8395;
+}
+
+
+/* =========================================================
+   Card Footers
+========================================================= */
+
+.asset-card-footer,
+.device-card-footer {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+
+    border-top: 1px solid #232938;
+}
+
+.asset-card-footer {
+    justify-content: space-between;
+
+    padding-top: 0;
+    border-top: none;
+}
+
+.device-card-footer {
+    justify-content: flex-end;
+}
+
+.asset-date {
+    min-width: 0;
+    overflow: hidden;
+
+    color: #7a8395;
+    font-size: 11px;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.asset-card-actions {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+    gap: 6px;
+}
+
+
+/* =========================================================
+   Empty States
+========================================================= */
+
+.asset-empty,
+.device-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 320px;
+    padding: 40px;
+
+    background: #12151d;
+    border: 1px dashed #2a3040;
+    border-radius: 10px;
+
+    text-align: center;
+}
+
+.asset-empty-icon,
+.device-empty-icon {
+    margin-bottom: 12px;
+
+    font-size: 36px;
+}
+
+.asset-empty h2,
+.device-empty h2 {
+    color: #e6e6e6;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.asset-empty p,
+.device-empty p {
+    margin-top: 6px;
+    margin-bottom: 18px;
+
+    color: #7a8395;
+    font-size: 14px;
+}
+
+.device-empty p {
+    max-width: 420px;
+}
+
+
+/* =========================================================
+   Scrollbars
+========================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a3040;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3a4255;
+}
+
+
+/* =========================================================
+   Responsive
+========================================================= */
+
+@media (max-width: 700px) {
+    .asset-library-header,
+    .device-library-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .asset-library-actions,
+    .device-library-actions {
+        width: 100%;
+    }
+
+    .asset-library-actions .btn,
+    .device-library-actions .btn {
+        width: 100%;
+    }
+
+    .asset-grid,
+    .device-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   Asset Detail
+========================================================= */
+
+.asset-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
+}
+
+.asset-detail-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 24px;
+    background: #12151d;
+    border: 1px solid #232938;
+    border-radius: 10px;
+}
+
+.asset-detail-preview .asset-preview {
+    width: 100%;
+    height: auto;
+    max-height: 600px;
+    object-fit: contain;
+}
+
+.asset-detail-info {
+    min-width: 0;
+}
+
+.asset-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.asset-detail-header h2 {
+    color: #e6e6e6;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.asset-detail-fields {
+    display: flex;
+    flex-direction: column;
+}
+
+.asset-detail-field {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #232938;
+}
+
+.asset-detail-field:first-child {
+    padding-top: 0;
+}
+
+.asset-detail-field dt {
+    color: #7a8395;
+    font-size: 13px;
+}
+
+.asset-detail-field dd {
+    min-width: 0;
+    overflow: hidden;
+    color: #e6e6e6;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+@media (max-width: 800px) {
+    .asset-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .asset-detail-preview {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 500px) {
+    .asset-detail-field {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}
+
+/* =========================================================
+   Device Detail
+   ========================================================= */
+
+.device-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
+}
+
+
+/* =========================================================
+   Device Preview
+   ========================================================= */
+
+.device-detail-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 24px;
+
+    background: #12151d;
+    border: 1px solid #232938;
+    border-radius: 10px;
+}
+
+.device-preview {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 600px;
+
+    object-fit: contain;
+}
+
+
+/* =========================================================
+   Device Placeholder
+   ========================================================= */
+
+.device-detail-preview .device-card-icon {
+    width: 96px;
+    height: 96px;
+
+    background: #1a2030;
+    border: 1px solid #2a3040;
+    border-radius: 18px;
+
+    font-size: 42px;
+}
+
+
+/* =========================================================
+   Device Information
+   ========================================================= */
+
+.device-detail-info {
+    min-width: 0;
+}
+
+.device-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-bottom: 18px;
+}
+
+.device-detail-header h2 {
+    color: #e6e6e6;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+
+/* =========================================================
+   Device Fields
+   ========================================================= */
+
+.device-detail-fields {
+    display: flex;
+    flex-direction: column;
+}
+
+.device-detail-field {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+
+    padding: 12px 0;
+
+    border-bottom: 1px solid #232938;
+}
+
+.device-detail-field:first-child {
+    padding-top: 0;
+}
+
+.device-detail-field:last-child {
+    border-bottom: none;
+}
+
+.device-detail-field dt {
+    color: #7a8395;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.device-detail-field dd {
+    min-width: 0;
+
+    overflow: hidden;
+
+    color: #e6e6e6;
+    font-size: 14px;
+    line-height: 1.5;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   Device Detail Lists
+   ========================================================= */
+
+.device-detail-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.device-detail-list li {
+    padding: 4px 8px;
+
+    background: #1a2030;
+    border: 1px solid #2a3040;
+    border-radius: 6px;
+
+    color: #c9d1d9;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+
+/* =========================================================
+   Device UID
+   ========================================================= */
+
+.device-detail-field dd:first-letter {
+    /* Keeps normal text rendering while allowing the
+       UID field to remain compact on narrow layouts. */
+}
+
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 800px) {
+    .device-detail {
+        grid-template-columns: 1fr;
+    }
+
+    .device-detail-preview {
+        min-height: 300px;
+    }
+
+    .device-preview {
+        max-height: 450px;
+    }
+}
+
+@media (max-width: 500px) {
+    .device-detail-field {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .device-detail-field dt {
+        font-size: 12px;
+    }
+
+    .device-detail-field dd {
+        font-size: 14px;
+    }
+
+    .device-detail-preview {
+        min-height: 240px;
+        padding: 16px;
+    }
+}
+
+.filament-colour-cell {
+    width: 56px;
+    text-align: center;
+    border: 4px solid white;
+}
+
+.filament-colour-swatch {
+    display: inline-block;
+    min-width: 80px;
+    height: 28px;
+    border-radius: 6px;
+    border: 4px solid var(--border-color);
+    vertical-align: middle;
+}
+
+```css
+/* =========================================================
+ * Settings Library Tables
+ * ========================================================= */
+
+.device-library-table-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.device-library-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+/* Header */
+
+.device-library-table thead {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.device-library-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Rows */
+
+.device-library-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.15s ease;
+}
+
+.device-library-table tbody tr:hover {
+    background-color: var(--background-secondary);
+}
+
+.device-library-table td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+/* Primary name */
+
+.device-library-table td:first-child {
+    min-width: 180px;
+}
+
+.device-library-table td:first-child a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.device-library-table td:first-child a:hover {
+    text-decoration: underline;
+}
+
+/* Muted values */
+
+.device-library-table .text-muted {
+    color: var(--text-secondary);
+}
+
+/* Actions */
+
+.device-library-table-actions {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.device-library-table-actions .button {
+    white-space: nowrap;
+}
+
+/* =========================================================
+ * Filament Colour
+ * ========================================================= */
+
+.filament-colour-cell {
+    width: 56px;
+    min-width: 56px;
+    text-align: center;
+}
+
+.filament-colour-swatch {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    vertical-align: middle;
+    box-sizing: border-box;
+}
+
+/* =========================================================
+ * Empty State
+ * ========================================================= */
+
+.device-library-empty {
+    padding: 0 !important;
+}
+
+.device-library-empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.device-library-empty-content h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.device-library-empty-content p {
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary);
+}
+
+/* =========================================================
+ * Responsive
+ * ========================================================= */
+
+@media (max-width: 768px) {
+    .device-library-table th,
+    .device-library-table td {
+        padding: 0.7rem 0.75rem;
+    }
+
+    .device-library-table th:nth-child(5),
+    .device-library-table td:nth-child(5),
+    .device-library-table th:nth-child(6),
+    .device-library-table td:nth-child(6) {
+        display: none;
+    }
+}
+
+/* =========================================================
+Dashboard
+========================================================= */
+
+.dashboard {
+width: 100%;
+max-width: 1200px;
+margin: 0 auto;
+}
+
+/* =========================================================
+Dashboard Header
+========================================================= */
+
+.dashboard-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 20px;
+margin-bottom: 24px;
+}
+
+.dashboard-title {
+color: #ffffff;
+font-size: 26px;
+font-weight: 600;
+line-height: 1.2;
+}
+
+.dashboard-subtitle {
+margin-top: 6px;
+color: #7a8395;
+font-size: 14px;
+line-height: 1.5;
+}
+
+.dashboard-actions {
+display: flex;
+align-items: center;
+gap: 8px;
+flex-shrink: 0;
+}
+
+/* =========================================================
+Dashboard Grid
+========================================================= */
+
+.dashboard-grid {
+display: grid;
+grid-template-columns:
+minmax(0, 1fr)
+minmax(0, 1fr);
+gap: 18px;
+}
+
+/* =========================================================
+Dashboard Card
+========================================================= */
+
+.dashboard-card {
+min-width: 0;
+overflow: hidden;
+background: #12151d;
+border: 1px solid #232938;
+border-radius: 10px;
+}
+
+.dashboard-card--wide {
+grid-column: 1 / -1;
+}
+
+.dashboard-card-header {
+padding: 18px 20px;
+}
+
+.dashboard-card-header h2 {
+color: #e6e6e6;
+font-size: 16px;
+font-weight: 600;
+}
+
+.dashboard-card-header p {
+margin-top: 4px;
+color: #7a8395;
+font-size: 13px;
+}
+
+/* =========================================================
+Profile Card
+========================================================= */
+
+.dashboard-profile {
+padding: 20px;
+}
+
+.dashboard-profile-header {
+display: flex;
+align-items: center;
+gap: 16px;
+}
+
+.dashboard-avatar {
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+width: 64px;
+height: 64px;
+overflow: hidden;
+background: #1a2030;
+border: 1px solid #2a3040;
+border-radius: 50%;
+}
+
+.dashboard-avatar-image {
+display: block;
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.dashboard-avatar-initials {
+color: #ffffff;
+font-size: 20px;
+font-weight: 600;
+letter-spacing: 0.02em;
+}
+
+.dashboard-profile-name {
+min-width: 0;
+}
+
+.dashboard-profile-name h2 {
+overflow: hidden;
+color: #ffffff;
+font-size: 18px;
+font-weight: 600;
+line-height: 1.3;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+
+.dashboard-profile-name p {
+margin-top: 4px;
+overflow: hidden;
+color: #7a8395;
+font-size: 13px;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+
+/* =========================================================
+Card Divider
+========================================================= */
+
+.dashboard-card-divider {
+height: 1px;
+margin: 20px 0 4px;
+background: #232938;
+}
+
+/* =========================================================
+Dashboard Fields
+========================================================= */
+
+.dashboard-fields {
+display: flex;
+flex-direction: column;
+margin: 0;
+}
+
+.dashboard-field {
+display: grid;
+grid-template-columns: 120px minmax(0, 1fr);
+align-items: center;
+gap: 16px;
+min-height: 48px;
+padding: 10px 0;
+border-bottom: 1px solid #232938;
+}
+
+.dashboard-field:last-child {
+border-bottom: none;
+}
+
+.dashboard-field dt {
+color: #7a8395;
+font-size: 13px;
+line-height: 1.5;
+}
+
+.dashboard-field dd {
+min-width: 0;
+overflow: hidden;
+color: #e6e6e6;
+font-size: 14px;
+line-height: 1.5;
+word-break: break-word;
+}
+
+.dashboard-field-mono {
+font-family:
+ui-monospace,
+SFMono-Regular,
+Menlo,
+Monaco,
+Consolas,
+"Liberation Mono",
+monospace;
+font-size: 12px !important;
+color: #9aa4b2 !important;
+}
+
+/* =========================================================
+Profile Field Padding
+========================================================= */
+
+.dashboard-profile .dashboard-fields {
+margin-top: 4px;
+}
+
+/* =========================================================
+Account Status
+========================================================= */
+
+.dashboard-status {
+display: inline-flex;
+align-items: center;
+gap: 6px;
+padding: 4px 9px;
+border-radius: 999px;
+font-size: 11px;
+font-weight: 500;
+line-height: 1.2;
+}
+
+.dashboard-status--enabled {
+background: #183524;
+border: 1px solid #245a38;
+color: #77d69a;
+}
+
+.dashboard-status--enabled::before {
+content: "";
+width: 6px;
+height: 6px;
+background: #77d69a;
+border-radius: 50%;
+}
+
+.dashboard-status--muted {
+background: #1b1f29;
+border: 1px solid #303747;
+color: #9aa4b2;
+}
+
+/* =========================================================
+Quick Actions
+========================================================= */
+
+.dashboard-actions-grid {
+display: grid;
+grid-template-columns: repeat(3, minmax(0, 1fr));
+gap: 12px;
+padding: 0 20px 20px;
+}
+
+.dashboard-action {
+display: flex;
+align-items: center;
+gap: 12px;
+min-width: 0;
+padding: 14px;
+background: #151922;
+border: 1px solid #232938;
+border-radius: 8px;
+color: inherit;
+text-decoration: none;
+transition:
+background-color 0.15s ease,
+border-color 0.15s ease,
+transform 0.15s ease;
+}
+
+.dashboard-action:hover {
+background: #1a2030;
+border-color: #30384b;
+transform: translateY(-1px);
+}
+
+.dashboard-action:focus-visible {
+outline: 2px solid #4c8dff;
+outline-offset: 2px;
+}
+
+.dashboard-action-icon {
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+width: 38px;
+height: 38px;
+background: #1a2030;
+border: 1px solid #2a3040;
+border-radius: 8px;
+font-size: 16px;
+}
+
+.dashboard-action strong {
+display: block;
+color: #e6e6e6;
+font-size: 13px;
+font-weight: 600;
+}
+
+.dashboard-action span {
+display: block;
+margin-top: 3px;
+color: #7a8395;
+font-size: 12px;
+line-height: 1.4;
+}
+
+/* =========================================================
+Responsive
+========================================================= */
+
+@media (max-width: 800px) {
+
+```
+.dashboard-grid {
+    grid-template-columns: 1fr;
+}
+
+.dashboard-card--wide {
+    grid-column: auto;
+}
+
+.dashboard-actions-grid {
+    grid-template-columns: 1fr;
+}
+```
+
+}
+
+@media (max-width: 600px) {
+
+```
+.dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.dashboard-actions {
+    width: 100%;
+}
+
+.dashboard-actions .btn {
+    width: 100%;
+}
+
+.dashboard-profile {
+    padding: 16px;
+}
+
+.dashboard-field {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    padding: 11px 0;
+}
+
+.dashboard-field dt {
+    font-size: 12px;
+}
+
+.dashboard-field dd {
+    font-size: 14px;
+}
+
+.dashboard-actions-grid {
+    padding: 0 16px 16px;
+}
+```
+
+}
+
+@media (max-width: 400px) {
+
+```
+.dashboard-profile-header {
+    align-items: flex-start;
+}
+
+.dashboard-avatar {
+    width: 52px;
+    height: 52px;
+}
+
+.dashboard-avatar-initials {
+    font-size: 16px;
+}
+
+}
+
+/* =========================================================
+Profile Edit
+========================================================= */
+
+.profile-edit {
+width: 100%;
+max-width: 860px;
+margin: 0 auto;
+}
+
+/* =========================================================
+Header
+========================================================= */
+
+.profile-edit-header {
+margin-bottom: 24px;
+}
+
+.profile-edit-title {
+color: #ffffff;
+font-size: 26px;
+font-weight: 600;
+line-height: 1.2;
+}
+
+.profile-edit-subtitle {
+margin-top: 6px;
+color: #7a8395;
+font-size: 14px;
+line-height: 1.5;
+}
+
+/* =========================================================
+Form
+========================================================= */
+
+.profile-edit-form {
+display: flex;
+flex-direction: column;
+gap: 18px;
+}
+
+/* =========================================================
+Sections
+========================================================= */
+
+.profile-edit-section {
+overflow: hidden;
+background: #12151d;
+border: 1px solid #232938;
+border-radius: 10px;
+}
+
+.profile-edit-section-header {
+padding: 18px 20px;
+border-bottom: 1px solid #232938;
+}
+
+.profile-edit-section-header h2 {
+color: #e6e6e6;
+font-size: 16px;
+font-weight: 600;
+}
+
+.profile-edit-section-header p {
+max-width: 650px;
+margin-top: 5px;
+color: #7a8395;
+font-size: 13px;
+line-height: 1.5;
+}
+
+.profile-edit-section-body {
+padding: 20px;
+}
+
+/* =========================================================
+Fields
+========================================================= */
+
+.profile-edit-fields {
+display: flex;
+flex-direction: column;
+gap: 16px;
+}
+
+.profile-edit-fields .form-group {
+margin: 0;
+}
+
+.profile-edit-fields .form-group label {
+margin-bottom: 6px;
+}
+
+/* =========================================================
+Profile Image
+========================================================= */
+
+.profile-edit-avatar-row {
+display: flex;
+align-items: center;
+gap: 18px;
+margin-bottom: 24px;
+padding-bottom: 20px;
+border-bottom: 1px solid #232938;
+}
+
+.profile-edit-avatar {
+width: 80px;
+height: 80px;
+}
+
+.profile-edit-avatar .dashboard-avatar-initials {
+font-size: 24px;
+}
+
+.profile-edit-avatar-content {
+min-width: 0;
+}
+
+.profile-edit-label {
+display: block;
+margin-bottom: 8px;
+color: #9aa4b2;
+font-size: 13px;
+font-weight: 500;
+}
+
+.profile-edit-file {
+display: block;
+width: 100%;
+max-width: 400px;
+padding: 8px 10px;
+background: #0f1115;
+border: 1px solid #2a3040;
+border-radius: 8px;
+color: #c9d1d9;
+font-size: 13px;
+}
+
+.profile-edit-file::file-selector-button {
+margin-right: 10px;
+padding: 6px 10px;
+background: #1a2030;
+border: 1px solid #2a3040;
+border-radius: 6px;
+color: #c9d1d9;
+cursor: pointer;
+}
+
+.profile-edit-file::file-selector-button:hover {
+background: #202739;
+color: #ffffff;
+}
+
+.profile-edit-help {
+margin-top: 6px;
+color: #7a8395;
+font-size: 12px;
+line-height: 1.4;
+}
+
+/* =========================================================
+Actions
+========================================================= */
+
+.profile-edit-actions {
+display: flex;
+align-items: center;
+justify-content: flex-end;
+gap: 8px;
+padding-top: 2px;
+}
+
+/* =========================================================
+Responsive
+========================================================= */
+
+@media (max-width: 600px) {
+
+```
+.profile-edit-section-header,
+.profile-edit-section-body {
+    padding: 16px;
+}
+
+.profile-edit-avatar-row {
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.profile-edit-file {
+    max-width: none;
+}
+
+.profile-edit-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+}
+
+.profile-edit-actions .btn {
+    width: 100%;
+}
+
+}

@@ -2,8 +2,11 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use uuid::Uuid;
+use tokio::io::AsyncRead;
 use crate::capabilities::DriverCapabilities;
 use crate::errors::DriverError;
+
 
 pub type DriverResult<T> = Result<T, DriverError>;
 
@@ -25,12 +28,27 @@ pub struct ConfigSchema {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DriverMeta {
-    id: String,
-    name: String,
-    version: String,
-    schema: ConfigSchema,
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub schema: ConfigSchema,
 }
 
+impl DriverMeta {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+    pub fn config_schema(&self) -> &ConfigSchema {
+        &self.schema
+    }
+}
+/*
 impl<T: DriverMetadata> From<T> for DriverMeta {
     fn from(m: T) -> DriverMeta {
         DriverMeta {
@@ -63,6 +81,7 @@ pub trait DriverMetadata {
     fn config_schema(&self) -> ConfigSchema;
 }
 
+
 /// A configured instance of a device driver.
 #[async_trait]
 pub trait DeviceDriver: Send + Sync {
@@ -77,6 +96,8 @@ pub trait DeviceDriver: Send + Sync {
 
     /// Generic capability discovery.
     fn capabilities(&self) -> DriverCapabilities;
+
+    async fn start_print(&self, device: &str, file: Box<dyn AsyncRead + Send + 'static>) -> Result<(), DriverError>;
 
     /// Optional generic command interface.
     async fn command(
@@ -94,3 +115,4 @@ pub enum DeviceStatus {
     Busy,
     Error { message: String },
 }
+*/

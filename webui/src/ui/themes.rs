@@ -1,98 +1,128 @@
+use crate::errors::OpenFabErr;
+use crate::settings::SettingsORM;
+use ormlite::{Model, postgres::PgPool};
 use rocket::http::CookieJar;
 use rocket::{Route, State, get, put, response::content::RawCss, routes};
+use rocket_dyn_templates::{Template, context};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::default::Default;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use uuid::Uuid;
 
-pub struct ThemePicker {
-    current: Arc<RwLock<String>>,
-    themes: HashMap<String, Theme>,
-}
-
-impl Default for ThemePicker {
-    fn default() -> ThemePicker {
-        let mut map = HashMap::new();
-        map.insert("default".to_string(), Theme::default());
-        map.insert("dark".to_string(), Theme::dark());
-        map.insert("light".to_string(), Theme::light());
-        ThemePicker {
-            current: Arc::new(RwLock::new("default".to_string())),
-            themes: map,
-        }
-    }
-}
-
-impl ThemePicker {
-    pub async fn select(&self) -> Theme {
-        let current: String = self.current.read().await.to_string();
-        match self.themes.get(&current) {
-            Some(current) => current.clone(),
-            None => Theme::default(),
-        }
-    }
-    pub async fn by_name(&self, name: &str) -> Theme {
-        match self.themes.get(name) {
-            Some(theme) => theme.clone(),
-            None => self.select().await,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[ormlite(table = "themes")]
 pub struct Theme {
-    name: &'static str,
-    base: &'static str,
-    accounts: &'static str,
-}
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub name: String,
 
-impl Theme {
-    pub fn light() -> Self {
-        Theme {
-            name: "default",
-            base: include_str!("../../css/light/base.css"),
-            accounts: include_str!("../../css/light/accounts.css"),
-        }
-    }
-    pub fn dark() -> Self {
-        Theme {
-            name: "default",
-            base: include_str!("../../css/dark/base.css"),
-            accounts: include_str!("../../css/dark/accounts.css"),
-        }
-    }
+    pub background: String,
+    pub surface: String,
+    pub surface_hover: String,
+    pub surface_header: String,
+
+    pub border: String,
+    pub border_subtle: String,
+
+    pub text: String,
+    pub text_strong: String,
+    pub text_muted: String,
+
+    pub accent: String,
 }
 
 impl Default for Theme {
-    fn default() -> Theme {
-        Theme::dark()
+    fn default() -> Self {
+        Self {
+            uid: Uuid::new_v4(),
+            name: "Default".to_string(),
+
+            background: "#0f1117".to_string(),
+            surface: "#12151d".to_string(),
+            surface_hover: "#1a2030".to_string(),
+            surface_header: "#151922".to_string(),
+
+            border: "#232938".to_string(),
+            border_subtle: "#2a3040".to_string(),
+
+            text: "#e6e6e6".to_string(),
+            text_strong: "#ffffff".to_string(),
+            text_muted: "#7a8395".to_string(),
+
+            accent: "#4c8dff".to_string(),
+        }
+    }
+}
+
+pub struct ThemePicker {}
+
+impl ThemePicker {
+    pub fn new() -> Self {
+        Self {}
+    }
+    pub async fn select(jar: &CookieJar<'_>, pool: &PgPool) -> Result<Theme, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        let theme_id: Uuid = match jar.get("theme") {
+            Some(value) => value.to_string().parse().unwrap_or(Uuid::nil()),
+            None => SettingsORM::select()
+                .where_("key = 'default_theme'")
+                .fetch_one(&mut *conn)
+                .await
+                .map(|v| v.value.parse())
+                .unwrap_or(Ok(Uuid::nil()))?,
+        };
+
+        let theme = if let theme_id = Uuid::nil() {
+            Theme::default()
+        } else {
+            Theme::select()
+                .where_("uid = ?")
+                .bind(theme_id)
+                .fetch_one(&mut *conn)
+                .await?
+        };
+        Ok(theme)
     }
 }
 
 // this provides the default / currently set server side base theme
 #[get("/base.css")]
-pub async fn base_theme(jar: &CookieJar<'_>, themes: &State<ThemePicker>) -> RawCss<String> {
-    RawCss(match jar.get("theme") {
-        Some(value) => themes.by_name(value.value()).await.base.to_string(),
-        None => themes.select().await.base.to_string(),
-    })
+pub async fn base_theme(jar: &CookieJar<'_>, pool: &State<PgPool>) -> RawCss<Template> {
+    let theme = ThemePicker::select(jar, pool).await.unwrap();
+    RawCss(Template::render("styles/base", context! { theme }))
 }
 
 // this provides the default / currently set server side acount pages theme
 #[get("/accounts.css")]
-pub async fn accounts_theme(jar: &CookieJar<'_>, themes: &State<ThemePicker>) -> RawCss<String> {
-    RawCss(themes.select().await.accounts.to_string())
+pub async fn accounts_theme(jar: &CookieJar<'_>, pool: &State<PgPool>) -> RawCss<Template> {
+    let theme = ThemePicker::select(jar, pool).await.unwrap();
+    RawCss(Template::render("styles/accounts", context! { theme }))
 }
 
-#[get("/<name>/base.css")]
-pub async fn get_named_base_theme(themes: &State<ThemePicker>, name: String) -> RawCss<String> {
-    RawCss(themes.by_name(&name).await.base.to_string())
+#[get("/<uid>/base.css")]
+pub async fn get_named_base_theme(pool: &State<PgPool>, uid: Uuid) -> RawCss<Template> {
+    let mut conn = pool.acquire().await.unwrap();
+    let theme = Theme::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+
+    RawCss(Template::render("styles/base", context! { theme }))
 }
 
-#[get("/<name>/accounts.css")]
-pub async fn get_named_accounts_theme(themes: &State<ThemePicker>, name: String) -> RawCss<String> {
-    RawCss(themes.by_name(&name).await.accounts.to_string())
+#[get("/<uid>/accounts.css")]
+pub async fn get_named_accounts_theme(pool: &State<PgPool>, uid: Uuid) -> RawCss<Template> {
+    let mut conn = pool.acquire().await.unwrap();
+    let theme = Theme::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+
+    RawCss(Template::render("styles/accounts", context! { theme }))
 }
 
 pub fn get_routes() -> Vec<Route> {

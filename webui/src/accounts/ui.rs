@@ -78,10 +78,44 @@ pub async fn register(
 }
 
 #[get("/dashboard")]
-pub async fn user_dashboard(guard: Guard) -> RawHtml<Template> {
-    RawHtml(Template::render("pages/accounts/dashboard", context! {}))
+pub async fn user_dashboard(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
+    let mut conn = pool.acquire().await.unwrap();
+    let user = User::select()
+        .where_("subject = ?")
+        .bind(guard.claims.sub)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+
+    RawHtml(Template::render(
+        "pages/accounts/dashboard",
+        context! { user },
+    ))
+}
+
+#[get("/profile")]
+pub async fn edit_profile(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
+    let mut conn = pool.acquire().await.unwrap();
+    let user = User::select()
+        .where_("subject = ?")
+        .bind(guard.claims.sub)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+
+    RawHtml(Template::render(
+        "pages/accounts/profile",
+        context! { user },
+    ))
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![login_page, login, register_page, register, user_dashboard]
+    routes![
+        login_page,
+        login,
+        register_page,
+        register,
+        user_dashboard,
+        edit_profile
+    ]
 }

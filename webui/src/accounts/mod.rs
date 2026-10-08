@@ -69,6 +69,7 @@ impl RegisterForm {
             fname: self.fname,
             lname: self.lname,
             email: self.email,
+            profile_image: None,
             password: Some(password),
             created: utils::unix_epoch_seconds(),
         })
@@ -84,6 +85,7 @@ pub struct User {
     fname: String,
     lname: String,
     email: String,
+    profile_image: Option<Uuid>,
     created: i64,
     password: Option<String>,
 }

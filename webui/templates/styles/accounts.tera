@@ -13,14 +13,13 @@
 .page form {
     width: 100%;
     max-width: 360px;
-    background: #ffffff;
-    border: 1px solid #d8dee8;
+    background: #151922;
+    border: 1px solid #232938;
     border-radius: 12px;
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
 /* Title */
@@ -29,13 +28,12 @@
     margin-bottom: 16px;
     font-size: 22px;
     font-weight: 600;
-    color: #111827;
 }
 
 /* Labels */
 .page label {
     font-size: 13px;
-    color: #475569;
+    color: #9aa4b2;
 }
 
 /* Inputs */
@@ -45,30 +43,30 @@
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid #cfd8e3;
-    background: #ffffff;
-    color: #1f2937;
+    border: 1px solid #2a3040;
+    background: #0f1115;
+    color: #e6e6e6;
     outline: none;
     font-size: 14px;
     transition: border 0.15s, box-shadow 0.15s;
 }
 
 .page input::placeholder {
-    color: #94a3b8;
+    color: #7a8395;
 }
 
 .page input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    border-color: #4c8dff;
+    box-shadow: 0 0 0 1px #4c8dff;
 }
 
 /* Button */
-.page button {
+.page .login-button {
     margin-top: 8px;
     padding: 10px;
     border-radius: 8px;
     border: none;
-    background: #3b82f6;
+    background: #4c8dff;
     color: white;
     font-weight: 500;
     font-size: 14px;
@@ -77,7 +75,7 @@
 }
 
 .page button:hover {
-    background: #2563eb;
+    background: #3b73d1;
 }
 
 .page button:active {
@@ -89,19 +87,18 @@
     margin-top: 8px;
     font-size: 13px;
     text-align: center;
-    color: #64748b;
+    color: #7a8395;
     text-decoration: none;
 }
 
 .page form a:hover {
-    color: #3b82f6;
+    color: #4c8dff;
 }
 
-/* Optional: subtle card hover */
+/* Optional: subtle card hover (desktop only feel) */
 @media (hover: hover) {
     .page form:hover {
-        border-color: #c2cfde;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        border-color: #2f3650;
     }
 }
 
@@ -111,7 +108,7 @@
 
 .oidc-section {
     margin-top: 16px;
-    border-top: 1px solid #d8dee8;
+    border-top: 1px solid #232938;
     padding-top: 12px;
 }
 
@@ -120,7 +117,7 @@
     width: 100%;
     background: transparent;
     border: none;
-    color: #475569;
+    color: #9aa4b2;
     font-size: 13px;
     display: flex;
     justify-content: space-between;
@@ -131,7 +128,7 @@
 }
 
 .oidc-toggle:hover {
-    color: #111827;
+    color: #e6e6e6;
 }
 
 /* Chevron animation */
@@ -161,16 +158,56 @@
     display: block;
     padding: 8px 10px;
     border-radius: 8px;
-    background: #ffffff;
-    border: 1px solid #cfd8e3;
-    color: #334155;
+    background: #0f1115;
+    border: 1px solid #2a3040;
+    color: #c9d1d9;
     text-decoration: none;
     font-size: 14px;
     transition: background 0.15s, border 0.15s, color 0.15s;
 }
 
 .oidc-provider:hover {
-    background: #f8fafc;
-    border-color: #3b82f6;
-    color: #111827;
+    background: #161b26;
+    border-color: #4c8dff;
+    color: #ffffff;
 }
+
+.password-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .password-wrapper input {
+        width: 100%;
+        box-sizing: border-box;
+        padding-right: 42px;
+    }
+
+    .password-toggle, .password-toggle2 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 42px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+        margin: 0;
+
+        background: transparent;
+        border: 0;
+        color: #666;
+        cursor: pointer;
+    }
+
+    .password-toggle:hover, .password-toggle2:hover {
+        color: #222;
+    }
+
+    .eye-icon, .eye-icon2 {
+        width: 20px;
+        height: 20px;
+    }

@@ -1,7 +1,7 @@
 use crate::devices::DeviceModelORM;
 use crate::library::{AssetORM, ObjectStore};
-use crate::settings::materials::FilamentORM;
 use crate::settings::DeviceModelInfo;
+use crate::settings::materials::FilamentORM;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::response::content::RawHtml;
@@ -13,13 +13,19 @@ use uuid::Uuid;
 pub async fn devices(pool: &State<PgPool>, store: &State<ObjectStore>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     let mut devices = Vec::new();
-    
+
     for orm in DeviceModelORM::select()
         .limit(20)
         .fetch_all(&mut *conn)
         .await
-        .unwrap().into_iter() {
-            devices.push(DeviceModelInfo::from_device_model_orm(pool, store, orm).await.unwrap());
+        .unwrap()
+        .into_iter()
+    {
+        devices.push(
+            DeviceModelInfo::from_device_model_orm(pool, store, orm)
+                .await
+                .unwrap(),
+        );
     }
 
     RawHtml(Template::render(
@@ -42,7 +48,9 @@ pub async fn device(
         .await
         .unwrap();
 
-    let info = DeviceModelInfo::from_device_model_orm(pool, store, device).await.unwrap();
+    let info = DeviceModelInfo::from_device_model_orm(pool, store, device)
+        .await
+        .unwrap();
     println!("info: {:?}", info);
     RawHtml(Template::render(
         "pages/settings/devlibrary/device",
@@ -53,7 +61,7 @@ pub async fn device(
 #[get("/materials/filaments?<page>")]
 pub async fn filaments(pool: &State<PgPool>, page: Option<usize>) -> RawHtml<Template> {
     let page_size = 100;
-    let page = (page.unwrap_or(1)-1);
+    let page = (page.unwrap_or(1) - 1);
     let mut conn = pool.acquire().await.unwrap();
     let filaments = FilamentORM::select()
         .where_("colour is not null and colour != ''")
