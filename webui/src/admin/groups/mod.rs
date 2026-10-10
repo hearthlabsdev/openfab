@@ -2,9 +2,9 @@ pub mod forms;
 pub mod ui;
 
 use crate::accounts::User;
-use serde::{Serialize, Deserialize};
 use ormlite::Model;
 use ormlite::model::{Join, JoinMeta};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]

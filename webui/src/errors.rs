@@ -2,25 +2,43 @@ use crate::discovery::AdvertiseCmd;
 use openfab::discovery::IppDiscoveryError;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
+use uuid::Uuid;
 
 #[derive(Debug, Error)]
 pub enum OpenFabErr {
     #[error("failed to send advertisement command: {0}")]
     AdvertiseErr(#[from] SendError<AdvertiseCmd>),
+
     #[error("failed to discover printers: {0}")]
     IppDiscovery(#[from] IppDiscoveryError),
+
     #[error("database error: {0}")]
     OrmLite(#[from] ormlite::Error),
+
     #[error("sql error: {0}")]
     SQLXErr(#[from] ormlite::SqlxError),
+
     #[error("Minio error: {0}")]
     MinioErr(#[from] minio_rsc::error::Error),
+
     #[error("Minio value error: {0}")]
     ValueErr(#[from] minio_rsc::error::ValueError),
+
     #[error("secret fetch error: {0}")]
     SecretFetchErr(#[from] secret_ref::SecretError),
+
     #[error("authentication failed: {0}")]
     AuthErr(#[from] AuthErr),
+
+    #[error("driver error: {0}")]
+    DriverError(#[from] openfab_drivers::errors::DriverError),
+
+    #[error("driver config error: {0}")]
+    DriverConfigError(#[from] openfab_drivers::errors::ConfigError),
+
+    #[error("missing sender for device: {0}")]
+    MissingSender(Uuid),
+
     #[error("failed to parse string to uuid: {0}")]
     UuidParseErr(#[from] uuid::Error),
 }

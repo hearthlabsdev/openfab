@@ -4,8 +4,10 @@
 //! 3. Device selection is an internal policy decision
 
 use openfab_bambu::BambuDriver;
+use openfab_drivers::events::EventType;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
+use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::config::Config;
 use rocket::data::{Limits, ToByteUnit};
@@ -18,13 +20,16 @@ use rocket_oidc::{
     auth::AuthState, client::LocalClient, config::OIDCConfig, config::WorkingConfig,
     sign::OidcSigner,
 };
+use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+use tokio::sync::broadcast;
 use webui::VirtualPrinter;
 use webui::accounts::AccountConfig;
+use webui::devices::{DeviceConfigORM, DeviceORM};
 use webui::library::ObjectStoreConfig;
-
+use webui::setup::RuntimeManager;
 #[macro_use]
 extern crate rocket;
 
@@ -55,6 +60,9 @@ async fn rocket() -> _ {
         limits: custom_limits,
         ..Config::debug_default()
     };
+    let pool = PgPool::connect("postgres://openfab:password@localhost:5432/openfab")
+        .await
+        .unwrap();
 
     let store_config = ObjectStoreConfig {
         endpoint: "localhost:3900".to_string(),
@@ -78,15 +86,21 @@ async fn rocket() -> _ {
         post_login: Some("/accounts/dashboard".into()),
     };
 
-    let mut runtime = NativeRuntime::new();
+    let runtime = NativeRuntime::new();
+    let mut manager = RuntimeManager::new(runtime);
     let bambu = BambuDriver::new();
-    runtime.load(bambu).await.unwrap();
+    manager
+        .load_driver(bambu)
+        .await
+        .expect("failed to load drivers");
+    manager
+        .load_devices(&pool)
+        .await
+        .expect("failed to load drivers");
 
     let store = store_config.object_store().await.unwrap();
     let accounts = AccountConfig::default();
-    let pool = PgPool::connect("postgres://openfab:password@localhost:5432/openfab")
-        .await
-        .unwrap();
+
     let rocket = rocket::custom(&config)
         .register("/", catchers![unauthorized])
         .mount("/", routes![index])
@@ -105,7 +119,7 @@ async fn rocket() -> _ {
         .manage(tx)
         .manage(accounts)
         .manage(pool)
-        .manage(runtime)
+        .manage(manager)
         .manage(vec![oidc.clone()])
         .manage(store)
         .mount("/static", FileServer::from("static"));

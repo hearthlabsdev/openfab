@@ -9,6 +9,7 @@ pub mod devices;
 pub mod library;
 pub mod prints;
 pub mod settings;
+pub mod setup;
 pub mod ui;
 
 pub mod discovery;

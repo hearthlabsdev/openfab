@@ -4,8 +4,8 @@ pub mod permissions;
 pub mod users;
 
 use ormlite::Model;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 #[ormlite(table = "user_activaton_code")]

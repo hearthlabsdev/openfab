@@ -29,7 +29,7 @@
 <form
     class="profile-edit-form"
     method="post"
-    action="/settings/profile"
+    action="/accounts/profile"
     enctype="multipart/form-data"
 >
 

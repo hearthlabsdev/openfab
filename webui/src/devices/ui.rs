@@ -2,17 +2,27 @@ use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
 use crate::devices::{DeviceConfigORM, DeviceORM};
 use crate::prints::{PrintJobORM, PrintQueueORM};
+use crate::setup::NativeManager;
 use crate::utils::{Guard, unix_epoch_seconds};
 
+use openfab_drivers::events::Event;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
 use openfab_drivers::utils::config_to_json;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::State;
+use rocket::futures::SinkExt;
+use rocket::futures::StreamExt;
+use rocket::futures::future::FutureExt;
 use rocket::response::content::RawHtml;
 use rocket::{Route, form::Form, get, post, response::Redirect, routes};
 use rocket_dyn_templates::{Template, context};
+use rocket_ws::{Channel, Stream, WebSocket};
+use std::sync::Arc;
+use std::task::Poll;
+use tokio::sync::Mutex;
+use tokio::sync::broadcast::{Receiver, Sender};
 use uuid::Uuid;
 
 use std::collections::HashMap;
@@ -29,7 +39,7 @@ pub async fn index(pool: &State<PgPool>) -> RawHtml<Template> {
 #[get("/create")]
 async fn create_page(
     guard: Guard,
-    rt: &State<NativeRuntime>,
+    rt: &State<NativeManager>,
     pool: &State<PgPool>,
 ) -> RawHtml<Template> {
     // within this current model one of two things needs to be the case:
@@ -52,7 +62,7 @@ async fn create_page(
 #[post("/create", data = "<form>")]
 async fn create(
     guard: Guard,
-    rt: &State<NativeRuntime>,
+    rt: &State<NativeManager>,
     pool: &State<PgPool>,
     form: Form<HashMap<String, String>>,
 ) -> Redirect {
@@ -96,6 +106,7 @@ async fn create(
             device: device.uid,
             key,
             value,
+            updated_at: unix_epoch_seconds(),
         };
         config.insert(&mut *conn).await.unwrap();
     }
@@ -148,7 +159,11 @@ pub async fn device_queue(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> 
 }
 
 #[get("/<uid>/configuration")]
-pub async fn device_config(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
+pub async fn device_config(
+    rt: &State<NativeManager>,
+    uid: Uuid,
+    pool: &State<PgPool>,
+) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
     let device = DeviceORM::select()
@@ -158,9 +173,17 @@ pub async fn device_config(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template>
         .await
         .unwrap();
 
+    let drivers = rt.index_drivers().await.unwrap();
+    let configs = DeviceConfigORM::select()
+        .where_("device = ?")
+        .bind(uid)
+        .fetch_all(&mut *conn)
+        .await
+        .unwrap();
+
     RawHtml(Template::render(
         "pages/devices/configuration",
-        context! { device },
+        context! { device, drivers, configs },
     ))
 }
 
@@ -193,6 +216,49 @@ pub async fn device_files(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> 
         .unwrap();
 
     RawHtml(Template::render("pages/devices/files", context! { device }))
+}
+
+#[get("/<uid>/status")]
+pub async fn live_status(
+    pool: &State<PgPool>,
+    manager: &State<NativeManager>,
+    socket: WebSocket,
+    uid: Uuid,
+) -> Channel<'static> {
+    // fetch information on the device to get serial number
+    let mut conn = pool.acquire().await.unwrap();
+    let device = DeviceORM::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await
+        .expect("failed to query device");
+
+    // grab the serial number
+    let serial = device.serial;
+
+    let mut rx = manager.subscribe(device.uid).expect("failed to subscribe to broadcast");
+    // lookup the broadcast receiver assigned to this serial number
+    socket.channel(move |mut stream| {
+        Box::pin(async move {
+            loop {
+                // received next message to see if there's an incoming command
+                if let Some(Some(message)) = stream.next().now_or_never() {
+                    // handle message
+                }
+
+                let event = rx.recv().await.unwrap();
+                let _ = stream
+                    .send(
+                        serde_json::to_string(&event)
+                            .expect("failed to serialize event")
+                            .into(),
+                    )
+                    .await;
+            }
+            Ok(())
+        })
+    })
 }
 
 pub fn get_routes() -> Vec<Route> {

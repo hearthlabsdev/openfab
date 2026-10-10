@@ -2,6 +2,7 @@
 pub mod forms;
 pub mod ui;
 
+use crate::utils::unix_epoch_seconds;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
 use openfab_drivers::utils::config_to_json;
@@ -102,10 +103,11 @@ impl DeviceORM {
 #[ormlite(table = "device_configs")]
 pub struct DeviceConfigORM {
     #[ormlite(primary_key)]
-    uid: Uuid,
-    device: Uuid,
-    key: String,
-    value: String,
+    pub uid: Uuid,
+    pub device: Uuid,
+    pub key: String,
+    pub value: String,
+    pub updated_at: i64,
 }
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
@@ -168,4 +170,46 @@ pub struct PrinterDiscoveryEventORM {
     pub success: bool,
     /// error message to record if verification fails.
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceLogORM {
+    pub uid: Uuid,
+    pub device: Uuid,
+    pub severity: String,
+    pub date: i64,
+    pub message_type: Option<String>,
+    pub message: String,
+}
+
+impl DeviceLogORM {
+    fn define(
+        device: Uuid,
+        severity: String,
+        message: String,
+        message_type: Option<String>,
+    ) -> Self {
+        Self {
+            uid: Uuid::new_v4(),
+            device,
+            severity,
+            message_type,
+            date: unix_epoch_seconds(),
+            message,
+        }
+    }
+    pub fn info(device: Uuid, message: String, message_type: Option<String>) -> Self {
+        Self::define(device, "info".into(), message, message_type)
+    }
+    pub fn error(device: Uuid, message: String, message_type: Option<String>) -> Self {
+        Self::define(device, "error".into(), message, message_type)
+    }
+
+    pub fn log(device: Uuid, message: String, message_type: Option<String>) -> Self {
+        Self::define(device, "log".into(), message, message_type)
+    }
+
+    pub fn warn(device: Uuid, message: String, message_type: Option<String>) -> Self {
+        Self::define(device, "warn".into(), message, message_type)
+    }
 }

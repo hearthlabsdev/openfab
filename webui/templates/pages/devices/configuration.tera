@@ -1,16 +1,250 @@
 {% extends "layouts/device" %}
 
-{% block title %}
-    {{ device.name }} — Device Configuration
-{% endblock title %}
-
 {% block content %}
 
-<div class="device-page">
+<div class="profile-edit page">
 
-    <h1>Device Configuration</h1>
+    {# =========================================================
+       Page Header
+       ========================================================= #}
 
-    {# Device-specific queue goes here. #}
+    <div class="profile-edit-header">
+        <div>
+            <h1 class="profile-edit-title">
+                Edit Device Configuration
+            </h1>
+
+            <p class="profile-edit-subtitle">
+                Update configuration settings for {{ device.name }}
+            </p>
+        </div>
+    </div>
+
+
+    {# =========================================================
+       Device Form
+       ========================================================= #}
+
+    <form
+        class="profile-edit-form"
+        method="post"
+        action="/devices/{{ device.uid }}/configuration/edit"
+    >
+
+        {# ---------------------------------------------------------
+           General Settings
+           --------------------------------------------------------- #}
+
+        <section class="profile-edit-section">
+
+            <div class="profile-edit-section-header">
+                <h2>General Information</h2>
+                <p>
+                    Update the human-readable name and operational settings for this device.
+                </p>
+            </div>
+
+            <div class="profile-edit-section-body">
+
+                <div class="profile-edit-fields">
+
+                    <div class="form-group">
+                        <label for="name">
+                            Device Name
+                        </label>
+                        <input
+                            id="name"
+                            name="name"
+                            type="text"
+                            value="{{ device.name }}"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="queue">
+                            Queue UUID
+                        </label>
+                        <input
+                            id="queue"
+                            name="queue"
+                            type="text"
+                            value="{{ device.queue | default() }}"
+                            placeholder="Optional queue UUID"
+                        >
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input
+                                type="checkbox"
+                                name="enabled"
+                                {% if device.enabled %}checked{% endif %}
+                            >
+                            <span>Enable for job dispatch</span>
+                        </label>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        {# ---------------------------------------------------------
+           Device Metadata (Read-Only)
+           --------------------------------------------------------- #}
+
+        <section class="profile-edit-section">
+
+            <div class="profile-edit-section-header">
+                <h2>Driver & Hardware Info</h2>
+                <p>
+                    Hardware identifiers and driver versions associated with this printer.
+                </p>
+            </div>
+
+            <div class="profile-edit-section-body">
+
+                <div class="profile-edit-fields">
+
+                    <div class="form-group">
+                        <label>Serial Number</label>
+                        <input type="text" value="{{ device.serial }}" disabled class="input-disabled">
+                    </div>
+
+                    {% if drivers is defined and drivers | length > 0 %}
+                        <div class="form-group">
+
+                        <label for="driver">Driver *</label>
+
+                        <select
+                            id="driver"
+                            name="driver"
+                            required
+                        >
+                            <option value="" disabled selected>
+                                Select a driver
+                            </option>
+
+                            {% for driver in drivers %}
+
+                            <option value="{{ driver.id }}" {% if driver.id == device.driver_id %}selected{% endif %}>
+                                {{ driver.name }} ({{ driver.version }})
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+                    {% else %}
+
+                    <div class="form-group">
+                        <label>Driver ID</label>
+                        <input type="text" value="{{ device.driver_id }}" disabled class="input-disabled">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Driver Version</label>
+                        <input type="text" value="{{ device.driver_version }}" disabled class="input-disabled">
+                    </div>
+
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </section>
+
+        <section class="profile-edit-section">
+
+            <div class="profile-edit-section-header">
+                <h2>Driver Configuration</h2>
+                <p>
+                    Advanced Driver Specific Configuration
+                </p>
+            </div>
+
+            <div class="profile-edit-section-body">
+
+                <div class="profile-edit-fields">
+
+                    {% if configs is defined %}
+                        
+                        <table class="result-table">
+                            <thead class="result-table__head">
+                                <tr class="result-table__row">
+                                    <th class="result-table__header result-table__header--job">
+                                        Option Name
+                                    </th>
+                                    <th class="result-table__header result-table__header--user">
+                                        Value
+                                    </th>
+                                    <th>
+                                        Last Updated
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="result-table__body">
+                            
+                                {% for config in configs %}
+                                    <tr class="result-table__row form-group">
+                                        <td class="result-table__cell">
+                                            {{ config.key }}
+                                        </td>
+                                        <td class="result-table__cell">
+                                            
+                                            <input type="text" id="config_{{ config.key }}" name="{{ config.key }}" value="{{ config.value }}"/>
+                                        </td>
+                                        <td>
+                                            <time
+                                                class="result-table__time local-time"
+                                                datetime="{{ config.updated_at }}"
+                                                data-unix="{{ config.updated_at }}"
+                                            >
+                                                {{ config.updated_at }}
+                                            </time>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    {% else %}
+                        <p>No Advanced Configuration Options Available</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </section>
+
+        {# =========================================================
+           Form Actions
+           ========================================================= #}
+
+        <div class="profile-edit-actions">
+
+            <a
+                href="/devices/{{ device.uid }}"
+                class="btn btn-secondary"
+            >
+                Cancel
+            </a>
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Save Changes
+            </button>
+
+        </div>
+
+    </form>
 
 </div>
 
