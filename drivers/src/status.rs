@@ -1,11 +1,11 @@
 //! # Printer Status and Telemetry Module
 //!
 //! This module provides core, vendor-agnostic data structures for representing 3D printer
-//! telemetry, job progress, and upload status. 
+//! telemetry, job progress, and upload status.
 //!
-//! To support brand-specific features (such as Prusa-specific storage/transfers or Bambu-specific 
-//! AMS states) without introducing generic parameters into application-level event loops, 
-//! [`PrinterStatus`] encapsulates unknown or vendor-specific fields within a private, flattened 
+//! To support brand-specific features (such as Prusa-specific storage/transfers or Bambu-specific
+//! AMS states) without introducing generic parameters into application-level event loops,
+//! [`PrinterStatus`] encapsulates unknown or vendor-specific fields within a private, flattened
 //! hash map while offering type-safe constructor validation via the [`Extensions`] trait.
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -67,11 +67,11 @@ pub struct PrinterStatus {
 }
 
 impl PrinterStatus {
-    /// Creates a new [`PrinterStatus`] by combining core temperature telemetry with a 
+    /// Creates a new [`PrinterStatus`] by combining core temperature telemetry with a
     /// strongly-typed vendor extension struct.
     ///
     /// # Errors
-    /// Returns a [`serde_json::Error`] if the provided `extra` extension struct fails 
+    /// Returns a [`serde_json::Error`] if the provided `extra` extension struct fails
     /// to serialize into a valid JSON object map.
     pub fn with_extras<E: Extensions>(
         bed_temp: f64,
@@ -99,7 +99,6 @@ impl PrinterStatus {
 /// Information tracking the progress and timing of an active print job.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobStatus {
-
     /// Estimated time remaining until job completion, measured in seconds.
     pub time_remaining_secs: i32,
     /// Current progress of the print job represented as a percentage (0 to 100).
@@ -111,18 +110,21 @@ pub struct JobStatus {
 }
 
 impl JobStatus {
-    pub fn with_extras<E: Extensions>(time_remaining_secs: i32, progress: i32, gcode_state: Option<String>, extra: E) -> Result<Self, serde_json::Error> {
+    pub fn with_extras<E: Extensions>(
+        time_remaining_secs: i32,
+        progress: i32,
+        gcode_state: Option<String>,
+        extra: E,
+    ) -> Result<Self, serde_json::Error> {
         let val = serde_json::to_value(extra)?;
         let mut extras: HashMap<String, Value> = serde_json::from_value(val)?;
         extras.retain(|_, v| !v.is_null());
-        Ok(
-            Self {
-                time_remaining_secs,
-                progress,
-                gcode_state,
-                extras
-            }
-        )
+        Ok(Self {
+            time_remaining_secs,
+            progress,
+            gcode_state,
+            extras,
+        })
     }
 }
 
