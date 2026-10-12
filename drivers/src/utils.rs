@@ -1,8 +1,8 @@
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-use crate::errors::ConfigError;
 use crate::config::ConfigSchema;
+use crate::errors::ConfigError;
 
 pub fn config_to_json(
     schema: &ConfigSchema,
@@ -23,35 +23,23 @@ pub fn config_to_json(
         };
 
         let json_value = match field.field_type.as_str() {
-            "text" | "password" => {
-                Value::String(value.clone())
-            }
+            "text" | "password" => Value::String(value.clone()),
 
-            "number" => {
-                Value::Number(
-                    value
-                        .parse::<u64>()
-                        .map_err(|_| {
-                            ConfigError::InvalidField(field.name.clone())
-                        })?
-                        .into()
-                )
-            }
+            "number" => Value::Number(
+                value
+                    .parse::<u64>()
+                    .map_err(|_| ConfigError::InvalidField(field.name.clone()))?
+                    .into(),
+            ),
 
-            "boolean" => {
-                Value::Bool(
-                    value
-                        .parse::<bool>()
-                        .map_err(|_| {
-                            ConfigError::InvalidField(field.name.clone())
-                        })?
-                )
-            }
+            "boolean" => Value::Bool(
+                value
+                    .parse::<bool>()
+                    .map_err(|_| ConfigError::InvalidField(field.name.clone()))?,
+            ),
 
             other => {
-                return Err(ConfigError::UnknownFieldType(
-                    other.to_string()
-                ));
+                return Err(ConfigError::UnknownFieldType(other.to_string()));
             }
         };
 
@@ -65,9 +53,7 @@ pub fn json_to_config(
     schema: &ConfigSchema,
     json: &Value,
 ) -> Result<HashMap<String, String>, ConfigError> {
-    let object = json.as_object().ok_or_else(|| {
-        ConfigError::InvalidConfig
-    })?;
+    let object = json.as_object().ok_or_else(|| ConfigError::InvalidConfig)?;
 
     let mut form = HashMap::new();
 
@@ -84,37 +70,23 @@ pub fn json_to_config(
         };
 
         let form_value = match field.field_type.as_str() {
-            "text" | "password" => {
-                value
-                    .as_str()
-                    .ok_or_else(|| {
-                        ConfigError::InvalidField(field.name.clone())
-                    })?
-                    .to_string()
-            }
+            "text" | "password" => value
+                .as_str()
+                .ok_or_else(|| ConfigError::InvalidField(field.name.clone()))?
+                .to_string(),
 
-            "number" => {
-                value
-                    .as_u64()
-                    .ok_or_else(|| {
-                        ConfigError::InvalidField(field.name.clone())
-                    })?
-                    .to_string()
-            }
+            "number" => value
+                .as_u64()
+                .ok_or_else(|| ConfigError::InvalidField(field.name.clone()))?
+                .to_string(),
 
-            "boolean" => {
-                value
-                    .as_bool()
-                    .ok_or_else(|| {
-                        ConfigError::InvalidField(field.name.clone())
-                    })?
-                    .to_string()
-            }
+            "boolean" => value
+                .as_bool()
+                .ok_or_else(|| ConfigError::InvalidField(field.name.clone()))?
+                .to_string(),
 
             other => {
-                return Err(ConfigError::UnknownFieldType(
-                    other.to_string(),
-                ));
+                return Err(ConfigError::UnknownFieldType(other.to_string()));
             }
         };
 

@@ -1,6 +1,7 @@
-use crate::errors::PrintError;
 use crate::PrinterStatus;
-use serde::{Serialize, Deserialize};
+use crate::errors::PrintError;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrintInfo {
@@ -21,6 +22,8 @@ pub enum EventType {
     PrintResumed,
     PrintStopped,
     FileUploaded,
+    /// used to indicate any event when registering a callback.
+    Any,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,4 +36,19 @@ pub enum Event {
     PrintStopped(PrintInfo, Option<PrintError>),
     FileUploaded(FileInfo),
     StatusUpdate(PrinterStatus),
+    Err(String),
+}
+
+pub struct EventSet {
+    pub events: Vec<Event>,
+}
+pub trait EventHandler {
+    type Status;
+    fn process(&mut self, status: Self::Status) -> Vec<Event>;
+}
+
+impl<E: EventHandler> From<(&mut E, E::Status)> for EventSet {
+    fn from((handler, status): (&mut E, E::Status)) -> EventSet {
+        EventSet { events: handler.process(status) }
+    }
 }

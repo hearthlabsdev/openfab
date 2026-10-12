@@ -1,12 +1,14 @@
 //! Module to provide a native driver runtime environment.
 
 use std::collections::HashMap;
-use std::sync::{Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::config::{DriverMeta};
+use crate::Callback;
 use crate::DeviceDriver;
+use crate::config::DriverMeta;
 use crate::errors::DriverError;
+use crate::events::EventType;
 use crate::runtime::{DriverHandle, DriverRuntime};
 
 pub struct NativeRuntime {
@@ -54,9 +56,7 @@ impl DriverRuntime for NativeRuntime {
     }
 
     async fn unload(&mut self, id: &str) -> Result<(), DriverError> {
-        self.drivers
-            .remove(id)
-            .ok_or(DriverError::DriverNotFound)?;
+        self.drivers.remove(id).ok_or(DriverError::DriverNotFound)?;
 
         Ok(())
     }

@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DriverError {
@@ -11,6 +11,9 @@ pub enum DriverError {
 
     #[error("device error: {0}")]
     Device(String),
+
+    #[error("device not found: {0}")]
+    DeviceNotFound(String),
 
     #[error("unsupported operation: {0}")]
     Unsupported(String),
@@ -29,6 +32,12 @@ pub enum DriverError {
 
     #[error("error occured in driver runtime")]
     Runtime(String),
+
+    #[error("failed to get status: {0}")]
+    StatusErr(#[from] StatusErr),
+
+    #[error("{0}")]
+    Custom(String),
 }
 
 #[derive(Debug, Error)]
@@ -53,6 +62,14 @@ pub enum ConfigError {
 
     #[error("not an object")]
     InvalidConfig,
+}
+
+#[derive(Debug, Error)]
+pub enum StatusErr {
+    #[error("missing bed temperature")]
+    MissingBedTemp,
+    #[error("missing nozzle temperature")]
+    MissingNozzleTemp,
 }
 
 /// serialization and deserialization may be required to pass the wasm boundary in the future.

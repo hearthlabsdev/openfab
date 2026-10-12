@@ -1,12 +1,9 @@
 //! This module provide structures for the driver to advertise the printers capabilities.
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub mod capabilities {
 
-    pub const REQUIRED_CAPABILITIES: &[&str] = &[
-        PRINTER_INFO,
-        PRINTER_STATUS,
-    ];
+    pub const REQUIRED_CAPABILITIES: &[&str] = &[PRINTER_INFO, PRINTER_STATUS];
 
     // Printer / machine
     pub const PRINTER_INFO: &str = "printer.info";

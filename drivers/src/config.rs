@@ -1,12 +1,11 @@
+use crate::capabilities::DriverCapabilities;
+use crate::errors::DriverError;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use uuid::Uuid;
 use tokio::io::AsyncRead;
-use crate::capabilities::DriverCapabilities;
-use crate::errors::DriverError;
-
+use uuid::Uuid;
 
 pub type DriverResult<T> = Result<T, DriverError>;
 

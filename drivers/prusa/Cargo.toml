@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+openfab-drivers = { path = "../" }
+async-trait = "0.1.92"
+tokio = "1.53.2"
+prusa-rs = { git = "https://github.com/vivianlazaras/prusa-rs" }
