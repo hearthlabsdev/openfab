@@ -100,9 +100,9 @@ impl PrinterStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobStatus {
     /// Estimated time remaining until job completion, measured in seconds.
-    pub time_remaining_secs: i32,
+    pub time_remaining_secs: i64,
     /// Current progress of the print job represented as a percentage (0 to 100).
-    pub progress: i32,
+    pub progress: i64,
 
     pub gcode_state: Option<String>,
     /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
@@ -111,8 +111,8 @@ pub struct JobStatus {
 
 impl JobStatus {
     pub fn with_extras<E: Extensions>(
-        time_remaining_secs: i32,
-        progress: i32,
+        time_remaining_secs: i64,
+        progress: i64,
         gcode_state: Option<String>,
         extra: E,
     ) -> Result<Self, serde_json::Error> {

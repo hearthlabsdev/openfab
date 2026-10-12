@@ -4,9 +4,9 @@ use bambu_rs::core::model::Model;
 
 use openfab_drivers::capabilities::DriverCapabilities;
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
-use openfab_drivers::errors::{DriverError, StatusErr};
-use openfab_drivers::events::{EventType, Event};
-use openfab_drivers::status::PrinterStatus;
+use openfab_drivers::errors::{DriverError, StatusErr, JobStatusErr};
+use openfab_drivers::events::{EventType, EventHandler, Event};
+use openfab_drivers::status::{PrinterStatus, JobStatus};
 use openfab_drivers::utils::get_value_type;
 use openfab_drivers::{Callback, CallbackId, DeviceDriver};
 use serde::{Deserialize, Serialize};
@@ -18,18 +18,15 @@ use tokio::task::JoinHandle;
 use tokio::sync::broadcast::{Sender, Receiver, channel};
 use std::time::Duration;
 use bambu_rs::core::status::PrinterStatus as BambuStatus;
+use bambu_rs::core::status::{HmsAlert, Filament, LightReport, DeviceError, Ipcam};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BambuJobExtensions {
-    pub gcode_state: Option<String>,
     pub print_error: Option<i64>,
-    
     pub layer_num: Option<i64>,
     pub total_layer_num: Option<i64>,
-
     pub stg_cur: Option<i64>,
     pub stage: Option<String>,
-
     pub gcode_file: Option<String>,
     pub gcode_file_prepare_percent: Option<i64>,
     pub mc_print_stage: Option<i64>,
@@ -37,14 +34,39 @@ pub struct BambuJobExtensions {
     pub mc_print_line_number: Option<i64>,
     pub print_type: Option<String>,
     pub stg: Vec<i64>,
-    
+}
+
+impl From<&BambuStatus> for BambuJobExtensions {
+    fn from(status: &BambuStatus) -> BambuJobExtensions {
+        BambuJobExtensions {
+            print_error: status.print_error,
+            layer_num: status.layer_num,
+            total_layer_num: status.total_layer_num,
+            stg_cur: status.stg_cur,
+            stage: status.stage.clone(),
+            gcode_file: status.gcode_file.clone(),
+            gcode_file_prepare_percent: status.gcode_file_prepare_percent.clone(),
+            mc_print_stage: status.mc_print_stage,
+            mc_print_sub_stage: status.mc_print_sub_stage,
+            mc_print_line_number: status.mc_print_line_number,
+            print_type: status.print_type.clone(),
+            stg: status.stg.clone(),
+        }
+    }
+} 
+
+pub fn try_from_job_status(status: &BambuStatus) -> Result<JobStatus, JobStatusErr> {
+    Ok(JobStatus::with_extras(
+        status.remaining_time_min.ok_or(JobStatusErr::MissingTimeRemaining)? * 60, 
+        status.mc_percent.ok_or(JobStatusErr::MissingProgress)?,
+        status.gcode_state.clone(),
+        BambuJobExtensions::from(status),
+    )?)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BambuExtensions {
-    
+pub struct BambuExtensions { 
     pub error: Option<DeviceError>,
-    
     /* used in base JobStatus fields
     pub mc_percent: Option<i64>,
     
@@ -77,21 +99,60 @@ pub struct BambuExtensions {
     pub profile_id: Option<String>,
     pub sequence_id: Option<String>,
     pub lifecycle: Option<String>,
-    pub ams: Option<Ams>,
-    pub upgrade: Option<Upgrade>,
-    pub online: Option<Online>,
-    pub upload: Option<Upload>,
+    
+    // I may add this functionality in later, but not now
+    //pub ams: Option<Ams>,
+    //pub upgrade: Option<Upgrade>,
+    //pub online: Option<Online>,
+    //pub upload: Option<Upload>,
     pub hms: Vec<HmsAlert>,
 }
 
+impl From<BambuStatus> for BambuExtensions {
+    fn from(status: BambuStatus) -> BambuExtensions {
+        BambuExtensions {
+            error: status.error,
+            home_flag: status.home_flag,
+    
+            cooling_fan_speed: status.cooling_fan_speed,
+            spd_lvl: status.spd_lvl,
+            subtask_name: status.subtask_name,
+            filament: status.filament,
+            lights: status.lights,
+            ipcam: status.ipcam,
+            big_fan1_speed: status.big_fan1_speed,
+            big_fan2_speed: status.big_fan2_speed,
+            heatbreak_fan_speed: status.heatbreak_fan_speed,
+            fan_gear: status.fan_gear,
+            spd_mag: status.spd_mag,
+    
+            nozzle_diameter: status.nozzle_diameter,
+            nozzle_type: status.nozzle_type,
+            sdcard: status.sdcard,
+            ams_status:status.ams_status,
+            ams_rfid_status: status.ams_rfid_status,
+            hw_switch_state: status.hw_switch_state,
+            wifi_signal: status.wifi_signal,
+            task_id: status.task_id,
+            subtask_id: status.subtask_id,
+            project_id: status.project_id,
+            profile_id: status.profile_id,
+            sequence_id: status.sequence_id,
+            lifecycle: status.lifecycle,
+            hms: status.hms,
+        }
+    }
+}
+
 pub fn try_from_device_status(status: BambuStatus) -> Result<PrinterStatus, StatusErr> {
-    Ok(PrinterStatus {
-        bed_temp: status.bed_temper.ok_or(StatusErr::MissingBedTemp)?,
-        target_bed_temp: status.bed_target,
-        nozzle_temp: status.nozzle_temper.ok_or(StatusErr::MissingNozzleTemp)?,
-        target_nozzle_temp: status.nozzle_target,
-        chamber_temp: status.chamber_temper_raw,
-    })
+    Ok(PrinterStatus::with_extras(
+        status.bed_temper.ok_or(StatusErr::MissingBedTemp)?,
+        status.bed_target,
+        status.nozzle_temper.ok_or(StatusErr::MissingNozzleTemp)?,
+        status.nozzle_target,
+        status.chamber_temper_raw,
+        BambuExtensions::from(status),
+    )?)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,9 +200,9 @@ impl Reporter {
 
 impl EventHandler for Reporter {
     type Status = BambuStatus;
-    fn process(status: Self::Status) -> Vec<Event> {
+    fn process(&mut self, status: Self::Status) -> Vec<Event> {
         let mut events = Vec::new();
-        if status != last {
+        if status != self.last {
             
         }
         events

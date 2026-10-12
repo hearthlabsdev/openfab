@@ -104,6 +104,18 @@ pub enum StatusErr {
     /// The required print nozzle temperature telemetry was missing from the payload.
     #[error("missing nozzle temperature")]
     MissingNozzleTemp,
+    #[error("failed to serialize extras: {0}")]
+    Serialization(#[from] serde_json::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum JobStatusErr {
+    #[error("missing print job time remaining estimate")]
+    MissingTimeRemaining,
+    #[error("missing print job progress")]
+    MissingProgress,
+    #[error("failed to serialize extras: {0}")]
+    Serialization(#[from] serde_json::Error),
 }
 
 /// Specialized print job failure errors.
