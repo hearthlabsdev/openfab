@@ -1,0 +1,110 @@
+{% extends "layouts/admin" %}
+
+{% block title %}Admin - Activation Codes{% endblock title %}
+
+{% block content %}
+
+    <h1>Admin - Activation Codes</h1>
+
+    <p>
+        This is the activation code management page. Here you can view, 
+        invalidate, and delete user activation codes.
+    </p>
+
+    <h2>Existing Activation Codes</h2>
+
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+                <th class="result-table__header result-table__header--code">
+                    Code
+                </th>
+
+                <th class="result-table__header result-table__header--creator">
+                    Creator
+                </th>
+
+                <th class="result-table__header result-table__header--account">
+                    Account
+                </th>
+
+                <th class="result-table__header result-table__header--status">
+                    Status
+                </th>
+
+                <th class="result-table__header result-table__header--actions">
+                    Actions
+                </th>
+            </tr>
+        </thead>
+
+        <tbody class="result-table__body">
+            {% if activation_codes is defined and activation_codes | length > 0 %}
+                {% for code in activation_codes %}
+                    <tr class="result-table__row">
+
+                        <td class="result-table__cell result-table__cell--code">
+                            <code>{{ code.code }}</code>
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--creator">
+                            {% if code.creator is defined and code.creator %}
+                                {{ code.creator.email | default(value=code.creator.uid) }}
+                            {% else %}
+                                <span class="result-table__muted">Unknown</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--account">
+                            {% if code.account is defined and code.account %}
+                                {{ code.account.email | default(value=code.account.uid) }}
+                            {% else %}
+                                <span class="result-table__muted">Unknown</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--status">
+                            {% if code.used %}
+                                <span class="badge badge-success">Used</span>
+                            {% elif code.invalidated %}
+                                <span class="badge badge-danger" title="{{ code.invalidation_reason | default(value='No reason provided') }}">
+                                    Invalidated
+                                </span>
+                            {% else %}
+                                <span class="badge badge-primary">Active</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--actions">
+                            <div class="result-table__actions">
+                                <form
+                                    action="/admin/activation-codes/{{ code.uid }}/delete"
+                                    method="POST"
+                                    class="result-table__action-form"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-danger"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        class="result-table__cell result-table__cell--empty"
+                        colspan="5"
+                    >
+                        No activation codes found.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+{% endblock content %}

@@ -7,8 +7,11 @@
 //! communication drops, missing telemetry fields, and configuration mismatches without needing 
 //! to parse unstructured strings.
 
+use crate::status::Extensions;
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use serde_json::Value;
 
 /// Core error types that can occur during driver operations, communications, or parsing.
 #[derive(Debug, thiserror::Error)]
@@ -114,6 +117,8 @@ pub enum JobStatusErr {
     MissingTimeRemaining,
     #[error("missing print job progress")]
     MissingProgress,
+    #[error("missing job state")]
+    MissingJobState,
     #[error("failed to serialize extras: {0}")]
     Serialization(#[from] serde_json::Error),
 }
@@ -122,5 +127,29 @@ pub enum JobStatusErr {
 ///
 /// Note: Serialization and deserialization derive attributes are included to allow 
 /// these errors to cross WebAssembly (WASM) boundaries safely in future front-end integrations.
-#[derive(Debug, Error, Clone, Serialize, Deserialize)]
-pub enum PrintError {}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrintError {
+    pub code: String,
+    pub message: Option<String>,
+    pub url: Option<String>,
+    extras: HashMap<String, Value>,
+}
+
+impl PrintError {
+    pub fn with_extras<E: Extensions>(
+        code: String,
+        message: Option<String>,
+        url: Option<String>,
+        extra: E,
+    ) -> Result<Self, serde_json::Error> {
+        let val = serde_json::to_value(extra)?;
+        let mut extras: HashMap<String, Value> = serde_json::from_value(val)?;
+        extras.retain(|_, v| !v.is_null());
+        Ok(Self {
+            code,
+            message,
+            url,
+            extras,
+        })
+    }
+}

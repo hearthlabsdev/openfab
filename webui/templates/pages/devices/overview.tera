@@ -5,31 +5,11 @@
 {% endblock title %}
 
 {% block content %}
-
-<div class="device-page">
-
-    <div class="device-page-header">
-        <div>
-            <h1>{{ device.name }}</h1>
-            <p class="muted">Device overview and live status.</p>
-        </div>
+    <div class="printer-view-page">
+        <!-- Render the Lit component, passing parameters down via HTML attributes -->
+        <device-view 
+            printer-id="{{ device.uid }}"
+            {% if camera_url is defined and camera_url is not none %}camera-url="{{ camera_url }}"{% endif %}
+        ></device-view>
     </div>
-
-    {# Live camera, status, temperatures, current print, etc. #}
-
-</div>
-
 {% endblock content %}
-
-{% block scripts %}
-
-<script>
-    window.addEventListener("device-event", (event) => {
-        const data = event.detail;
-
-        // Update the overview UI.
-        console.log(data);
-    });
-</script>
-
-{% endblock scripts %}

@@ -61,7 +61,7 @@
                     <div class="device-card-footer">
                         
                         <a
-                            href="/devices/{{ printer.uid }}"
+                            href="/devices/{{ printer.uid }}/info"
                             class="btn btn-secondary"
                         >
                             View

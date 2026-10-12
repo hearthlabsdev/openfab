@@ -1,7 +1,7 @@
+use crate::devices::DeviceLogORM;
 /// Utility module for setting up server runtime.
 use crate::devices::{DeviceConfigORM, DeviceORM};
 use crate::errors::OpenFabErr;
-
 use std::collections::HashMap;
 
 use openfab_drivers::DeviceDriver;
@@ -68,6 +68,10 @@ impl<R: Runtime + 'static> RuntimeManager<R> {
                 Err(e) => {
                     // should log the error here
                     eprintln!("failed to connect to device: {e}");
+                    DeviceLogORM::error(device.uid, e.to_string(), None)
+                        .insert(&mut *conn)
+                        .await
+                        .expect("failed to insert into log");
                     continue;
                 }
             };

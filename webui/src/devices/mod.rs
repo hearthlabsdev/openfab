@@ -172,8 +172,10 @@ pub struct PrinterDiscoveryEventORM {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[ormlite(table = "device_logs")]
 pub struct DeviceLogORM {
+    #[ormlite(primary_key)]
     pub uid: Uuid,
     pub device: Uuid,
     pub severity: String,

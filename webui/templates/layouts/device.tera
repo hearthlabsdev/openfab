@@ -1,4 +1,4 @@
-{# templates/layouts/device.tera #}
+f{# templates/layouts/device.tera #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,11 +17,6 @@
         href="/css/base.css"
     >
 
-    {# Device-specific styles #}
-    <link
-        rel="stylesheet"
-        href="/css/device.css"
-    >
 
     {# Page-specific head content #}
     {% block head %}{% endblock head %}
@@ -171,7 +166,7 @@
                         </div>
 
                         <a
-                            href="/devices/{{ device.uid }}"
+                            href="/devices/{{ device.uid }}/info"
                             class=""
                         >
                             Overview
@@ -253,59 +248,7 @@
 
     </div>
 
-
-    {# =========================================================
-       Global Scripts
-    ========================================================== #}
-
-    <script src="/static/js/app.js"></script>
-
-
-    {# =========================================================
-       Device Events
-    ========================================================== #}
-
-    {% block device_scripts %}
-
-        <script>
-            const deviceUid = "{{ device.uid }}";
-
-            const protocol =
-                window.location.protocol === "https:"
-                    ? "wss:"
-                    : "ws:";
-
-            const deviceSocket = new WebSocket(
-                `${protocol}//${window.location.host}/devices/${deviceUid}/events`
-            );
-
-            deviceSocket.addEventListener("open", () => {
-                console.log("Connected to device events");
-            });
-
-            deviceSocket.addEventListener("message", (event) => {
-                const data = JSON.parse(event.data);
-
-                window.dispatchEvent(
-                    new CustomEvent("device-event", {
-                        detail: data
-                    })
-                );
-            });
-
-            deviceSocket.addEventListener("close", () => {
-                console.log("Disconnected from device events");
-            });
-
-            deviceSocket.addEventListener("error", (error) => {
-                console.error(
-                    "Device event connection error",
-                    error
-                );
-            });
-        </script>
-
-    {% endblock device_scripts %}
+    <script type="module" src="/static/js/bundle.js"></script>
 
 
     {# =========================================================

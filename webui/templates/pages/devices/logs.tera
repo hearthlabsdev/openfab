@@ -1,0 +1,85 @@
+{% extends "layouts/device" %}
+
+{% block title %}
+    {{ device.name }} — Device Logs
+{% endblock title %}
+
+{% block content %}
+
+<div class="device-page">
+
+    <h1>Device Logs</h1>
+
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+                <th class="result-table__header result-table__header--severity">
+                    Severity
+                </th>
+                <th class="result-table__header result-table__header--type">
+                    Type
+                </th>
+                <th class="result-table__header result-table__header--message">
+                    Message
+                </th>
+                <th class="result-table__header result-table__header--date">
+                    Timestamp
+                </th>
+            </tr>
+        </thead>
+
+        <tbody class="result-table__body">
+            {% if logs is defined and logs | length > 0 %}
+                {% for log in logs %}
+                    <tr class="result-table__row">
+                        <td class="result-table__cell result-table__cell--severity">
+                            {{ log.severity }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--type">
+                            {{ log.message_type | default(value="—") }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--message">
+                            <code>{{ log.message }}</code>
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--date">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ log.date }}"
+                                data-unix="{{ log.date }}"
+                            >
+                                {{ log.date }}
+                            </time>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        class="result-table__cell result-table__cell--empty"
+                        colspan="4"
+                    >
+                        No logs recorded for this device.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    document.querySelectorAll(".local-time").forEach(function (element) {
+        const unix = Number(element.dataset.unix);
+
+        if (!Number.isNaN(unix)) {
+            // Handles both seconds or milliseconds timestamps safely
+            const timestampMs = unix > 10000000000 ? unix : unix * 1000;
+            element.textContent = new Date(timestampMs).toLocaleString();
+        }
+    });
+</script>
+
+{% endblock content %}

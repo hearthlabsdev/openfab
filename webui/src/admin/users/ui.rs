@@ -1,6 +1,7 @@
 use crate::accounts::User;
 use crate::admin::ActivationCodeORM;
 use crate::admin::users::forms::UserForm;
+use crate::errors::OpenFabErr;
 use crate::utils::Guard;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
@@ -11,14 +12,14 @@ use rocket::{Route, State, get, post, routes};
 use rocket_dyn_templates::{Template, context};
 
 #[get("/users")]
-pub async fn index(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
-    let mut conn = pool.acquire().await.unwrap();
-    let users = User::select().fetch_all(&mut *conn).await.unwrap();
+pub async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let users = User::select().fetch_all(&mut *conn).await?;
 
-    RawHtml(Template::render(
+    Ok(RawHtml(Template::render(
         "pages/admin/users/index",
         context! { users },
-    ))
+    )))
 }
 
 #[post("/users/create", data = "<form>")]
@@ -27,17 +28,21 @@ pub async fn create_user(form: Form<UserForm<'_>>) -> Redirect {
 }
 
 #[get("/activation-codes")]
-pub async fn list_activation_codes(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
-    let mut conn = pool.acquire().await.unwrap();
+pub async fn list_activation_codes(
+    guard: Guard,
+    pool: &State<PgPool>,
+) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
     let codes = ActivationCodeORM::select()
+        .join(ActivationCodeORM::account())
+        .join(ActivationCodeORM::creator())
         .fetch_all(&mut *conn)
-        .await
-        .unwrap();
+        .await?;
 
-    RawHtml(Template::render(
+    Ok(RawHtml(Template::render(
         "pages/admin/activation",
         context! { codes },
-    ))
+    )))
 }
 
 pub async fn create_activation_code(guard: Guard, pool: &State<PgPool>) -> Redirect {

@@ -43,6 +43,7 @@ impl Default for AccountConfig {
 pub struct LoginForm {
     pub email: String,
     pub password: String,
+    pub redirect: Option<String>,
 }
 
 #[derive(Debug, Clone, FromForm)]

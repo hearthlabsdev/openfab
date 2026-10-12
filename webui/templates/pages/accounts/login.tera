@@ -71,6 +71,9 @@
             </button>
         </div>
 
+        {% if redirect is defined %}
+            <input type="hidden" name="redirect" value="{{ redirect }}"/>
+        {% endif %}
         <button type="submit" class="login-button">Login</button>
 
         {% if config is defined and config.allow_registration %}

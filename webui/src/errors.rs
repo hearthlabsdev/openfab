@@ -84,14 +84,19 @@ impl OpenFabErr {
 
 impl<'r> Responder<'r, 'static> for OpenFabErr {
     fn respond_to(self, req: &Request<'_>) -> rocket::response::Result<'static> {
-        let route = req.route().map(|v| v.uri.as_str().to_string());
+        let route = req.uri().path().as_str().to_string();
         match &self {
             // If it's an authentication error, redirect back to the login page with the error message
             OpenFabErr::AuthErr(auth_err) => {
                 let (status, error_msg) = self.match_status_message();
                 let encoded_msg = utf8_percent_encode(&error_msg, NON_ALPHANUMERIC).to_string();
 
-                let redirect_url = format!("/accounts/login?message={}", encoded_msg);
+                let encoded_route =
+                    utf8_percent_encode(&req.uri().path().as_str(), NON_ALPHANUMERIC).to_string();
+                let redirect_url = format!(
+                    "/accounts/login?message={}&redirect={}",
+                    encoded_msg, encoded_route
+                );
 
                 // Delegate to Rocket's Redirect responder
                 Redirect::to(redirect_url).respond_to(req)
@@ -101,7 +106,6 @@ impl<'r> Responder<'r, 'static> for OpenFabErr {
                 let (status, error_msg) = self.match_status_message();
 
                 let encoded_msg = utf8_percent_encode(&error_msg, NON_ALPHANUMERIC).to_string();
-
                 let redirect_url = format!("{}?message={}", route, encoded_msg);
 
                 // Delegate to Rocket's Redirect responder
@@ -119,16 +123,15 @@ impl<'r> Responder<'r, 'static> for OpenFabErr {
             _ => {
                 let (status, error_msg) = self.match_status_message();
                 let encoded_msg = utf8_percent_encode(&error_msg, NON_ALPHANUMERIC).to_string();
-
-                let redirect_url = match route {
-                    Some(route) => {
-                        format!("/admin/bugreport?error={}&route={}", encoded_msg, route)
-                    }
-                    None => format!("/admin/bugreport?error={}", encoded_msg),
-                };
+                let encoded_route =
+                    utf8_percent_encode(&req.uri().path().as_str(), NON_ALPHANUMERIC).to_string();
 
                 // Delegate to Rocket's Redirect responder
-                Redirect::to(redirect_url).respond_to(req)
+                Redirect::to(format!(
+                    "/admin/bugreport?error={}&route={}",
+                    encoded_msg, encoded_route
+                ))
+                .respond_to(req)
             }
         }
     }

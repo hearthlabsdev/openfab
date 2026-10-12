@@ -14,15 +14,16 @@ use rocket_dyn_templates::{Template, context};
 use rocket_oidc::auth::AuthState;
 use rocket_oidc::config::OIDCConfig;
 
-#[get("/login?<message>")]
+#[get("/login?<message>&<redirect>")]
 pub fn login_page(
     config: &State<AccountConfig>,
     oidc: &State<Vec<OIDCConfig>>,
     message: Option<String>,
+    redirect: Option<String>,
 ) -> RawHtml<Template> {
     RawHtml(Template::render(
         "pages/accounts/login",
-        context! { config: config.inner(), providers: oidc.inner(), error: message },
+        context! { config: config.inner(), providers: oidc.inner(), error: message, redirect },
     ))
 }
 
@@ -39,14 +40,21 @@ pub async fn login(
         .where_("email = ?")
         .bind(login.email)
         .fetch_one(&mut *conn)
-        .await.map_err(|v| OpenFabErr::AuthErr(AuthErr::UserNotFound))?;
+        .await
+        .map_err(|v| OpenFabErr::AuthErr(AuthErr::UserNotFound))?;
 
     if !crate::utils::verify_password(&login.password, &user.password.as_ref().unwrap()).unwrap() {
         return Err(OpenFabErr::AuthErr(AuthErr::InvalidPassword));
     }
 
     auth.local_login(jar, "RS512", &user.email).await.unwrap();
-    Ok(Redirect::to(format!("/")))
+    Ok(match login.redirect {
+        Some(route) => {
+            println!("login redirect uri: {}", route);
+            Redirect::to(route)
+        }
+        None => Redirect::to("/"),
+    })
 }
 
 #[get("/register")]

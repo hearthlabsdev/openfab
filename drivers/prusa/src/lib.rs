@@ -1,7 +1,7 @@
 use openfab_drivers::capabilities::DriverCapabilities;
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, StatusErr};
-use openfab_drivers::events::{EventType, Event};
+use openfab_drivers::events::{Event, EventType};
 use openfab_drivers::status::PrinterStatus;
 use openfab_drivers::utils::get_value_type;
 use openfab_drivers::{Callback, CallbackId, DeviceDriver};
@@ -11,20 +11,95 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::io::AsyncRead;
-use tokio::task::JoinHandle;
 use std::time::Duration;
+use tokio::io::AsyncRead;
+use tokio::sync::broadcast::{Receiver, Sender, channel};
+use tokio::task::JoinHandle;
 use tokio::time::sleep;
-use tokio::sync::broadcast::{channel, Sender, Receiver};
+use approx::relative_eq;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct PrinterStatusMsg {
+    ok: Option<bool>,
+    message: Option<String>,
+}
+
+impl PrinterStatusMsg {
+    pub fn new(ok: Option<bool>, message: Option<String>) -> Self {
+        Self {
+            ok,
+            message
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrusaExtensions {
+    axis_x: Option<f64>,
+    axis_y: Option<f64>,
+    axis_z: Option<f64>,
+    flow: Option<i32>,
+    speed: Option<i32>,
+    fan_hotend: Option<i32>,
+    fan_print: Option<i32>,
+    connection_status: Option<PrinterStatusMsg>,
+    printer_status: Option<PrinterStatusMsg>,
+}
+
+impl PartialEq for PrusaExtensions {
+    fn eq(&self, other: &Self) -> bool {
+        // Helper closure or macro logic to compare Option<f64> with relative_eq
+        let f64_eq = |a: &Option<f64>, b: &Option<f64>| match (a, b) {
+            (Some(v1), Some(v2)) => relative_eq!(v1, v2, epsilon = 1.0_f64.to_radians()), // adjust epsilon as needed
+            (None, None) => true,
+            _ => false,
+        };
+
+        f64_eq(&self.axis_x, &other.axis_x)
+            && f64_eq(&self.axis_y, &other.axis_y)
+            && f64_eq(&self.axis_z, &other.axis_z)
+            && self.flow == other.flow
+            && self.speed == other.speed
+            && self.fan_hotend == other.fan_hotend
+            && self.fan_print == other.fan_print
+            && self.connection_status == other.connection_status
+            && self.printer_status == other.printer_status
+    }
+}
+
+impl From<&StatusPrinter> for PrusaExtensions {
+    fn from(status: &StatusPrinter) -> PrusaExtensions {
+        PrusaExtensions {
+            axis_x: status.axis_x,
+            axis_y: status.axis_y,
+            axis_z: status.axis_z,
+            flow: status.flow,
+            speed: status.speed,
+            fan_hotend: status.fan_hotend,
+            fan_print: status.fan_print,
+            connection_status: status
+                .status_connect
+                .clone()
+                .map(|v| PrinterStatusMsg::new(v.ok, v.message)),
+            printer_status: status
+                .status_printer
+                .clone()
+                .map(|v| PrinterStatusMsg::new(v.ok, v.message)),
+        }
+    }
+}
 
 pub fn try_from_printer_status(status: StatusPrinter) -> Result<PrinterStatus, StatusErr> {
-    Ok(PrinterStatus {
-        bed_temp: status.temp_bed.ok_or(StatusErr::MissingBedTemp)?,
-        target_bed_temp: status.target_bed,
-        nozzle_temp: status.temp_nozzle.ok_or(StatusErr::MissingNozzleTemp)?,
-        target_nozzle_temp: status.target_nozzle,
-        chamber_temp: None,
-    })
+    Ok(PrinterStatus::with_extras(
+        status.temp_bed.ok_or(StatusErr::MissingBedTemp)?,
+        status.target_bed,
+        status
+            .temp_nozzle
+            .ok_or(StatusErr::MissingNozzleTemp)?,
+        status.target_nozzle,
+        None,
+        PrusaExtensions::from(&status),
+    )?)
 }
 
 // at some point it might be a good idea to setup a certificate validation chain.
@@ -156,10 +231,13 @@ impl DeviceDriver for PrusaDriver {
             loop {
                 match worker_client.get_status().await {
                     Ok(event) => {
-                        let event = Event::StatusUpdate(try_from_printer_status(*event.printer).expect("failed to get printer status"));
+                        let event = Event::StatusUpdate(
+                            try_from_printer_status(*event.printer)
+                                .expect("failed to get printer status"),
+                        );
                         sender2.send(event).unwrap();
                         // I should run callbacks based on what has changed in the status but oh well
-                    },
+                    }
                     Err(e) => {
                         /// I should update to have this properly logged both to standard out, and to database.
                         eprintln!("error occured in prusa driver: {}", e);
@@ -200,15 +278,21 @@ impl DeviceDriver for PrusaDriver {
             .ok_or(DriverError::DeviceNotFound(device.into()))?
             .client
             .get_status()
-            .await {
-                Ok(status) => status,
-                Err(e) => return Err(DriverError::Custom(e.to_string())),
+            .await
+        {
+            Ok(status) => status,
+            Err(e) => return Err(DriverError::Custom(e.to_string())),
         };
         Ok(try_from_printer_status(*full.printer)?)
     }
 
     fn subscribe(&self, device: &str) -> Result<Receiver<Event>, DriverError> {
-        Ok(self.clients.get(device).ok_or(DriverError::DeviceNotFound(device.into()))?.sender.subscribe())
+        Ok(self
+            .clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))?
+            .sender
+            .subscribe())
     }
     /// Register an event callback handler
     async fn register_handler(
@@ -221,9 +305,7 @@ impl DeviceDriver for PrusaDriver {
             .get_mut(device)
             .ok_or(DriverError::DeviceNotFound(device.into()))?;
         let recv = client.sender.subscribe();
-        let handle = tokio::spawn(async move {
-            callback(recv).await
-        });
+        let handle = tokio::spawn(async move { callback(recv).await });
         client.handler = Some(handle);
         Ok(())
     }

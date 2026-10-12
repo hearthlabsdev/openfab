@@ -19,6 +19,7 @@ tracing = "0.1.44"
 openfab-drivers = { path = "../drivers" }
 openfab-bambu = { path = "../drivers/bambu" }
 openfab-prusa = { path = "../drivers/prusa" }
+openfab-dummy = { path = "../drivers/dummy" }
 prusa-rs = { git = "https://github.com/vivianlazaras/prusa-rs" }
 
 livekit = { version = "0.7.32", optional = true }

@@ -110,7 +110,7 @@
     </div>
 
     {# Global scripts #}
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/bundle.js"></script>
 
     {# Page-specific scripts #}
     {% block scripts %}{% endblock scripts %}

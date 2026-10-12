@@ -5,7 +5,8 @@ members = ["drivers","drivers/bambu","drivers/klipper",
     "drivers/prusa",
     "drivers/bambu",
     "drivers/marlin",
-    "drivers/klipper"
+    "drivers/klipper",
+    "drivers/dummy"
 , "slicers/cura", "slicers/slic3r"]
 
 resolver = "2"

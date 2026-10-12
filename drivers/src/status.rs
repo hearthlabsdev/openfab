@@ -8,10 +8,13 @@
 //! [`PrinterStatus`] encapsulates unknown or vendor-specific fields within a private, flattened
 //! hash map while offering type-safe constructor validation via the [`Extensions`] trait.
 
+use crate::EventType;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use approx::relative_eq;
+
 
 /// A marker trait representing types that can be safely serialized and deserialized
 /// as vendor-specific printer extension payloads.
@@ -23,7 +26,7 @@ pub trait Extensions: Debug + Clone + Serialize + DeserializeOwned {}
 impl<T: Debug + Clone + Serialize + DeserializeOwned> Extensions for T {}
 
 /// Represents the current operational state of a 3D printer.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum State {
     /// The printer is idle and waiting for instructions.
     Idle,
@@ -43,6 +46,8 @@ pub enum State {
     Attention,
     /// The printer is fully initialized, online, and ready for work.
     Ready,
+    /// catch all
+    Unknown(String),
 }
 
 /// Core, vendor-agnostic status metrics reported by a 3D printer.
@@ -64,6 +69,24 @@ pub struct PrinterStatus {
     /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
     #[serde(flatten)]
     extra: HashMap<String, Value>,
+}
+
+impl PartialEq for PrinterStatus {
+    fn eq(&self, other: &Self) -> bool {
+        // Helper for optional f64 comparisons with relative_eq
+        let f64_opt_eq = |a: &Option<f64>, b: &Option<f64>| match (a, b) {
+            (Some(v1), Some(v2)) => relative_eq!(v1, v2, epsilon = 1e-4),
+            (None, None) => true,
+            _ => false,
+        };
+
+        relative_eq!(self.bed_temp, other.bed_temp, epsilon = 1e-4)
+            && f64_opt_eq(&self.target_bed_temp, &other.target_bed_temp)
+            && relative_eq!(self.nozzle_temp, other.nozzle_temp, epsilon = 1e-4)
+            && f64_opt_eq(&self.target_nozzle_temp, &other.target_nozzle_temp)
+            && f64_opt_eq(&self.chamber_temp, &other.chamber_temp)
+            && self.extra == other.extra
+    }
 }
 
 impl PrinterStatus {
@@ -94,26 +117,42 @@ impl PrinterStatus {
             extra: extras,
         })
     }
+
+    pub fn new(bed_temp: f64,
+        target_bed_temp: Option<f64>,
+        nozzle_temp: f64,
+        target_nozzle_temp: Option<f64>,
+        chamber_temp: Option<f64>
+    ) -> Self {
+        Self {
+            bed_temp,
+            target_bed_temp,
+            nozzle_temp,
+            target_nozzle_temp,
+            chamber_temp,
+            extra: HashMap::new(),
+        }
+    }
 }
 
 /// Information tracking the progress and timing of an active print job.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct JobStatus {
     /// Estimated time remaining until job completion, measured in seconds.
     pub time_remaining_secs: i64,
     /// Current progress of the print job represented as a percentage (0 to 100).
     pub progress: i64,
 
-    pub gcode_state: Option<String>,
+    pub state: State,
     /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
+    #[serde(flatten)]
     extras: HashMap<String, Value>,
 }
-
 impl JobStatus {
     pub fn with_extras<E: Extensions>(
         time_remaining_secs: i64,
         progress: i64,
-        gcode_state: Option<String>,
+        state: State,
         extra: E,
     ) -> Result<Self, serde_json::Error> {
         let val = serde_json::to_value(extra)?;
@@ -122,9 +161,46 @@ impl JobStatus {
         Ok(Self {
             time_remaining_secs,
             progress,
-            gcode_state,
+            state,
             extras,
         })
+    }
+
+    pub fn new(time_remaining_secs: i64, progress: i64, state: State) -> Self {
+        Self {
+            time_remaining_secs,
+            progress,
+            state,
+            extras: HashMap::new(),
+        }
+    }
+
+    /// Determines the discrete [`EventType`] by comparing the previous job status state 
+    /// with the current job status state (`self`).
+    pub fn get_event_type(&self, last: &JobStatus) -> EventType {
+        if last.state == self.state {
+            return EventType::JobUpdate;
+        }
+
+        match (&last.state, &self.state) {
+            // Transition from inactive/ready to printing -> Job Started
+            (State::Idle | State::Ready, State::Printing) => EventType::PrintStarted,
+            
+            // Transition from printing to paused -> Job Paused
+            (State::Printing, State::Paused) => EventType::PrintPaused,
+            
+            // Transition from paused back to printing -> Job Resumed
+            (State::Paused, State::Printing) => EventType::PrintResumed,
+            
+            // Transition from active states to finished or stopped -> Job Stopped/Completed
+            (State::Printing | State::Paused, State::Finished | State::Stopped) => EventType::PrintStopped,
+            
+            // Transition into an error state
+            (_, State::Error) => EventType::Err,
+            
+            // Fallback for any other state modification
+            _ => EventType::JobUpdate,
+        }
     }
 }
 

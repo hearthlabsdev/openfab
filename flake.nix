@@ -68,6 +68,7 @@
             livekit-libwebrtc
             glib
             libva
+            nodejs
           ];
 
           VULKAN_DIR = "${pkgs.vulkan-loader}";

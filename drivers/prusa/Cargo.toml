@@ -10,3 +10,4 @@ openfab-drivers = { path = "../" }
 async-trait = "0.1.92"
 tokio = "1.53.2"
 prusa-rs = { git = "https://github.com/vivianlazaras/prusa-rs" }
+approx = "0.5.1"

@@ -44,7 +44,7 @@ impl BugReportForm {
 }
 
 #[get("/bugreport?<error>&<route>")]
-pub async fn bug_report_page(error: String, route: Option<String>) -> RawHtml<Template> {
+pub async fn bug_report_page(error: Option<String>, route: Option<String>) -> RawHtml<Template> {
     RawHtml(Template::render(
         "pages/admin/bugreport",
         context! { error, route },

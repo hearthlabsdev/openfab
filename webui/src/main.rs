@@ -3,7 +3,10 @@
 //! 2. IPP attributes describe capabilities.
 //! 3. Device selection is an internal policy decision
 
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
+
 use openfab_bambu::BambuDriver;
+use openfab_dummy::DummyDriver;
 use openfab_drivers::events::EventType;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
@@ -43,21 +46,15 @@ fn index() -> RawHtml<Template> {
 
 #[catch(401)]
 fn unauthorized(req: &Request<'_>) -> Redirect {
-    match req.local_cache(|| None::<OpenFabErr>) {
-        Some(err) => {
-            let (message, status) = err.match_status_message();
-            Redirect::to(format!("/accounts/login?message={}", message))
-        }
-        None => Redirect::to("/accounts/login"),
-    }
+    println!("unauthorized catcher called");
+    let route = utf8_percent_encode(&req.uri().path().as_str(), NON_ALPHANUMERIC).to_string();
+    Redirect::to(format!("/accounts/login?redirect={}", route))
 }
 
 #[catch(500)]
 fn internal_server_error(req: &Request) -> Redirect {
-    match req.route().map(|v| v.uri.as_str().to_string()) {
-        Some(route) => Redirect::to(format!("/admin/bugreport?route={}", route)),
-        None => Redirect::to("/admin/bugreport"),
-    }
+    let route = utf8_percent_encode(&req.uri().path().as_str(), NON_ALPHANUMERIC).to_string();
+    Redirect::to(format!("/admin/bugreport?route={}", route))
 }
 
 #[launch]
@@ -105,10 +102,16 @@ async fn rocket() -> _ {
     let runtime = NativeRuntime::new();
     let mut manager = RuntimeManager::new(runtime);
     let bambu = BambuDriver::new();
+    let dummy = DummyDriver::new();
     manager
         .load_driver(bambu)
         .await
         .expect("failed to load drivers");
+
+    manager.load_driver(dummy)
+        .await
+        .expect("failed to load dummy driver");
+
     manager
         .load_devices(&pool)
         .await
@@ -118,7 +121,7 @@ async fn rocket() -> _ {
     let accounts = AccountConfig::default();
 
     let rocket = rocket::custom(&config)
-        .register("/", catchers![unauthorized])
+        .register("/", catchers![unauthorized, internal_server_error])
         .mount("/", routes![index])
         .attach(Template::custom(|engine| {
             // Register a custom "none" tester

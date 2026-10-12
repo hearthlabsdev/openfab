@@ -1,3 +1,4 @@
+use crate::devices::DeviceLogORM;
 use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
 use crate::devices::{DeviceConfigORM, DeviceORM};
@@ -129,10 +130,10 @@ async fn create(
         config.insert(&mut *conn).await?;
     }
     // also need to impl store and retrive from database, but that can wait.
-    Ok(Redirect::to("/devices"))
+    Ok(Redirect::to("/"))
 }
 
-#[get("/<uid>")]
+#[get("/<uid>/info")]
 pub async fn device(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
@@ -241,50 +242,90 @@ pub async fn device_files(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> 
     RawHtml(Template::render("pages/devices/files", context! { device }))
 }
 
+#[get("/<uid>/logs")]
+pub async fn device_logs(
+    guard: Guard,
+    pool: &State<PgPool>,
+    uid: Uuid,
+) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let device = DeviceORM::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await?;
+
+    let logs = DeviceLogORM::select()
+        .where_("device = ?")
+        .bind(uid)
+        .fetch_all(&mut *conn)
+        .await?;
+
+    Ok(RawHtml(Template::render(
+        "pages/devices/logs",
+        context! { logs, device },
+    )))
+}
+
+use rocket::http::Status;
+
 #[get("/<uid>/status")]
 pub async fn live_status(
     pool: &State<PgPool>,
     manager: &State<NativeManager>,
     socket: WebSocket,
     uid: Uuid,
-) -> Channel<'static> {
-    // fetch information on the device to get serial number
-    let mut conn = pool.acquire().await.unwrap();
+) -> Result<Channel<'static>, Status> {
+    // 1. Acquire connection and fetch device, returning 404 if missing
+    let mut conn = pool.acquire().await.map_err(|_| Status::InternalServerError)?;
     let device = DeviceORM::select()
         .where_("uid = ?")
         .bind(uid)
-        .fetch_one(&mut *conn)
+        .fetch_optional(&mut *conn)
         .await
-        .expect("failed to query device");
+        .map_err(|_| Status::InternalServerError)?
+        .ok_or(Status::NotFound)?;
 
-    // grab the serial number
     let serial = device.serial;
 
-    let mut rx = manager
-        .subscribe(&device.driver_id, &serial)
-        .await
-        .expect("failed to subscribe to broadcast");
-    // lookup the broadcast receiver assigned to this serial number
-    socket.channel(move |mut stream| {
+    // 2. Try subscribing, returning 400 Bad Request if it fails
+    let rx = manager.subscribe(&device.driver_id, &serial).await
+        .map_err(|_| Status::BadRequest)?;
+
+    // 3. Hand over to the WebSocket channel only if everything succeeded
+    Ok(socket.channel(move |mut stream| {
         Box::pin(async move {
+            let mut rx = rx;
             loop {
-                // received next message to see if there's an incoming command
-                if let Some(Some(message)) = stream.next().now_or_never() {
-                    // handle message
+                if let Some(Some(_message)) = stream.next().now_or_never() {
+                    // handle incoming client messages if needed
                 }
 
-                let event = rx.recv().await.unwrap();
-                let _ = stream
-                    .send(
-                        serde_json::to_string(&event)
-                            .expect("failed to serialize event")
-                            .into(),
-                    )
-                    .await;
+                match rx.recv().await {
+                    Ok(event) => {
+                        let _ = stream
+                            .send(
+                                serde_json::to_string(&event)
+                                    .expect("failed to serialize event")
+                                    .into(),
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        let _ = stream
+                            .send(
+                                serde_json::to_string(&Event::Err(e.to_string()))
+                                    .expect("failed to serialize event")
+                                    .into(),
+                            )
+                            .await;
+                        break;
+                    }
+                }
             }
             Ok(())
         })
-    })
+    }))
 }
 
 pub fn get_routes() -> Vec<Route> {
@@ -296,6 +337,8 @@ pub fn get_routes() -> Vec<Route> {
         device_queue,
         device_config,
         device_captures,
-        device_files
+        device_files,
+        live_status,
+        device_logs
     ]
 }
