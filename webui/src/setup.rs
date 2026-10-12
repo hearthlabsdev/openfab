@@ -12,8 +12,10 @@ use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverHandle;
 use openfab_drivers::runtime::DriverRuntime as Runtime;
 use serde_json::Value;
+use std::time::Duration;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::{Receiver, Sender};
+use tokio::time::sleep;
 
 use ormlite::Model;
 use ormlite::postgres::PgPool;
@@ -23,22 +25,18 @@ pub type NativeManager = RuntimeManager<NativeRuntime>;
 
 pub struct RuntimeManager<R: Runtime + 'static> {
     runtime: R,
-    senders: HashMap<Uuid, Sender<Event>>,
 }
 
 impl<R: Runtime + 'static> RuntimeManager<R> {
     pub fn new(rt: R) -> Self {
-        Self {
-            runtime: rt,
-            senders: HashMap::new(),
-        }
+        Self { runtime: rt }
     }
-    pub fn subscribe(&self, device: Uuid) -> Result<Receiver<Event>, OpenFabErr> {
-        Ok(self
-            .senders
-            .get(&device)
-            .ok_or(OpenFabErr::MissingSender(device.clone()))?
-            .subscribe())
+    pub async fn subscribe(
+        &self,
+        driver: &str,
+        device: &str,
+    ) -> Result<Receiver<Event>, OpenFabErr> {
+        Ok(self.runtime.subscribe(driver, device).await?)
     }
     pub async fn load_driver<D: DeviceDriver + 'static>(
         &mut self,
@@ -50,9 +48,6 @@ impl<R: Runtime + 'static> RuntimeManager<R> {
         let mut conn = pool.acquire().await?;
 
         for device in DeviceORM::select().fetch_all(&mut *conn).await? {
-            let (sender, mut rx1) = broadcast::channel(100);
-            let sender2 = sender.clone();
-
             let configs = DeviceConfigORM::select()
                 .where_("device = ?")
                 .bind(device.uid)
@@ -64,24 +59,18 @@ impl<R: Runtime + 'static> RuntimeManager<R> {
 
             let schema = self.runtime.config_schema(&device.driver_id).await?;
             let device_config = openfab_drivers::utils::config_to_json(&schema, &configs)?;
-            self.senders.insert(device.uid, sender);
-            self.runtime
+            match self
+                .runtime
                 .add_device(&device.driver_id, device_config)
-                .await?;
-            self.runtime
-                .register_callback(
-                    &device.driver_id,
-                    &device.serial,
-                    EventType::Any,
-                    move |device, event| {
-                        let mut cbsender = sender2.clone();
-                        async move {
-                            cbsender.send(event).unwrap();
-                            Ok(None)
-                        }
-                    },
-                )
-                .await?;
+                .await
+            {
+                Ok(_) => {}
+                Err(e) => {
+                    // should log the error here
+                    eprintln!("failed to connect to device: {e}");
+                    continue;
+                }
+            };
         }
         Ok(())
     }

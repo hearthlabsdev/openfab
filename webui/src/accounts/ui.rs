@@ -1,5 +1,6 @@
 use crate::accounts::User;
 use crate::accounts::{AccountConfig, LoginForm, RegisterForm};
+use crate::errors::{AuthErr, OpenFabErr};
 use crate::utils::Guard;
 
 use ormlite::Model;
@@ -13,14 +14,15 @@ use rocket_dyn_templates::{Template, context};
 use rocket_oidc::auth::AuthState;
 use rocket_oidc::config::OIDCConfig;
 
-#[get("/login")]
+#[get("/login?<message>")]
 pub fn login_page(
     config: &State<AccountConfig>,
     oidc: &State<Vec<OIDCConfig>>,
+    message: Option<String>,
 ) -> RawHtml<Template> {
     RawHtml(Template::render(
         "pages/accounts/login",
-        context! { config: config.inner(), providers: oidc.inner() },
+        context! { config: config.inner(), providers: oidc.inner(), error: message },
     ))
 }
 
@@ -30,22 +32,21 @@ pub async fn login(
     auth: &State<AuthState>,
     pool: &State<PgPool>,
     login_form: Form<LoginForm>,
-) -> Redirect {
+) -> Result<Redirect, OpenFabErr> {
     let login = login_form.into_inner();
     let mut conn = pool.acquire().await.unwrap();
     let user = User::select()
         .where_("email = ?")
         .bind(login.email)
         .fetch_one(&mut *conn)
-        .await
-        .unwrap();
+        .await.map_err(|v| OpenFabErr::AuthErr(AuthErr::UserNotFound))?;
 
     if !crate::utils::verify_password(&login.password, &user.password.as_ref().unwrap()).unwrap() {
-        panic!("invalid password");
+        return Err(OpenFabErr::AuthErr(AuthErr::InvalidPassword));
     }
 
     auth.local_login(jar, "RS512", &user.email).await.unwrap();
-    Redirect::to(format!("/"))
+    Ok(Redirect::to(format!("/")))
 }
 
 #[get("/register")]

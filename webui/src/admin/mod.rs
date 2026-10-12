@@ -1,6 +1,7 @@
 pub mod apikeys;
 pub mod groups;
 pub mod permissions;
+pub mod reports;
 pub mod users;
 
 use ormlite::Model;
@@ -19,6 +20,6 @@ pub fn get_routes() -> Vec<rocket::Route> {
     routes.extend(users::ui::get_routes());
     routes.extend(groups::ui::get_routes());
     routes.extend(apikeys::get_routes());
-    println!("routes: {:?}", routes);
+    routes.extend(reports::get_routes());
     routes
 }

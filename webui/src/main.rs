@@ -9,6 +9,7 @@ use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
+use rocket::Request;
 use rocket::config::Config;
 use rocket::data::{Limits, ToByteUnit};
 use rocket::fs::FileServer;
@@ -28,6 +29,7 @@ use tokio::sync::broadcast;
 use webui::VirtualPrinter;
 use webui::accounts::AccountConfig;
 use webui::devices::{DeviceConfigORM, DeviceORM};
+use webui::errors::OpenFabErr;
 use webui::library::ObjectStoreConfig;
 use webui::setup::RuntimeManager;
 #[macro_use]
@@ -40,8 +42,22 @@ fn index() -> RawHtml<Template> {
 }
 
 #[catch(401)]
-fn unauthorized() -> Redirect {
-    Redirect::to("/accounts/login")
+fn unauthorized(req: &Request<'_>) -> Redirect {
+    match req.local_cache(|| None::<OpenFabErr>) {
+        Some(err) => {
+            let (message, status) = err.match_status_message();
+            Redirect::to(format!("/accounts/login?message={}", message))
+        }
+        None => Redirect::to("/accounts/login"),
+    }
+}
+
+#[catch(500)]
+fn internal_server_error(req: &Request) -> Redirect {
+    match req.route().map(|v| v.uri.as_str().to_string()) {
+        Some(route) => Redirect::to(format!("/admin/bugreport?route={}", route)),
+        None => Redirect::to("/admin/bugreport"),
+    }
 }
 
 #[launch]

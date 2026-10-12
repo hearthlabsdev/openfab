@@ -1,6 +1,7 @@
 use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
 use crate::devices::{DeviceConfigORM, DeviceORM};
+use crate::errors::OpenFabErr;
 use crate::prints::{PrintJobORM, PrintQueueORM};
 use crate::setup::NativeManager;
 use crate::utils::{Guard, unix_epoch_seconds};
@@ -28,12 +29,12 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 #[get("/")]
-pub async fn index(pool: &State<PgPool>) -> RawHtml<Template> {
-    let mut conn = pool.acquire().await.unwrap();
-    let devices = DeviceORM::select().fetch_all(&mut *conn).await.unwrap();
+pub async fn index(pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let devices = DeviceORM::select().fetch_all(&mut *conn).await?;
 
     let context = context! { devices };
-    RawHtml(Template::render("pages/devices/index", &context))
+    Ok(RawHtml(Template::render("pages/devices/index", &context)))
 }
 
 #[get("/create")]
@@ -41,22 +42,18 @@ async fn create_page(
     guard: Guard,
     rt: &State<NativeManager>,
     pool: &State<PgPool>,
-) -> RawHtml<Template> {
+) -> Result<RawHtml<Template>, OpenFabErr> {
     // within this current model one of two things needs to be the case:
     // either the server is running on a lan where it can discover devices, or a client needs to discover relaying the discovery to the server.
-    let mut conn = pool
-        .acquire()
-        .await
-        .expect("failed to acquire db connection");
+    let mut conn = pool.acquire().await?;
     let devices = PrinterDiscoveryEventORM::select()
         .fetch_all(&mut *conn)
-        .await
-        .expect("failed to fetch discovery events");
-    let drivers = rt.index_drivers().await.unwrap();
+        .await?;
+    let drivers = rt.index_drivers().await?;
     println!("drivers len: {}", drivers.len());
     let context = context! { devices, drivers };
 
-    RawHtml(Template::render("pages/devices/create", &context))
+    Ok(RawHtml(Template::render("pages/devices/create", &context)))
 }
 
 #[post("/create", data = "<form>")]
@@ -65,25 +62,40 @@ async fn create(
     rt: &State<NativeManager>,
     pool: &State<PgPool>,
     form: Form<HashMap<String, String>>,
-) -> Redirect {
-    let form = form.into_inner();
+) -> Result<Redirect, OpenFabErr> {
+    let mut form = form.into_inner();
+    form.retain(|_, v| !v.is_empty());
+
     #[cfg(debug_assertions)]
-    println!("received form: {}", serde_json::to_string(&form).unwrap());
-    let driver_id = form.get("driver").unwrap();
-    let schema = rt.config_schema(&driver_id).await.unwrap();
-    let value = config_to_json(&schema, &form).unwrap();
-    rt.add_device(driver_id, value).await.unwrap();
-    let name = form.get("name").unwrap().to_string();
-    if name == "" {
-        panic!("name not set");
+    println!("received form: {}", serde_json::to_string(&form)?);
+    let driver_id = form.get("driver").ok_or(OpenFabErr::MissingConfigOption(
+        "devices/create".into(),
+        "driver".into(),
+    ))?;
+    let schema = rt.config_schema(&driver_id).await?;
+
+    let value = config_to_json(&schema, &form)?;
+    rt.add_device(driver_id, value).await?;
+    let name = form
+        .get("name")
+        .ok_or(OpenFabErr::MissingConfigOption(
+            "devices/create".into(),
+            "name".into(),
+        ))?
+        .to_string();
+    if name.is_empty() {
+        return Err(OpenFabErr::MissingConfigOption(
+            "devices/create".into(),
+            "name".into(),
+        ));
     }
     let mut queue_opt: Option<Uuid> = form.get("queue").map(|v| v.parse().unwrap());
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = pool.acquire().await?;
 
     if queue_opt.is_none() {
         let queue = PrintQueueORM::new(format!("{} Default Queue", name));
-        let queue = queue.insert(&mut *conn).await.unwrap();
+        let queue = queue.insert(&mut *conn).await?;
         queue_opt = Some(queue.uid);
     }
     let device = DeviceORM {
@@ -94,12 +106,18 @@ async fn create(
         last_seen: unix_epoch_seconds(),
         status: "active".to_string(),
         enabled: true,
-        serial: form.get("serial").unwrap().to_string(),
+        serial: form
+            .get("serial")
+            .ok_or(OpenFabErr::MissingConfigOption(
+                "device.create".into(),
+                "serial".into(),
+            ))?
+            .to_string(),
         driver_id: driver_id.to_string(),
         driver_version: "0.1.0".to_string(),
     };
 
-    let device = device.insert(&mut *conn).await.unwrap();
+    let device = device.insert(&mut *conn).await?;
     for (key, value) in form.into_iter() {
         let config = DeviceConfigORM {
             uid: Uuid::new_v4(),
@@ -108,10 +126,10 @@ async fn create(
             value,
             updated_at: unix_epoch_seconds(),
         };
-        config.insert(&mut *conn).await.unwrap();
+        config.insert(&mut *conn).await?;
     }
     // also need to impl store and retrive from database, but that can wait.
-    Redirect::to("/devices")
+    Ok(Redirect::to("/devices"))
 }
 
 #[get("/<uid>")]
@@ -173,6 +191,11 @@ pub async fn device_config(
         .await
         .unwrap();
 
+    let queues = PrintQueueORM::select()
+        .fetch_all(&mut *conn)
+        .await
+        .expect("failed to fetch queues");
+
     let drivers = rt.index_drivers().await.unwrap();
     let configs = DeviceConfigORM::select()
         .where_("device = ?")
@@ -183,7 +206,7 @@ pub async fn device_config(
 
     RawHtml(Template::render(
         "pages/devices/configuration",
-        context! { device, drivers, configs },
+        context! { device, drivers, configs, queues },
     ))
 }
 
@@ -237,7 +260,10 @@ pub async fn live_status(
     // grab the serial number
     let serial = device.serial;
 
-    let mut rx = manager.subscribe(device.uid).expect("failed to subscribe to broadcast");
+    let mut rx = manager
+        .subscribe(&device.driver_id, &serial)
+        .await
+        .expect("failed to subscribe to broadcast");
     // lookup the broadcast receiver assigned to this serial number
     socket.channel(move |mut stream| {
         Box::pin(async move {

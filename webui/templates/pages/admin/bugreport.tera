@@ -1,0 +1,40 @@
+{% extends "layouts/base" %}
+
+{% block title %}Internal Server Error{% endblock title %}
+
+{% block content %}
+    
+    <div class="bugreport-container">
+        <form method="post" action="/admin/bugreport">
+            <h1>Internal Server Error</h1>
+
+            {% if error is defined and error %}
+                <div class="error-banner" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>{{ error }}</span>
+                    <input type="hidden" name="error" value="{{ error }}" />
+                </div>
+            {% else %}
+                <label for="error_name">Please Describe The Error</label>
+                <input id="error_name" type="text" name="error" placeholder="Brief summary of what happened..." />
+            {% endif %}
+
+            {% if route is defined and route is not none %}
+                <input type="hidden" name="route" value="{{ route }}"/>
+            {% else %}
+                <label for="route">What resources where you trying to use (e.g. devices/create)</label>
+                <input type="text" id="route" name="route" placeholder="devices/create"/>
+            {% endif %}
+
+            <label for="error_desc">Error Description & Reproduction Steps</label>
+            <textarea name="description" id="error_desc" placeholder="Provide any details that can help us diagnose the issue..."></textarea>
+            
+            <button type="submit" class="btn btn-danger">Report Error</button>
+        </form>
+    </div>
+
+{% endblock content %}
