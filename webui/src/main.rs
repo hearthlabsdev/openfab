@@ -6,10 +6,10 @@
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 
 use openfab_bambu::BambuDriver;
-use openfab_dummy::DummyDriver;
 use openfab_drivers::events::EventType;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
+use openfab_dummy::DummyDriver;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::Request;
@@ -55,6 +55,14 @@ fn unauthorized(req: &Request<'_>) -> Redirect {
 fn internal_server_error(req: &Request) -> Redirect {
     let route = utf8_percent_encode(&req.uri().path().as_str(), NON_ALPHANUMERIC).to_string();
     Redirect::to(format!("/admin/bugreport?route={}", route))
+}
+
+#[catch(404)]
+fn page_not_found(req: &Request) -> RawHtml<Template> {
+    RawHtml(Template::render(
+        "pages/admin/404",
+        context! { route: req.uri().path().as_str().to_string() },
+    ))
 }
 
 #[launch]
@@ -108,7 +116,8 @@ async fn rocket() -> _ {
         .await
         .expect("failed to load drivers");
 
-    manager.load_driver(dummy)
+    manager
+        .load_driver(dummy)
         .await
         .expect("failed to load dummy driver");
 
@@ -121,7 +130,10 @@ async fn rocket() -> _ {
     let accounts = AccountConfig::default();
 
     let rocket = rocket::custom(&config)
-        .register("/", catchers![unauthorized, internal_server_error])
+        .register(
+            "/",
+            catchers![unauthorized, page_not_found, internal_server_error],
+        )
         .mount("/", routes![index])
         .attach(Template::custom(|engine| {
             // Register a custom "none" tester

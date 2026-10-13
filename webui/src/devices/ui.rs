@@ -6,6 +6,7 @@ use crate::errors::OpenFabErr;
 use crate::prints::{PrintJobORM, PrintQueueORM};
 use crate::setup::NativeManager;
 use crate::utils::{Guard, unix_epoch_seconds};
+use ormlite::model::ModelBuilder;
 
 use openfab_drivers::events::Event;
 use openfab_drivers::native::NativeRuntime;
@@ -15,6 +16,7 @@ use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::State;
 use rocket::futures::SinkExt;
+use rocket::form::FromForm;
 use rocket::futures::StreamExt;
 use rocket::futures::future::FutureExt;
 use rocket::response::content::RawHtml;
@@ -177,8 +179,48 @@ pub async fn device_queue(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> 
     ))
 }
 
+#[derive(Debug, Clone, FromForm)]
+pub struct ConfigUpdateForm {
+    pub name: String,
+    pub queue: Uuid,
+    pub driver_id: String,
+    configs: HashMap<Uuid, String>,
+}
+
+#[post("/<uid>/configuration/edit", data = "<form>")]
+pub async fn edit_device_config(guard: Guard, rt: &State<NativeManager>, form: Form<ConfigUpdateForm>, uid: Uuid, pool: &State<PgPool>) -> Result<Redirect, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let form = form.into_inner();
+    let mut device = DeviceORM::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await?;
+    
+    device.name = form.name;
+    device.queue = Some(form.queue);
+    device.driver_id = form.driver_id;
+    device.update_all_fields(&mut *conn).await?;
+
+    for (config_uid, value) in form.configs.into_iter() {
+        let config = DeviceConfigORM::select()
+            .where_("uid = ? and device = ?")
+            .bind(config_uid)
+            .bind(uid)
+            .fetch_one(&mut *conn).await?;
+
+        config.update_partial()
+            .value(value)
+            .updated_at(unix_epoch_seconds())
+            .update(&mut *conn)
+            .await?;
+    }
+    Ok(Redirect::to(format!("/devices/{}/info", uid)))
+}
+
 #[get("/<uid>/configuration")]
 pub async fn device_config(
+    guard: Guard,
     rt: &State<NativeManager>,
     uid: Uuid,
     pool: &State<PgPool>,
@@ -277,7 +319,10 @@ pub async fn live_status(
     uid: Uuid,
 ) -> Result<Channel<'static>, Status> {
     // 1. Acquire connection and fetch device, returning 404 if missing
-    let mut conn = pool.acquire().await.map_err(|_| Status::InternalServerError)?;
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(|_| Status::InternalServerError)?;
     let device = DeviceORM::select()
         .where_("uid = ?")
         .bind(uid)
@@ -289,7 +334,9 @@ pub async fn live_status(
     let serial = device.serial;
 
     // 2. Try subscribing, returning 400 Bad Request if it fails
-    let rx = manager.subscribe(&device.driver_id, &serial).await
+    let rx = manager
+        .subscribe(&device.driver_id, &serial)
+        .await
         .map_err(|_| Status::BadRequest)?;
 
     // 3. Hand over to the WebSocket channel only if everything succeeded
@@ -339,6 +386,7 @@ pub fn get_routes() -> Vec<Route> {
         device_captures,
         device_files,
         live_status,
-        device_logs
+        device_logs,
+        edit_device_config,
     ]
 }

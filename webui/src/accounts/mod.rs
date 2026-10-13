@@ -71,6 +71,7 @@ impl RegisterForm {
             lname: self.lname,
             email: self.email,
             profile_image: None,
+            last_login: utils::unix_epoch_seconds(),
             password: Some(password),
             created: utils::unix_epoch_seconds(),
         })
@@ -88,6 +89,7 @@ pub struct User {
     email: String,
     profile_image: Option<Uuid>,
     created: i64,
+    last_login: i64,
     password: Option<String>,
 }
 

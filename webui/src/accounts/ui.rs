@@ -1,9 +1,10 @@
 use crate::accounts::User;
 use crate::accounts::{AccountConfig, LoginForm, RegisterForm};
 use crate::errors::{AuthErr, OpenFabErr};
-use crate::utils::Guard;
+use crate::utils::{Guard, unix_epoch_seconds};
 
 use ormlite::Model;
+use ormlite::model::ModelBuilder;
 use ormlite::postgres::PgPool;
 use rocket::form::Form;
 use rocket::http::CookieJar;
@@ -48,6 +49,12 @@ pub async fn login(
     }
 
     auth.local_login(jar, "RS512", &user.email).await.unwrap();
+    let user = user
+        .update_partial()
+        .last_login(unix_epoch_seconds())
+        .update(&mut *conn)
+        .await?;
+
     Ok(match login.redirect {
         Some(route) => {
             println!("login redirect uri: {}", route);

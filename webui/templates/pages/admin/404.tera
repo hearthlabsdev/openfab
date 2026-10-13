@@ -1,0 +1,16 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+<div class="page">
+{% if route is defined and route is not none %}
+<h1>The Requested Page {{ route }} was not found.</h1>
+<br/>
+to submit a bug report please go to <a href="/admin/bugreport?route={{ route }}&error=Page%20Not%20Found">bug reprts</a>
+{% else %}
+<h2>Unknown Missing Page</h2>
+<br/>
+to submit a bug report please go to <a href="/admin/bugreport">bug reprts</a>
+{% endif %}
+<br/>
+</div>
+{% endblock content %}

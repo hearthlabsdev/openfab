@@ -28,6 +28,14 @@
                     Email
                 </th>
 
+                <th class="result-table__header result-table__header--email">
+                    Last Login
+                </th>
+
+                <th class="result-table__header result-table__header--email">
+                    Joined
+                </th>
+
                 <th class="result-table__header result-table__header--groups">
                     Groups
                 </th>
@@ -53,6 +61,26 @@
 
                         <td class="result-table__cell result-table__cell--email">
                             {{ user.email }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--submitted">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ user.last_login }}"
+                                data-unix="{{ user.last_login }}"
+                            >
+                                {{ user.last_login }}
+                            </time>
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--submitted">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ user.created }}"
+                                data-unix="{{ user.created }}"
+                            >
+                                {{ user.created }}
+                            </time>
                         </td>
 
                         <td class="result-table__cell result-table__cell--groups">

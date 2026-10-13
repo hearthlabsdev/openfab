@@ -68,7 +68,7 @@
                         {% if queues is defined and queues | length > 0 %}
                             <select id="print_queue" name="queue">
                             {% for queue in queues %}
-                                <option {% if queue.uid == device.queue %}selected{% endif %}>
+                                <option value="{{ queue.uid }}" {% if queue.uid == device.queue %}selected{% endif %}>
                                     {{ queue.name }}
                                 </option>
                             {% endfor %}
@@ -136,7 +136,7 @@
 
                         <select
                             id="driver"
-                            name="driver"
+                            name="driver_id"
                             required
                         >
                             <option value="" disabled selected>
@@ -212,7 +212,7 @@
                                         </td>
                                         <td class="result-table__cell">
                                             
-                                            <input type="text" id="config_{{ config.key }}" name="{{ config.key }}" value="{{ config.value }}"/>
+                                            <input type="text" id="config_{{ config.key }}" name="configs[{{ config.uid }}]" value="{{ config.value }}"/>
                                         </td>
                                         <td>
                                             <time
