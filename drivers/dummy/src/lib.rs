@@ -59,11 +59,16 @@ impl DummyState {
             self.nozzle_temp += self.config.increment;
         }
         if self.progress < 100
-            && self.bed_temp > self.config.target_bed_temp
-            && self.nozzle_temp > self.config.target_nozzle_temp
         {
-            self.progress = self.time / self.calculate_time_remaining();
+            self.progress += 1; //self.time / self.calculate_time_remaining();
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.bed_temp = 0.0;
+        self.nozzle_temp = 0.0;
+        self.time = 0;
+        self.progress = 0;
     }
 
     pub fn printer_status(&self) -> PrinterStatus {
@@ -104,7 +109,9 @@ impl DummyState {
     }
 
     pub fn job_status(&self) -> JobStatus {
-        JobStatus::new(self.calculate_time_remaining(), self.progress, State::Printing)
+        
+        let status = JobStatus::new(self.calculate_time_remaining(), self.progress, State::Printing);
+        status
     }
 }
 
