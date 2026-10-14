@@ -2,16 +2,23 @@ use crate::errors::OpenFabErr;
 use crate::library::ObjectStore;
 use crate::library::{AssetORM, LibraryORM};
 use crate::utils::Guard;
+use crate::utils::ResultStream;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
-use rocket::State;
 use rocket::form::{Form, FromForm};
 use rocket::fs::TempFile;
+
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
+
+use rocket::response::stream::ReaderStream;
+use rocket::{Responder, Response, State};
 use rocket::{Route, get, post, routes};
 use rocket_dyn_templates::{Template, context};
 use serde::{Deserialize, Serialize};
+use std::io;
+use tokio_util::bytes::Bytes;
+use tokio_util::io::StreamReader;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +28,8 @@ pub struct AssetInfo {
     pub mime: String,
     /// a presigned get url to display in the webui
     pub url: String,
+    /// a local proxy url for dealing with cors issues.
+    pub local_url: String,
     pub library: Uuid,
     /// Size of the file in bytes.
     pub size: i64,
@@ -44,6 +53,7 @@ impl AssetInfo {
             mime: orm.mime,
             library: orm.library,
             url: store.presigned_get_url(&orm.key, 60 * 60).await?,
+            local_url: format!("/library/assets/{}/fetch", orm.uid),
             size: orm.size,
             created_at: orm.created_at,
             updated_at: orm.updated_at,
@@ -203,6 +213,28 @@ pub async fn get_asset(
     ))
 }
 
+#[get("/assets/<uid>/fetch")]
+pub async fn asset_proxy(
+    store: &State<ObjectStore>,
+    pool: &State<PgPool>,
+    uid: Uuid,
+) -> Result<ResultStream, OpenFabErr> {
+    let mut conn = pool.acquire().await.expect("connection failed");
+    let asset = AssetORM::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await
+        .expect("failed to get asset");
+
+    let stream = store
+        .get_streamed(asset.key.clone())
+        .await
+        .expect("failed to get stream");
+
+    Ok(stream)
+}
+
 pub fn get_routes() -> Vec<Route> {
     routes![
         create_asset,
@@ -210,6 +242,7 @@ pub fn get_routes() -> Vec<Route> {
         index,
         index_assets,
         download,
-        get_asset
+        get_asset,
+        asset_proxy
     ]
 }

@@ -1,5 +1,8 @@
+use crate::admin::users::UserActivationCode;
 use rocket::{form::FromForm, fs::TempFile};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, FromForm)]
 pub struct ActivationForm {
@@ -23,4 +26,10 @@ pub struct UserForm<'r> {
     pub locale: Option<String>,
     pub timezone: Option<String>,
     pub picture: Option<TempFile<'r>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromForm)]
+pub struct ActivationCodeForm {
+    pub user: Uuid,
+    pub ttl: Option<i64>,
 }

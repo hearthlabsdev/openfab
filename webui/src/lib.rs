@@ -24,10 +24,6 @@ use openfab::advertise::{IppAdvertiser, IppBroadcastBuilder};
 use rocket::tokio;
 use tokio::sync::mpsc;
 
-/// can this server handle livekit orchestration for per machine live viewing.
-#[cfg(feature = "livekit")]
-pub mod livekit;
-
 use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;

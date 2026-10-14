@@ -15,8 +15,8 @@ use openfab_drivers::utils::config_to_json;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::State;
-use rocket::futures::SinkExt;
 use rocket::form::FromForm;
+use rocket::futures::SinkExt;
 use rocket::futures::StreamExt;
 use rocket::futures::future::FutureExt;
 use rocket::response::content::RawHtml;
@@ -188,7 +188,13 @@ pub struct ConfigUpdateForm {
 }
 
 #[post("/<uid>/configuration/edit", data = "<form>")]
-pub async fn edit_device_config(guard: Guard, rt: &State<NativeManager>, form: Form<ConfigUpdateForm>, uid: Uuid, pool: &State<PgPool>) -> Result<Redirect, OpenFabErr> {
+pub async fn edit_device_config(
+    guard: Guard,
+    rt: &State<NativeManager>,
+    form: Form<ConfigUpdateForm>,
+    uid: Uuid,
+    pool: &State<PgPool>,
+) -> Result<Redirect, OpenFabErr> {
     let mut conn = pool.acquire().await?;
     let form = form.into_inner();
     let mut device = DeviceORM::select()
@@ -196,7 +202,7 @@ pub async fn edit_device_config(guard: Guard, rt: &State<NativeManager>, form: F
         .bind(uid)
         .fetch_one(&mut *conn)
         .await?;
-    
+
     device.name = form.name;
     device.queue = Some(form.queue);
     device.driver_id = form.driver_id;
@@ -207,9 +213,11 @@ pub async fn edit_device_config(guard: Guard, rt: &State<NativeManager>, form: F
             .where_("uid = ? and device = ?")
             .bind(config_uid)
             .bind(uid)
-            .fetch_one(&mut *conn).await?;
+            .fetch_one(&mut *conn)
+            .await?;
 
-        config.update_partial()
+        config
+            .update_partial()
             .value(value)
             .updated_at(unix_epoch_seconds())
             .update(&mut *conn)

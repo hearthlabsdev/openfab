@@ -1,7 +1,9 @@
 use crate::devices::DeviceModelORM;
+use crate::errors::OpenFabErr;
 use crate::library::{AssetORM, ObjectStore};
 use crate::settings::DeviceModelInfo;
 use crate::settings::materials::FilamentORM;
+use crate::ui::themes::ThemeORM;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::response::content::RawHtml;
@@ -98,6 +100,17 @@ pub async fn index() -> RawHtml<Template> {
     RawHtml(Template::render("pages/settings/index", context! {}))
 }
 
+#[get("/settings/styles")]
+pub async fn styles(pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let themes = ThemeORM::select().fetch_all(&mut *conn).await?;
+
+    Ok(RawHtml(Template::render(
+        "pages/settings/styles/index",
+        context! { themes },
+    )))
+}
+
 pub fn get_routes() -> Vec<Route> {
-    routes![devices, device, filament, filaments, index]
+    routes![devices, device, filament, filaments, index, styles]
 }

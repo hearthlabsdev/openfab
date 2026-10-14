@@ -52,6 +52,8 @@
                 alt="{{ asset.name }}"
             />
 
+        {% elif asset.mime == "model/stl" %}
+            <stl-viewer src="{{ asset.local_url }}" color="#ff5500" style="height: 500px;"></stl-viewer>
         {% else %}
 
             <div class="asset-file-icon">

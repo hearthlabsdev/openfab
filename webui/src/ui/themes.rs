@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model)]
 #[ormlite(table = "themes")]
-pub struct Theme {
+pub struct ThemeORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,
     pub name: String,
@@ -31,7 +31,7 @@ pub struct Theme {
     pub accent: String,
 }
 
-impl Default for Theme {
+impl Default for ThemeORM {
     fn default() -> Self {
         Self {
             uid: Uuid::new_v4(),
@@ -60,7 +60,7 @@ impl ThemePicker {
     pub fn new() -> Self {
         Self {}
     }
-    pub async fn select(jar: &CookieJar<'_>, pool: &PgPool) -> Result<Theme, OpenFabErr> {
+    pub async fn select(jar: &CookieJar<'_>, pool: &PgPool) -> Result<ThemeORM, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let theme_id: Uuid = match jar.get("theme") {
             Some(value) => value.to_string().parse().unwrap_or(Uuid::nil()),
@@ -73,9 +73,9 @@ impl ThemePicker {
         };
 
         let theme = if let theme_id = Uuid::nil() {
-            Theme::default()
+            ThemeORM::default()
         } else {
-            Theme::select()
+            ThemeORM::select()
                 .where_("uid = ?")
                 .bind(theme_id)
                 .fetch_one(&mut *conn)
@@ -102,7 +102,7 @@ pub async fn accounts_theme(jar: &CookieJar<'_>, pool: &State<PgPool>) -> RawCss
 #[get("/<uid>/base.css")]
 pub async fn get_named_base_theme(pool: &State<PgPool>, uid: Uuid) -> RawCss<Template> {
     let mut conn = pool.acquire().await.unwrap();
-    let theme = Theme::select()
+    let theme = ThemeORM::select()
         .where_("uid = ?")
         .bind(uid)
         .fetch_one(&mut *conn)
@@ -115,7 +115,7 @@ pub async fn get_named_base_theme(pool: &State<PgPool>, uid: Uuid) -> RawCss<Tem
 #[get("/<uid>/accounts.css")]
 pub async fn get_named_accounts_theme(pool: &State<PgPool>, uid: Uuid) -> RawCss<Template> {
     let mut conn = pool.acquire().await.unwrap();
-    let theme = Theme::select()
+    let theme = ThemeORM::select()
         .where_("uid = ?")
         .bind(uid)
         .fetch_one(&mut *conn)

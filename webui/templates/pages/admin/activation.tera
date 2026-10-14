@@ -39,8 +39,8 @@
         </thead>
 
         <tbody class="result-table__body">
-            {% if activation_codes is defined and activation_codes | length > 0 %}
-                {% for code in activation_codes %}
+            {% if codes is defined and codes | length > 0 %}
+                {% for code in codes %}
                     <tr class="result-table__row">
 
                         <td class="result-table__cell result-table__cell--code">

@@ -114,6 +114,19 @@
                                         Delete
                                     </button>
                                 </form>
+                                <form
+                                    action="/admin/activation-codes"
+                                    method="POST"
+                                    class="result-table__action-form"
+                                >
+                                    <input type="hidden" value="{{ user.uid }}" name="user"/>
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-primary"
+                                    >
+                                        Generate Activation Code
+                                    </button>
+                                </form>
                             </div>
                         </td>
 
