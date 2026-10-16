@@ -1,6 +1,7 @@
 pub mod forms;
 pub mod ui;
 
+/*
 use crate::accounts::User;
 use ormlite::Model;
 use ormlite::model::{Join, JoinMeta};
@@ -26,3 +27,4 @@ pub struct GroupMembershipRel {
     #[ormlite(column = "group")]
     pub group: Join<GroupORM>,
 }
+*/

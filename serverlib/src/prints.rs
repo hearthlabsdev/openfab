@@ -1,12 +1,13 @@
-use ormlite::Model;
-use serde_derive::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use crate::accounts::User;
 use crate::library::AssetORM;
 use crate::utils::unix_epoch_seconds;
 use ormlite::model::Join;
 use ormlite::model::JoinMeta;
+use ormlite::Model;
+use serde_derive::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use rocket_okapi::okapi::schemars::JsonSchema;
 
 #[derive(Debug, Model, Serialize, Deserialize)]
 #[ormlite(table = "print_jobs")]
@@ -55,6 +56,99 @@ pub struct PrintJobORM {
     pub notes: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct PrintJob {
+    /// Stable job identifier
+    pub uid: Uuid,
+
+    /// Owning user
+    pub user: Uuid,
+
+    /// Target queue (capability-based)
+    pub queue: Uuid,
+
+    /// Original filename or description
+    pub name: String,
+    /// the file being printed (PDF, SVG, STL, OBJ, GCODE, etc.)
+    pub asset: Uuid,
+
+    /// Estimated cost (computed at submission)
+    pub estimated_cost: Option<f64>,
+
+    /// Job creation timestamp
+    pub created_at: i64,
+
+    /// Terminal lifecycle state
+    pub state: String,
+
+    /// When job entered terminal state
+    pub completed_at: Option<i64>,
+
+    pub copies: Option<i32>,
+    pub priority: Option<String>,
+
+    // =========================
+    // Advanced Settings
+    // =========================
+    pub material: Option<String>,
+    pub nozzle_temp: Option<i32>,
+    pub bed_temp: Option<i32>,
+    pub layer_height: Option<f32>,
+    pub infill: Option<i32>,
+    pub supports: Option<String>,
+    pub notes: Option<String>,
+}
+
+impl From<PrintJobORM> for PrintJob {
+    fn from(orm: PrintJobORM) -> Self {
+        Self {
+            uid: orm.uid,
+            user: orm.user.id,
+            queue: orm.queue,
+            name: orm.name,
+            asset: orm.asset.id,
+            estimated_cost: orm.estimated_cost,
+            created_at: orm.created_at,
+            state: orm.state,
+            completed_at: orm.completed_at,
+            copies: orm.copies,
+            priority: orm.priority,
+            material: orm.material,
+            nozzle_temp: orm.nozzle_temp,
+            bed_temp: orm.bed_temp,
+            layer_height: orm.layer_height,
+            infill: orm.infill,
+            supports: orm.supports,
+            notes: orm.notes,
+        }
+    }
+}
+/*
+impl From<PrintJob> for PrintJobORM {
+    fn from(job: PrintJob) -> Self {
+        Self {
+            uid: job.uid,
+            user: Join::new(job.user),
+            queue: job.queue,
+            name: job.name,
+            asset: Join::new(job.asset),
+            estimated_cost: job.estimated_cost,
+            created_at: job.created_at,
+            state: job.state,
+            completed_at: job.completed_at,
+            copies: job.copies,
+            priority: job.priority,
+            material: job.material,
+            nozzle_temp: job.nozzle_temp,
+            bed_temp: job.bed_temp,
+            layer_height: job.layer_height,
+            infill: job.infill,
+            supports: job.supports,
+            notes: job.notes,
+        }
+    }
+}*/
+
 #[derive(Debug, Model, Clone, Serialize, Deserialize)]
 #[ormlite(table = "print_job_executions")]
 pub struct PrintJobExecutionORM {
@@ -83,7 +177,7 @@ pub struct PrintJobExecutionORM {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[derive(Debug, Clone, Serialize, Deserialize, Model, JsonSchema)]
 #[ormlite(table = "print_queues")]
 pub struct PrintQueueORM {
     #[ormlite(primary_key)]

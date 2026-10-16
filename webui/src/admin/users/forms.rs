@@ -1,8 +1,8 @@
-use crate::admin::users::UserActivationCode;
 use rocket::{form::FromForm, fs::TempFile};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
+use serverlib::admin::users::{UserActivationCode};
 
 #[derive(Debug, Clone, FromForm)]
 pub struct ActivationForm {

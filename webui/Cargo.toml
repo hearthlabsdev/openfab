@@ -44,5 +44,6 @@ reqwest = "0.12.28"
 tokio-util = "0.7.20"
 futures-util = "0.3.34"
 serverlib = { path = "../serverlib" }
+openfab-api-server = { path = "../api-server" }
 [features]
 #livekit = [ "dep:livekit" ]

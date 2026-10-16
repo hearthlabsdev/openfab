@@ -1,5 +1,5 @@
 use crate::library::AssetORM;
-use crate::prints::PrintJobORM;
+use serverlib::prints::PrintJobORM;
 use crate::accounts::User;
 use crate::utils::unix_epoch_seconds;
 use ormlite::model::Join;

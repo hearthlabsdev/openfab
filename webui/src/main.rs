@@ -153,7 +153,7 @@ async fn rocket() -> _ {
         .mount("/static", FileServer::from("static"));
 
     let rocket = webui::ui::register_routes(rocket);
-    //let rocket = webui::api::register_routes(rocket);
+    let rocket = openfab_api_server::register_routes(rocket);
 
     let mut key = File::open("../keys/backend.key.pem").await.unwrap();
     let mut priv_key_str = String::new();

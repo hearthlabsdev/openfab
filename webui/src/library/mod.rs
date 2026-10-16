@@ -1,7 +1,7 @@
 pub mod ui;
 pub use ui::get_routes;
 pub use serverlib::library::*;
-
+/*
 use crate::errors::OpenFabErr;
 use crate::utils::ResultStream;
 use crate::utils::unix_epoch_seconds;
@@ -18,7 +18,6 @@ use std::io;
 use tokio::io::AsyncRead;
 use tokio_util::bytes::Bytes;
 use tokio_util::io::StreamReader;
-pub use ui::get_routes;
 
 use uuid::Uuid;
 
@@ -240,3 +239,4 @@ impl ObjectStore {
         Ok(ResultStream::new(io_stream, ct_type))
     }
 }
+*/

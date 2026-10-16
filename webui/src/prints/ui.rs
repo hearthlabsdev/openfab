@@ -1,8 +1,9 @@
 use crate::accounts::User;
 use crate::devices::DeviceORM;
-use crate::library::AssetORM;
 use crate::prints::forms::PrintForm;
-use crate::prints::{PrintJobORM, PrintQueueORM};
+
+use serverlib::library::AssetORM;
+use serverlib::prints::{PrintJobORM, PrintQueueORM};
 use crate::utils::Guard;
 use ormlite::Model;
 use ormlite::postgres::PgPool;

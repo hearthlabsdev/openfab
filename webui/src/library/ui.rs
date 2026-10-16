@@ -2,7 +2,7 @@ use crate::errors::OpenFabErr;
 use crate::library::ObjectStore;
 use crate::library::{AssetORM, LibraryORM};
 use crate::utils::Guard;
-use crate::utils::ResultStream;
+use serverlib::utils::ResultStream;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::form::{Form, FromForm};

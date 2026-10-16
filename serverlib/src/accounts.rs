@@ -7,6 +7,7 @@ use rocket_oidc::claims::CoreClaims;
 use rocket_oidc::utils::string_or_vec;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
+use rocket_okapi::okapi::schemars::JsonSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Error)]
@@ -75,19 +76,19 @@ impl RegisterForm {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Model)]
+#[derive(Debug, Clone, Serialize, Deserialize, Model, JsonSchema)]
 #[ormlite(table = "users")]
 pub struct User {
     #[ormlite(primary_key)]
-    uid: Uuid,
-    subject: Option<String>,
-    fname: String,
-    lname: String,
-    email: String,
-    profile_image: Option<Uuid>,
-    created: i64,
-    last_login: i64,
-    password: Option<String>,
+    pub uid: Uuid,
+    pub subject: Option<String>,
+    pub fname: String,
+    pub lname: String,
+    pub email: String,
+    pub profile_image: Option<Uuid>,
+    pub created: i64,
+    pub last_login: i64,
+    pub password: Option<String>,
 }
 
 impl User {

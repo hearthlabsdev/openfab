@@ -1,7 +1,7 @@
 pub mod ui;
 pub use serverlib::accounts::*;
 pub use ui::get_routes;
-
+/*
 use ormlite::Model;
 use rocket::FromForm;
 use rocket::form::Form;
@@ -10,7 +10,6 @@ use rocket_oidc::utils::string_or_vec;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use time::{Duration, OffsetDateTime};
-pub use ui::get_routes;
 use uuid::Uuid;
 
 use crate::utils;
@@ -157,3 +156,4 @@ impl CoreClaims for UserID {
         self.exp
     }
 }
+*/

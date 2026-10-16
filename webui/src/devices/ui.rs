@@ -3,7 +3,7 @@ use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
 use crate::devices::{DeviceConfigORM, DeviceORM};
 use crate::errors::OpenFabErr;
-use crate::prints::{PrintJobORM, PrintQueueORM};
+use serverlib::prints::{PrintJobORM, PrintQueueORM};
 use crate::setup::NativeManager;
 use crate::utils::{Guard, unix_epoch_seconds};
 use ormlite::model::ModelBuilder;

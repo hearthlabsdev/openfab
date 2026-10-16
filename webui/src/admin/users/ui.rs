@@ -1,6 +1,4 @@
 use crate::accounts::User;
-use crate::admin::ActivationCodeORM;
-use crate::admin::users::UserActivationCode;
 use crate::admin::users::forms::ActivationCodeForm;
 use crate::admin::users::forms::UserForm;
 use crate::errors::OpenFabErr;
@@ -12,6 +10,9 @@ use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
 use rocket::{Route, State, get, post, routes};
 use rocket_dyn_templates::{Template, context};
+
+use serverlib::admin::users::UserActivationCode;
+use serverlib::admin::ActivationCodeORM;
 
 #[get("/users")]
 pub async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {

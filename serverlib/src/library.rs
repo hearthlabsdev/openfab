@@ -8,12 +8,11 @@ use rocket::fs::TempFile;
 use secret_ref::*;
 
 use serde_derive::{Deserialize, Serialize};
-
+use rocket_okapi::okapi::schemars::JsonSchema;
 use uuid::Uuid;
-
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
 
-#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+#[derive(Debug, Model, Clone, Serialize, Deserialize, JsonSchema)]
 #[ormlite(table = "libraries")]
 pub struct LibraryORM {
     #[ormlite(primary_key)]
@@ -63,7 +62,7 @@ pub struct Resource {
     pub asset: AssetORM,
 }
 
-#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+#[derive(Debug, Model, Clone, Serialize, Deserialize, JsonSchema)]
 #[ormlite(table = "assets")]
 pub struct AssetORM {
     #[ormlite(primary_key)]
