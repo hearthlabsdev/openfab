@@ -61,10 +61,12 @@ impl<R: Runtime + 'static> RuntimeManager<R> {
             let device_config = openfab_drivers::utils::config_to_json(&schema, &configs)?;
             match self
                 .runtime
-                .add_device(&device.driver_id, device_config)
+                .add_device(&device.driver_id, device_config.clone())
                 .await
             {
-                Ok(_) => {}
+                Ok(_) => {
+                    eprintln!("added device: {:?}", device_config.get("serial"));
+                }
                 Err(e) => {
                     // should log the error here
                     eprintln!("failed to connect to device: {e}");
@@ -89,6 +91,10 @@ impl<R: Runtime + 'static> RuntimeManager<R> {
 
     pub async fn index_drivers(&self) -> Result<Vec<DriverMeta>, DriverError> {
         self.runtime.index_drivers().await
+    }
+
+    pub fn runtime(&self) -> &R {
+        &self.runtime
     }
 }
 /*

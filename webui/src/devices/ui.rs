@@ -184,6 +184,7 @@ pub struct ConfigUpdateForm {
     pub name: String,
     pub queue: Uuid,
     pub driver_id: String,
+    pub serial: String,
     configs: HashMap<Uuid, String>,
 }
 
@@ -206,6 +207,7 @@ pub async fn edit_device_config(
     device.name = form.name;
     device.queue = Some(form.queue);
     device.driver_id = form.driver_id;
+    device.serial = form.serial;
     device.update_all_fields(&mut *conn).await?;
 
     for (config_uid, value) in form.configs.into_iter() {
@@ -279,7 +281,11 @@ pub async fn device_captures(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Templat
 }
 
 #[get("/<uid>/files")]
-pub async fn device_files(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
+pub async fn device_files(
+    rt: &State<NativeManager>,
+    uid: Uuid,
+    pool: &State<PgPool>,
+) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
     let device = DeviceORM::select()
@@ -289,7 +295,11 @@ pub async fn device_files(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> 
         .await
         .unwrap();
 
-    RawHtml(Template::render("pages/devices/files", context! { device }))
+    let files = rt.runtime().list_entries(&device.driver_id, &device.serial, "/").await.expect("failed to list files");
+    RawHtml(Template::render(
+        "pages/devices/files",
+        context! { device, files },
+    ))
 }
 
 #[get("/<uid>/logs")]
@@ -308,6 +318,7 @@ pub async fn device_logs(
     let logs = DeviceLogORM::select()
         .where_("device = ?")
         .bind(uid)
+        .order_desc("date")
         .fetch_all(&mut *conn)
         .await?;
 
@@ -342,10 +353,18 @@ pub async fn live_status(
     let serial = device.serial;
 
     // 2. Try subscribing, returning 400 Bad Request if it fails
-    let rx = manager
-        .subscribe(&device.driver_id, &serial)
-        .await
-        .map_err(|_| Status::BadRequest)?;
+    let rx = match manager.subscribe(&device.driver_id, &serial).await {
+        Ok(rx) => rx,
+        Err(e) => {
+            // log the error
+            eprintln!("failed to connect to device: {e}");
+            DeviceLogORM::error(device.uid, e.to_string(), None)
+                .insert(&mut *conn)
+                .await
+                .map_err(|e| Status::InternalServerError);
+            return Err(Status::BadRequest);
+        }
+    };
 
     // 3. Hand over to the WebSocket channel only if everything succeeded
     Ok(socket.channel(move |mut stream| {

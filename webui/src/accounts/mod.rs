@@ -1,4 +1,7 @@
 pub mod ui;
+pub use serverlib::accounts::*;
+pub use ui::get_routes;
+
 use ormlite::Model;
 use rocket::FromForm;
 use rocket::form::Form;

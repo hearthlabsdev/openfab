@@ -16,7 +16,7 @@ use uuid::Uuid;
 pub struct SettingsORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,
-    pub user: Option<Uuid>,
+    pub account: Option<Uuid>,
     pub key: String,
     pub value: String,
 }

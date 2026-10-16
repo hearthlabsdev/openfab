@@ -133,6 +133,7 @@ pub mod errors;
 /// used for JSON API types and handlers
 /// this includes definitions for anything outside of the scope of IPP including: library, device management, user and group management, and policy management.
 pub mod api;
+//pub mod gcode;
 
 #[cfg(feature = "oidc")]
 pub mod oidc;

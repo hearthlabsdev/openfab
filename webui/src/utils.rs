@@ -1,15 +1,15 @@
+use futures_util::{Stream, StreamExt};
 use openfab::oidc::OidcClaims;
+use rocket::Request;
+use rocket::http::{ContentType, Status};
+use rocket::response::{Responder, Response};
 use rocket_dyn_templates::tera::Context;
 use rocket_oidc::{OIDCGuard, auth::ApiKeyGuard};
-use rocket::http::{ContentType, Status};
-use rocket::Request;
+use std::io;
 use std::pin::Pin;
 use std::task::{Context as TaskContext, Poll};
-use tokio_util::bytes::Bytes;
-use rocket::response::{Responder, Response};
-use futures_util::{Stream, StreamExt};
-use std::io;
 use tokio::io::{AsyncRead, ReadBuf};
+use tokio_util::bytes::Bytes;
 
 pub type ApiGuard = ApiKeyGuard<OidcClaims>;
 pub type Guard = OIDCGuard<crate::accounts::UserID>;
@@ -118,8 +118,8 @@ impl<'r> Responder<'r, 'static> for ResultStream {
         let mut response = Response::new();
 
         // Parse and set the Content-Type header stored inside the stream object
-        let content_type = ContentType::parse_flexible(&self.content_type)
-            .unwrap_or(ContentType::Binary);
+        let content_type =
+            ContentType::parse_flexible(&self.content_type).unwrap_or(ContentType::Binary);
         response.set_header(content_type);
 
         // Pass `self` as the streamed body since ResultStream implements AsyncRead

@@ -104,12 +104,24 @@
 
             <div class="asset-detail-field">
                 <dt>Created</dt>
-                <dd>{{ asset.created_at }}</dd>
+                <dd><time
+                class="asset-detail-field local-time"
+                datetime="{{ asset.created_at }}"
+                data-unix="{{ asset.created_at }}"
+            >
+                {{ asset.created_at }}
+            </time></dd>
             </div>
 
             <div class="asset-detail-field">
                 <dt>Updated</dt>
-                <dd>{{ asset.updated_at }}</dd>
+                <dd><time
+                class="asset-detail-field local-time"
+                datetime="{{ asset.updated_at }}"
+                data-unix="{{ asset.updated_at }}"
+            >
+                {{ asset.updated_at }}
+            </time></dd>
             </div>
 
             {% if asset.last_used_at is defined and asset.last_used_at is not none %}

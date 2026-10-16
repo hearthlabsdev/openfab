@@ -1,20 +1,22 @@
-/* =========================
+/* =========================================================
    Auth Pages (Login/Register)
-========================= */
+========================================================= */
 
 /* Center the auth content */
 .page {
     display: flex;
     justify-content: center;
     align-items: center;
+    background: var(--background);
+    color: var(--text);
 }
 
 /* Form container */
 .page form {
     width: 100%;
     max-width: 360px;
-    background: #151922;
-    border: 1px solid #232938;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 24px;
     display: flex;
@@ -28,12 +30,13 @@
     margin-bottom: 16px;
     font-size: 22px;
     font-weight: 600;
+    color: var(--text-strong);
 }
 
 /* Labels */
 .page label {
     font-size: 13px;
-    color: #9aa4b2;
+    color: var(--text-muted);
 }
 
 /* Inputs */
@@ -43,21 +46,21 @@
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid #2a3040;
-    background: #0f1115;
-    color: #e6e6e6;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--text);
     outline: none;
     font-size: 14px;
     transition: border 0.15s, box-shadow 0.15s;
 }
 
 .page input::placeholder {
-    color: #7a8395;
+    color: var(--text-muted);
 }
 
 .page input:focus {
-    border-color: #4c8dff;
-    box-shadow: 0 0 0 1px #4c8dff;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* Button */
@@ -66,16 +69,16 @@
     padding: 10px;
     border-radius: 8px;
     border: none;
-    background: #4c8dff;
-    color: white;
+    background: var(--accent);
+    color: #ffffff;
     font-weight: 500;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.15s, transform 0.05s;
+    transition: opacity 0.15s, transform 0.05s;
 }
 
 .page button:hover {
-    background: #3b73d1;
+    opacity: 0.9;
 }
 
 .page button:active {
@@ -87,28 +90,29 @@
     margin-top: 8px;
     font-size: 13px;
     text-align: center;
-    color: #7a8395;
+    color: var(--text-muted);
     text-decoration: none;
 }
 
 .page form a:hover {
-    color: #4c8dff;
+    color: var(--accent);
 }
 
 /* Optional: subtle card hover (desktop only feel) */
 @media (hover: hover) {
     .page form:hover {
-        border-color: #2f3650;
+        border-color: var(--border);
     }
 }
 
-/* =========================
+
+/* =========================================================
    OIDC Section
-========================= */
+========================================================= */
 
 .oidc-section {
     margin-top: 16px;
-    border-top: 1px solid #232938;
+    border-top: 1px solid var(--border-subtle);
     padding-top: 12px;
 }
 
@@ -117,7 +121,7 @@
     width: 100%;
     background: transparent;
     border: none;
-    color: #9aa4b2;
+    color: var(--text-muted);
     font-size: 13px;
     display: flex;
     justify-content: space-between;
@@ -128,7 +132,7 @@
 }
 
 .oidc-toggle:hover {
-    color: #e6e6e6;
+    color: var(--text);
 }
 
 /* Chevron animation */
@@ -158,56 +162,61 @@
     display: block;
     padding: 8px 10px;
     border-radius: 8px;
-    background: #0f1115;
-    border: 1px solid #2a3040;
-    color: #c9d1d9;
+    background: var(--background);
+    border: 1px solid var(--border);
+    color: var(--text-strong);
     text-decoration: none;
     font-size: 14px;
     transition: background 0.15s, border 0.15s, color 0.15s;
 }
 
 .oidc-provider:hover {
-    background: #161b26;
-    border-color: #4c8dff;
-    color: #ffffff;
+    background: var(--surface-hover);
+    border-color: var(--accent);
+    color: var(--text-strong);
 }
 
+
+/* =========================================================
+   Password Wrapper & Toggles
+========================================================= */
+
 .password-wrapper {
-        position: relative;
-        width: 100%;
-    }
+    position: relative;
+    width: 100%;
+}
 
-    .password-wrapper input {
-        width: 100%;
-        box-sizing: border-box;
-        padding-right: 42px;
-    }
+.password-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 42px;
+}
 
-    .password-toggle, .password-toggle2 {
-        position: absolute;
-        top: 0;
-        right: 0;
-        height: 100%;
-        width: 42px;
+.password-toggle, 
+.password-toggle2 {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    cursor: pointer;
+}
 
-        display: flex;
-        align-items: center;
-        justify-content: center;
+.password-toggle:hover, 
+.password-toggle2:hover {
+    color: var(--text-strong);
+}
 
-        padding: 0;
-        margin: 0;
-
-        background: transparent;
-        border: 0;
-        color: #666;
-        cursor: pointer;
-    }
-
-    .password-toggle:hover, .password-toggle2:hover {
-        color: #222;
-    }
-
-    .eye-icon, .eye-icon2 {
-        width: 20px;
-        height: 20px;
-    }
+.eye-icon, 
+.eye-icon2 {
+    width: 20px;
+    height: 20px;
+}

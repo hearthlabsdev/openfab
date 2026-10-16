@@ -1,4 +1,4 @@
-f{# templates/layouts/device.tera #}
+{# templates/layouts/device.tera #}
 <!DOCTYPE html>
 <html lang="en">
 <head>

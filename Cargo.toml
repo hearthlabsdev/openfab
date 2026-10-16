@@ -1,12 +1,19 @@
 [workspace]
-members = ["drivers","drivers/bambu","drivers/klipper",
+members = [
+    "drivers",
+    "drivers/bambu",
+    "drivers/klipper",
     "core",
     "webui",
+    "api-server",
+    "serverlib",
     "drivers/prusa",
     "drivers/bambu",
     "drivers/marlin",
     "drivers/klipper",
-    "drivers/dummy"
-, "slicers/cura", "slicers/slic3r"]
+    "drivers/virtual",
+    "slicers/cura", 
+    "slicers/slic3r"
+]
 
 resolver = "2"

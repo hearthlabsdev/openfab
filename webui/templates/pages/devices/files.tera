@@ -6,10 +6,63 @@
 
 {% block content %}
 
-<div class="device-page">
+<div class="container">
 
-    <h1>Device Files</h1>
+    <div class="page-header flex-between">
+        <h1 class="title">Device Files</h1>
+    </div>
 
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+                <th class="result-table__header result-table__header--name">
+                    Name
+                </th>
+                <th class="result-table__header result-table__header--size">
+                    Size
+                </th>
+            </tr>
+        </thead>
+
+        <tbody class="result-table__body">
+
+            {% if files is defined and files | length > 0 %}
+
+                {% for file in files %}
+
+                    <tr class="result-table__row">
+
+                        <td class="result-table__cell result-table__cell--name">
+                            {{ file.name }}
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--size">
+                            {% if file.size is defined and file.size is not none %}
+                                {{ file.size }} bytes
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            {% else %}
+
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        colspan="2"
+                        class="result-table__cell result-table__cell--empty"
+                    >
+                        No files found on this device.
+                    </td>
+                </tr>
+
+            {% endif %}
+
+        </tbody>
+    </table>
 
 </div>
 

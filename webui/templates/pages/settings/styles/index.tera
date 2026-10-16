@@ -1,0 +1,78 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+
+<div class="container">
+
+    <a href="/settings/styles/create" class="btn btn-primary">Create Theme</a>
+
+    <table class="result-table">
+        <thead class="result-table__head">
+            <tr class="result-table__row">
+
+                <th class="result-table__header result-table__header--name">
+                    Name
+                </th>
+
+                <th class="result-table__header result-table__header--submitted">
+                    Submitted
+                </th>
+
+                <th class="result-table__header result-table__header--status">
+                    Status
+                </th>
+
+            </tr>
+        </thead>
+
+        <tbody class="result-table__body">
+
+            {% if themes is defined and themes | length > 0 %}
+
+                {% for theme in themes %}
+
+                    <tr class="result-table__row">
+
+                        <td class="result-table__cell result-table__cell--name">
+                            <a href="/settings/styles/{{ theme.uid }}">{{ theme.name }}</a>
+                        </td>
+
+                        <td class="result-table__cell result-table__cell--submitted">
+                            <time
+                                class="result-table__time local-time"
+                                datetime="{{ theme.created_at }}"
+                                data-unix="{{ theme.created_at }}"
+                            >
+                                {{ theme.created_at }}
+                            </time>
+                        </td>
+
+                        <td>
+                            <form action="/settings/styles/{{ theme.uid }}/apply" method="POST">
+                                <button type="submit" class="btn btn-primary">Apply</button>
+                            </form>
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            {% else %}
+
+                <tr class="result-table__row result-table__row--empty">
+                    <td
+                        colspan="3"
+                        class="result-table__cell result-table__cell--empty"
+                    >
+                        No themes found.
+                    </td>
+                </tr>
+
+            {% endif %}
+
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock content %}

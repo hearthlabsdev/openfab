@@ -3,14 +3,13 @@
 //! 2. IPP attributes describe capabilities.
 //! 3. Device selection is an internal policy decision
 
+#![deny(unused)]
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 
 use openfab_bambu::BambuDriver;
-use openfab_drivers::events::EventType;
 use openfab_drivers::native::NativeRuntime;
-use openfab_drivers::runtime::DriverRuntime;
-use openfab_dummy::DummyDriver;
-use ormlite::Model;
+use openfab_virtual::VirtualDriver;
+use openfab_prusa::PrusaDriver;
 use ormlite::postgres::PgPool;
 use rocket::Request;
 use rocket::config::Config;
@@ -24,15 +23,9 @@ use rocket_oidc::{
     auth::AuthState, client::LocalClient, config::OIDCConfig, config::WorkingConfig,
     sign::OidcSigner,
 };
-use std::collections::HashMap;
-use std::net::{Ipv4Addr, SocketAddr};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
-use tokio::sync::broadcast;
-use webui::VirtualPrinter;
 use webui::accounts::AccountConfig;
-use webui::devices::{DeviceConfigORM, DeviceORM};
-use webui::errors::OpenFabErr;
 use webui::library::ObjectStoreConfig;
 use webui::setup::RuntimeManager;
 #[macro_use]
@@ -68,8 +61,7 @@ fn page_not_found(req: &Request) -> RawHtml<Template> {
 #[launch]
 async fn rocket() -> _ {
     // Build Rocket
-    let tx = VirtualPrinter::new().spawn_advertiser();
-
+    
     println!("current time UTC: {}", time::OffsetDateTime::now_utc());
 
     let custom_limits = Limits::default()
@@ -110,14 +102,20 @@ async fn rocket() -> _ {
     let runtime = NativeRuntime::new();
     let mut manager = RuntimeManager::new(runtime);
     let bambu = BambuDriver::new();
-    let dummy = DummyDriver::new();
+    let vdriver = VirtualDriver::new().await.expect("failed to setup virtual driver");
+    let prusa = PrusaDriver::new();
     manager
         .load_driver(bambu)
         .await
         .expect("failed to load drivers");
 
     manager
-        .load_driver(dummy)
+        .load_driver(prusa)
+        .await
+        .expect("failed to load drivers");
+    
+    manager
+        .load_driver(vdriver)
         .await
         .expect("failed to load dummy driver");
 
@@ -147,7 +145,6 @@ async fn rocket() -> _ {
                 },
             );
         }))
-        .manage(tx)
         .manage(accounts)
         .manage(pool)
         .manage(manager)
@@ -156,7 +153,7 @@ async fn rocket() -> _ {
         .mount("/static", FileServer::from("static"));
 
     let rocket = webui::ui::register_routes(rocket);
-    let rocket = webui::api::register_routes(rocket);
+    //let rocket = webui::api::register_routes(rocket);
 
     let mut key = File::open("../keys/backend.key.pem").await.unwrap();
     let mut priv_key_str = String::new();

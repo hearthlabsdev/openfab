@@ -1,17 +1,23 @@
-use crate::prints::*;
 use rocket::{delete, get, post, put};
 use rocket_okapi::openapi;
+use rocket::serde::json::Json;
+use rocket::State;
 use uuid::Uuid;
+use ormlite::Model;
+use ormlite::postgres::PgPool;
+
+use serverlib::errors::OpenFabErr;
 
 #[openapi(tag = "Prints")]
-#[get("/prints")]
-pub(crate) async fn list_prints() {
+#[get("/prints/queue/<uid>")]
+pub(crate) async fn list_prints(pool: &State<PgPool>, uid: Uuid) -> Result<Vec<Json<PrintJobORM>>, OpenFabErr> {
     unimplemented!();
 }
 
 #[openapi(tag = "Prints")]
 #[get("/prints/<id>")]
-pub(crate) async fn get_print(id: Uuid) {
+pub(crate) async fn get_print(id: Uuid) -> Result<Json<PrintJobORM>, OpenFabErr> {
+    
     unimplemented!();
 }
 

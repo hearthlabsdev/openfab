@@ -239,6 +239,61 @@ export const styles = css`
     font-style: italic;
     margin: 0;
   }
+
+  .camera-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.printer-feed {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 4px;
+}
+
+.printer-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.control-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.start-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.start-btn:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.stop-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.stop-btn:hover:not(:disabled) {
+  background-color: #c82333;
+}
 `;
 
 export interface PrinterStatus {
@@ -400,7 +455,7 @@ export class DeviceView extends LitElement {
 
   render() {
     return html`
-      <div class="printer-dashboard">
+      <div class="printer-dashboard page">
         <div class="dashboard-header">
           <h2>Printer: ${this.printerId}</h2>
           <span class="badge badge-${this.connectionState.toLowerCase()}">
@@ -426,6 +481,24 @@ export class DeviceView extends LitElement {
               ? html`<img src="${this.cameraUrl}" alt="Printer Live Camera" class="printer-feed" />`
               : html`<div class="camera-placeholder">Camera unavailable or disabled</div>`
             }
+
+            <div class="printer-controls">
+            <button 
+              class="control-btn start-btn" 
+              @click="${this.startPrint}"
+              ?disabled="${this.isPrinting}">
+              Start Print
+            </button>
+            <button 
+              class="control-btn stop-btn" 
+              @click="${this.stopPrint}"
+              ?disabled="${!this.isPrinting}">
+              Stop Print
+            </button>
+            <button class="btn btn-primary" @click="${this.uploadFile}">
+              Upload File
+            </button>
+          </div>
           </div>
 
           <div class="telemetry-container">

@@ -1,4 +1,6 @@
 pub mod ui;
+pub use ui::get_routes;
+pub use serverlib::library::*;
 
 use crate::errors::OpenFabErr;
 use crate::utils::ResultStream;
@@ -8,14 +10,14 @@ use minio_rsc::http::Method;
 use ormlite::model::JoinMeta;
 use ormlite::{Model, model::Join};
 use rocket::fs::TempFile;
-use std::pin::Pin;
 use secret_ref::*;
+use std::pin::Pin;
 
 use serde_derive::{Deserialize, Serialize};
+use std::io;
 use tokio::io::AsyncRead;
 use tokio_util::bytes::Bytes;
 use tokio_util::io::StreamReader;
-use std::io;
 pub use ui::get_routes;
 
 use uuid::Uuid;
@@ -129,6 +131,13 @@ impl ObjectStoreConfig {
     }
 }
 
+/*
+pub struct StorageBackend {
+    S3(ObjectStore),
+    FTPS(TokioRustlsFtpStream),
+
+}*/
+
 pub struct ObjectStore {
     client: Minio,
     bucket: String,
@@ -208,29 +217,26 @@ impl ObjectStore {
         Ok(url)
     }
 
-    pub async fn get_streamed(
-    &self,
-    key: String,
-) -> Result<ResultStream, OpenFabErr> {
-    let res = self
-        .client
-        .executor(Method::GET)
-        .bucket_name(&self.bucket)
-        .object_name(key)
-        .send_ok()
-        .await?;
+    pub async fn get_streamed(&self, key: String) -> Result<ResultStream, OpenFabErr> {
+        let res = self
+            .client
+            .executor(Method::GET)
+            .bucket_name(&self.bucket)
+            .object_name(key)
+            .send_ok()
+            .await?;
 
-    let ct_type = res
-        .headers()
-        .get(reqwest::header::CONTENT_TYPE)
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream")
-        .to_string();
+        let ct_type = res
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("application/octet-stream")
+            .to_string();
 
-    // Map reqwest::Error -> std::io::Error using TryStreamExt
-    let io_stream = res.bytes_stream();
-    
-    // Boxing it makes the complex return signature clean and satisfies Rocket's 'static bounds
-    Ok(ResultStream::new(io_stream, ct_type))
-}
+        // Map reqwest::Error -> std::io::Error using TryStreamExt
+        let io_stream = res.bytes_stream();
+
+        // Boxing it makes the complex return signature clean and satisfies Rocket's 'static bounds
+        Ok(ResultStream::new(io_stream, ct_type))
+    }
 }

@@ -1,5 +1,6 @@
 use crate::errors::OpenFabErr;
 use crate::settings::SettingsORM;
+use crate::utils::unix_epoch_seconds;
 use ormlite::{Model, postgres::PgPool};
 use rocket::http::CookieJar;
 use rocket::{Route, State, get, put, response::content::RawCss, routes};
@@ -29,6 +30,7 @@ pub struct ThemeORM {
     pub text_muted: String,
 
     pub accent: String,
+    pub created_at: i64,
 }
 
 impl Default for ThemeORM {
@@ -50,6 +52,7 @@ impl Default for ThemeORM {
             text_muted: "#7a8395".to_string(),
 
             accent: "#4c8dff".to_string(),
+            created_at: unix_epoch_seconds(),
         }
     }
 }
@@ -63,23 +66,23 @@ impl ThemePicker {
     pub async fn select(jar: &CookieJar<'_>, pool: &PgPool) -> Result<ThemeORM, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let theme_id: Uuid = match jar.get("theme") {
-            Some(value) => value.to_string().parse().unwrap_or(Uuid::nil()),
+            Some(value) => { println!("theme: {}", value.to_string()); value.to_string().parse().expect("failed to get theme cookie") },
             None => SettingsORM::select()
-                .where_("key = 'default_theme'")
+                .where_("key = 'theme'")
                 .fetch_one(&mut *conn)
                 .await
                 .map(|v| v.value.parse())
-                .unwrap_or(Ok(Uuid::nil()))?,
+                .unwrap().expect("failed to get theme"),//_or(Ok(Uuid::nil()))?,
         };
-
-        let theme = if let theme_id = Uuid::nil() {
+        println!("theme id: {}", theme_id);
+        let theme = if theme_id == Uuid::nil() {
             ThemeORM::default()
         } else {
             ThemeORM::select()
                 .where_("uid = ?")
                 .bind(theme_id)
                 .fetch_one(&mut *conn)
-                .await?
+                .await.expect("failed to feme theme")
         };
         Ok(theme)
     }
@@ -88,7 +91,9 @@ impl ThemePicker {
 // this provides the default / currently set server side base theme
 #[get("/base.css")]
 pub async fn base_theme(jar: &CookieJar<'_>, pool: &State<PgPool>) -> RawCss<Template> {
+    
     let theme = ThemePicker::select(jar, pool).await.unwrap();
+    println!("theme: {:?}", theme);
     RawCss(Template::render("styles/base", context! { theme }))
 }
 

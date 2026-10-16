@@ -49,6 +49,7 @@
             <div class="asset-card-preview">
                 {% if asset.mime == "image/png" %}
                     <img class="asset-preview" src="{{ asset.url }}"/>
+                
                 {% elif asset.mime == "image/svg+xml" %}
                     <svg class="asset-preview" src="{{ asset.url }}">
 

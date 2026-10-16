@@ -5,7 +5,7 @@
 {% endblock title %}
 
 {% block content %}
-    <div class="printer-view-page">
+    <div class="printer-view-page page">
         <!-- Render the Lit component, passing parameters down via HTML attributes -->
         <device-view 
             printer-id="{{ device.uid }}"

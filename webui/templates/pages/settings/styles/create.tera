@@ -1,0 +1,91 @@
+{% extends "layouts/base" %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="page-header">
+        <h1 class="title">Create Theme</h1>
+    </div>
+
+    <form method="POST" action="/settings/styles/create" class="form">
+        
+        <div class="form-group">
+            <label for="name">Theme Name</label>
+            <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                class="form-control" 
+                required 
+                value="{{ theme.name | default(value='Light Mode') }}"
+                placeholder="e.g. Dark Mode"
+            >
+        </div>
+
+        <div class="form-section">
+            <h3 class="form-section__title">Colors & Palette</h3>
+
+            <div class="form-group">
+                <label for="accent">Accent</label>
+                <input type="text" id="accent" name="accent" class="form-control" value="{{ theme.accent | default(value='#3b82f6') }}" placeholder="#3b82f6">
+            </div>
+
+            <div class="form-group">
+                <label for="background">Background</label>
+                <input type="text" id="background" name="background" class="form-control" value="{{ theme.background | default(value='#ffffff') }}" placeholder="#ffffff">
+            </div>
+
+            <div class="form-group">
+                <label for="surface">Surface</label>
+                <input type="text" id="surface" name="surface" class="form-control" value="{{ theme.surface | default(value='#f9fafb') }}" placeholder="#f9fafb">
+            </div>
+
+            <div class="form-group">
+                <label for="surface_hover">Surface Hover</label>
+                <input type="text" id="surface_hover" name="surface_hover" class="form-control" value="{{ theme.surface_hover | default(value='#f3f4f6') }}" placeholder="#f3f4f6">
+            </div>
+
+            <div class="form-group">
+                <label for="surface_header">Surface Header</label>
+                <input type="text" id="surface_header" name="surface_header" class="form-control" value="{{ theme.surface_header | default(value='#e5e7eb') }}" placeholder="#e5e7eb">
+            </div>
+
+            <div class="form-group">
+                <label for="border">Border</label>
+                <input type="text" id="border" name="border" class="form-control" value="{{ theme.border | default(value='#d1d5db') }}" placeholder="#d1d5db">
+            </div>
+
+            <div class="form-group">
+                <label for="border_subtle">Border Subtle</label>
+                <input type="text" id="border_subtle" name="border_subtle" class="form-control" value="{{ theme.border_subtle | default(value='#e5e7eb') }}" placeholder="#e5e7eb">
+            </div>
+
+            <div class="form-group">
+                <label for="text">Text</label>
+                <input type="text" id="text" name="text" class="form-control" value="{{ theme.text | default(value='#374151') }}" placeholder="#374151">
+            </div>
+
+            <div class="form-group">
+                <label for="text_strong">Text Strong</label>
+                <input type="text" id="text_strong" name="text_strong" class="form-control" value="{{ theme.text_strong | default(value='#111827') }}" placeholder="#111827">
+            </div>
+
+            <div class="form-group">
+                <label for="text_muted">Text Muted</label>
+                <input type="text" id="text_muted" name="text_muted" class="form-control" value="{{ theme.text_muted | default(value='#6b7280') }}" placeholder="#6b7280">
+            </div>
+
+        </div>
+
+        <div class="form-actions flex-end">
+            <button type="submit" class="btn btn-primary">
+                Save Theme
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock content %}

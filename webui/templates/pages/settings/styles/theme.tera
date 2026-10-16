@@ -1,0 +1,126 @@
+{% extends "layouts/settings" %}
+
+{% block title %}
+Themes
+{% endblock title %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Theme Configuration</h1>
+        <p class="text-sm text-gray-600">Customize the colors and styling variables for your application theme.</p>
+    </div>
+
+    <form action="/settings/themes" method="POST" class="space-y-6 bg-white shadow px-6 py-6 rounded-lg">
+        <!-- Theme Name -->
+        <div>
+            <label for="name" class="block text-sm font-medium text-gray-700">Theme Name</label>
+            <input type="text" name="name" id="name" value="{{ theme.name }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" required>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- Color Settings Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Background -->
+            <div>
+                <label for="background" class="block text-sm font-medium text-gray-700">Background</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="background" id="background" value="{{ theme.background }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="background_text" value="{{ theme.background }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Surface -->
+            <div>
+                <label for="surface" class="block text-sm font-medium text-gray-700">Surface</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="surface" id="surface" value="{{ theme.surface }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="surface_text" value="{{ theme.surface }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Surface Hover -->
+            <div>
+                <label for="surface_hover" class="block text-sm font-medium text-gray-700">Surface Hover</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="surface_hover" id="surface_hover" value="{{ theme.surface_hover }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="surface_hover_text" value="{{ theme.surface_hover }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Surface Header -->
+            <div>
+                <label for="surface_header" class="block text-sm font-medium text-gray-700">Surface Header</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="surface_header" id="surface_header" value="{{ theme.surface_header }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="surface_header_text" value="{{ theme.surface_header }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Border -->
+            <div>
+                <label for="border" class="block text-sm font-medium text-gray-700">Border</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="border" id="border" value="{{ theme.border }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="border_text" value="{{ theme.border }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Border Subtle -->
+            <div>
+                <label for="border_subtle" class="block text-sm font-medium text-gray-700">Border Subtle</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="border_subtle" id="border_subtle" value="{{ theme.border_subtle }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="border_subtle_text" value="{{ theme.border_subtle }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Text -->
+            <div>
+                <label for="text" class="block text-sm font-medium text-gray-700">Text</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="text" id="text" value="{{ theme.text }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="text_value" value="{{ theme.text }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Text Strong -->
+            <div>
+                <label for="text_strong" class="block text-sm font-medium text-gray-700">Text Strong</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="text_strong" id="text_strong" value="{{ theme.text_strong }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="text_strong_text" value="{{ theme.text_strong }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Text Muted -->
+            <div>
+                <label for="text_muted" class="block text-sm font-medium text-gray-700">Text Muted</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="text_muted" id="text_muted" value="{{ theme.text_muted }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="text_muted_text" value="{{ theme.text_muted }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Accent -->
+            <div>
+                <label for="accent" class="block text-sm font-medium text-gray-700">Accent</label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="color" name="accent" id="accent" value="{{ theme.accent }}" class="h-10 w-10 rounded border cursor-pointer">
+                    <input type="text" name="accent_text" value="{{ theme.accent }}" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end pt-4">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock content %}

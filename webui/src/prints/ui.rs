@@ -1,6 +1,6 @@
 use crate::accounts::User;
 use crate::devices::DeviceORM;
-use crate::prints::AssetORM;
+use crate::library::AssetORM;
 use crate::prints::forms::PrintForm;
 use crate::prints::{PrintJobORM, PrintQueueORM};
 use crate::utils::Guard;

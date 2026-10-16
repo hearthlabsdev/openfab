@@ -2,7 +2,7 @@
 #![allow(unused_variables)]
 pub mod accounts;
 pub mod admin;
-pub mod api;
+
 pub mod config;
 pub mod dashboard;
 pub mod devices;
@@ -12,12 +12,11 @@ pub mod settings;
 pub mod setup;
 pub mod ui;
 
-pub mod discovery;
+//pub mod discovery;
 pub mod errors;
 pub mod routes;
 pub mod utils;
 
-use crate::discovery::AdvertiseCmd;
 use openfab::IppTxtRecords;
 use openfab::advertise::{IppAdvertiser, IppBroadcastBuilder};
 
@@ -28,6 +27,7 @@ use ormlite::Model;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/*
 pub struct VirtualPrinter {}
 
 impl VirtualPrinter {
@@ -92,4 +92,4 @@ impl VirtualPrinter {
     pub fn spawn_scanner_endpoint(tx: &mpsc::Sender<AdvertiseCmd>) {
         unimplemented!("Scanner endpoint not implemented yet");
     }
-}
+}*/

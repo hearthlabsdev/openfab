@@ -126,7 +126,7 @@
 
                     <div class="form-group">
                         <label>Serial Number</label>
-                        <input type="text" value="{{ device.serial }}" disabled class="input-disabled">
+                        <input type="text" name="serial" value="{{ device.serial }}">
                     </div>
 
                     {% if drivers is defined and drivers | length > 0 %}
