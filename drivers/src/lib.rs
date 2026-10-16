@@ -1,4 +1,5 @@
 #![deny(unused)]
+//#![deny(missing_docs)]
 //! # Fabrication Machine Driver SDK
 //!
 //! This crate provides a unified, vendor-agnostic SDK and interface layer for interacting

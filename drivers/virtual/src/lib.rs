@@ -1,12 +1,11 @@
+#![deny(unused)]
 use libunftp::ServerBuilder;
-use openfab_drivers::capabilities::DriverCapabilities;
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
-use openfab_drivers::errors::{DriverError, StatusErr};
-use openfab_drivers::events::{Event, EventType};
+use openfab_drivers::errors::{DriverError};
+use openfab_drivers::events::{Event};
 use openfab_drivers::files::FileEntry;
 use openfab_drivers::status::{JobStatus, PrinterStatus, State};
-use openfab_drivers::utils::get_value_type;
-use openfab_drivers::{Callback, CallbackId, DeviceDriver};
+use openfab_drivers::{DeviceDriver};
 use std::net::IpAddr;
 use suppaftp::tokio::AsyncRustlsConnector;
 use tokio::sync::Mutex;
@@ -20,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use suppaftp::tokio::AsyncRustlsFtpStream;
-use tokio::io::AsyncRead;
 use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
@@ -110,7 +108,7 @@ impl FTPSServer {
         .build()
         .map_err(|e| DriverError::Custom(e.to_string()))?;
         let handle = tokio::task::spawn(async move {
-            server.listen("127.0.0.1:2121").await;
+            server.listen("127.0.0.1:2121").await.expect("failed to run server");
         });
         Ok(Self {
             path: home,
@@ -118,6 +116,9 @@ impl FTPSServer {
             port,
             handle,
         })
+    }
+    pub fn path(&self) -> &PathBuf {
+        &self.path
     }
     pub async fn default() -> Result<Self, DriverError> {
         let home = std::env::temp_dir();
@@ -138,7 +139,7 @@ impl FTPSServer {
                     AsyncRustlsConnector::from(RustlsTlsConnnector::from(
                         lan_client_config().map_err(|e| DriverError::Custom(e.to_string()))?,
                     )),
-                    &domain,
+                    domain,
                 )
                 .await
                 .map_err(|e| DriverError::Custom(e.to_string()))?;
@@ -226,7 +227,7 @@ impl VirtualState {
             0
         };
 
-        let heating_time = heating_steps * (self.config.poll_interval as i64);
+        let heating_time = heating_steps * (self.config.poll_interval);
 
         // 2. Mock a standard print duration after heating completes (e.g., 300 seconds total print time)
         let total_mock_print_duration = 300;
@@ -242,12 +243,11 @@ impl VirtualState {
     }
 
     pub fn job_status(&self) -> JobStatus {
-        let status = JobStatus::new(
+        JobStatus::new(
             self.calculate_time_remaining(),
             self.progress,
             State::Printing,
-        );
-        status
+        )
     }
 }
 
@@ -255,8 +255,7 @@ pub struct VirtualClient {
     worker: JoinHandle<()>,
     sender: Sender<Event>,
     // dropping the last receiver closest the channel
-    recv: Receiver<Event>,
-    handler: Option<JoinHandle<Result<Option<PrinterStatus>, DriverError>>>,
+    _recv: Receiver<Event>,
     state: Arc<Mutex<VirtualState>>,
     ftps: Arc<Mutex<AsyncRustlsFtpStream>>,
 }
@@ -333,17 +332,16 @@ impl DeviceDriver for VirtualDriver {
         Self::metadata()
     }
     // Requires &self or &mut self to be callable on a `dyn DeviceDriver`
-    async fn connect(&mut self, config: serde_json::Value) -> Result<(), DriverError> {
+    async fn connect(&mut self, config: Value) -> Result<(), DriverError> {
         let config: VirtualClientConfig = serde_json::from_value(config)?;
         let serial = config.serial.clone();
-        let poll_interval = config.poll_interval.clone();
+        let poll_interval = config.poll_interval;
         let state = Arc::new(Mutex::new(VirtualState::new(config)));
 
-        let (sender, recv) = tokio::sync::broadcast::channel(16);
+        let (sender, recv) = channel(16);
         let sender2 = sender.clone();
         let state_mtx = state.clone();
-        let domain = "localhost";
-        let mut stream = self.server.connect("localhost").await?;
+        let stream = self.server.connect("localhost").await?;
         
         let ftps = Arc::new(Mutex::new(stream));
         let handle = tokio::task::spawn(async move {
@@ -364,8 +362,7 @@ impl DeviceDriver for VirtualDriver {
         let lan_client = VirtualClient {
             worker: handle,
             sender,
-            recv,
-            handler: None,
+            _recv: recv,
             state,
             ftps,
         };
@@ -374,11 +371,8 @@ impl DeviceDriver for VirtualDriver {
     }
     async fn disconnect(&mut self, device: &str) -> Result<(), DriverError> {
         let device = self.clients.remove(device);
-        match device {
-            Some(device) => {
-                device.worker.abort();
-            }
-            None => {}
+        if let Some(device) = device {
+            device.worker.abort();
         }
         Ok(())
     }
@@ -420,20 +414,5 @@ impl DeviceDriver for VirtualDriver {
             .map(|v| FileEntry::new(&v, PathBuf::new(), None))
             .collect::<Vec<FileEntry>>())
     }
-
-    /// Register an event callback handler
-    async fn register_handler(
-        &mut self,
-        device: &str,
-        callback: Callback,
-    ) -> Result<(), DriverError> {
-        let client = self
-            .clients
-            .get_mut(device)
-            .ok_or(DriverError::DeviceNotFound(device.into()))?;
-        let recv = client.sender.subscribe();
-        let handle = tokio::spawn(async move { callback(recv).await });
-        client.handler = Some(handle);
-        Ok(())
-    }
+    
 }

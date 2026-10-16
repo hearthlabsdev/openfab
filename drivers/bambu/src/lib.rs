@@ -1,29 +1,29 @@
+#![deny(unused)]
 use bambu_rs::async_camera::CameraClient;
+use bambu_rs::async_ftp::FtpsClient;
 use bambu_rs::client::LanMqttClient;
 use bambu_rs::config::ResolvedTarget;
 use bambu_rs::core::model::Model;
 use bambu_rs::core::status::PrinterStatus as BambuStatus;
 use bambu_rs::core::status::{DeviceError, Filament, HmsAlert, Ipcam, LightReport};
-use bambu_rs::async_ftp::FtpsClient;
-use openfab_drivers::capabilities::DriverCapabilities;
-use openfab_drivers::files::FileEntry;
+use openfab_drivers::DeviceDriver;
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, JobStatusErr, PrintError, StatusErr};
 use openfab_drivers::events::{CameraEvent, Event, EventHandler, EventType};
+use openfab_drivers::files::FileEntry;
 use openfab_drivers::status::{JobStatus, PrinterStatus, State};
-use openfab_drivers::utils::get_value_type;
-use openfab_drivers::{Callback, CallbackId, DeviceDriver};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
-use tokio::io::AsyncRead;
+
 use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::sync::watch::{Receiver as Watcher, Sender as FrameSender, channel as camera_feed};
 use tokio::task::JoinHandle;
 
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BambuJobExtensions {
@@ -289,7 +289,7 @@ pub struct BambuDriver {
 pub struct BambuCameraClient {
     handle: JoinHandle<()>,
     camera: FrameSender<CameraEvent>,
-    watcher: Watcher<CameraEvent>,
+    _watcher: Watcher<CameraEvent>,
 }
 
 impl BambuCameraClient {
@@ -322,7 +322,7 @@ impl BambuCameraClient {
 
         Ok(Self {
             camera,
-            watcher,
+            _watcher: watcher,
             handle,
         })
     }
@@ -341,8 +341,7 @@ pub struct BambuClient {
     sender: Sender<Event>,
     camera: Option<BambuCameraClient>,
     files: FtpsClient,
-    recv: Receiver<Event>,
-    handler: Option<JoinHandle<Result<Option<PrinterStatus>, DriverError>>>,
+    _recv: Receiver<Event>,
 }
 
 impl BambuClient {
@@ -380,7 +379,7 @@ impl BambuClient {
                         }
                     }
                     Err(e) => {
-                        /// I should update to have this properly logged both to standard out, and to database.
+                        // I should update to have this properly logged both to standard out, and to database.
                         sender2
                             .send(Event::Err(e.to_string()))
                             .expect("failed to send error");
@@ -396,10 +395,9 @@ impl BambuClient {
             worker: handle,
             client,
             sender,
-            recv,
+            _recv: recv,
             files,
             camera: None,
-            handler: None,
         };
         Ok(lan_client)
     }
@@ -503,7 +501,7 @@ impl DeviceDriver for BambuDriver {
         Self::metadata()
     }
     // Requires &self or &mut self to be callable on a `dyn DeviceDriver`
-    async fn connect(&mut self, config: serde_json::Value) -> Result<(), DriverError> {
+    async fn connect(&mut self, config: Value) -> Result<(), DriverError> {
         let target: ClientTarget = serde_json::from_value(config)?;
         let serial = target.serial.clone();
         let resolved = target.resolve();
@@ -533,7 +531,17 @@ impl DeviceDriver for BambuDriver {
         unimplemented!();
     }
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError> {
-        unimplemented!();
+        let event = self
+            .clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))?
+            .client
+            .fetch_async()
+            .await
+            .map_err(|e| DriverError::Custom(e.to_string()))?;
+        let event = BambuStatus::from_state(event.get());
+        let status = try_from_device_status(event)?;
+        Ok(status)
     }
 
     fn subscribe(&self, device: &str) -> Result<Receiver<Event>, DriverError> {
@@ -563,29 +571,13 @@ impl DeviceDriver for BambuDriver {
             .ok_or(DriverError::DeviceNotFound(device.into()))?
             .files;
         eprintln!("in list files after get files");
-        Ok(
-            files.list(dir)
+        Ok(files
+            .list(dir)
             .await
             .map_err(|v| DriverError::Custom(v.to_string()))?
             .into_iter()
             .map(|v| file_entry_convert(v))
             .collect::<Vec<FileEntry>>())
-    }
-
-    /// Register an event callback handler
-    async fn register_handler(
-        &mut self,
-        device: &str,
-        callback: Callback,
-    ) -> Result<(), DriverError> {
-        let client = self
-            .clients
-            .get_mut(device)
-            .ok_or(DriverError::DeviceNotFound(device.into()))?;
-        let recv = client.sender.subscribe();
-        let handle = tokio::spawn(async move { callback(recv).await });
-        client.handler = Some(handle);
-        Ok(())
     }
 }
 

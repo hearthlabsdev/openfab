@@ -1,23 +1,24 @@
-use openfab_drivers::capabilities::DriverCapabilities;
+#![deny(unused)]
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, StatusErr};
-use openfab_drivers::events::{Event, EventType};
+use openfab_drivers::events::{Event};
 use openfab_drivers::status::PrinterStatus;
-use openfab_drivers::utils::get_value_type;
 use openfab_drivers::files::FileEntry;
-use openfab_drivers::{Callback, CallbackId, DeviceDriver};
+use openfab_drivers::{DeviceDriver};
 use prusa_rs::api::client::{ApiClient, ClientConfig};
 use prusa_rs::models::status_printer::StatusPrinter;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::io::AsyncRead;
+
 use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
+
 use approx::relative_eq;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PrinterStatusMsg {
@@ -125,18 +126,19 @@ impl PrusaDriverConfig {
     }
 }
 
+#[derive(Debug, Default)]
 pub struct PrusaDriver {
     // identified by serial number?
     clients: HashMap<String, PrusaClient>,
 }
 
+#[derive(Debug)]
 pub struct PrusaClient {
     client: Arc<ApiClient>,
     worker: JoinHandle<()>,
     sender: Sender<Event>,
     // dropping the last receiver closest the channel
-    recv: Receiver<Event>,
-    handler: Option<JoinHandle<Result<Option<PrinterStatus>, DriverError>>>,
+    _recv: Receiver<Event>,
 }
 
 impl PrusaDriver {
@@ -219,14 +221,14 @@ impl DeviceDriver for PrusaDriver {
         Self::metadata()
     }
     // Requires &self or &mut self to be callable on a `dyn DeviceDriver`
-    async fn connect(&mut self, config: serde_json::Value) -> Result<(), DriverError> {
+    async fn connect(&mut self, config: Value) -> Result<(), DriverError> {
         let config: PrusaDriverConfig = serde_json::from_value(config)?;
         let serial = config.serial.clone();
         let client_config = config.client_config();
         let client = Arc::new(ApiClient::new(client_config));
         let worker_client = client.clone();
         let poll_interval = config.poll_interval;
-        let (sender, recv) = tokio::sync::broadcast::channel(16);
+        let (sender, recv) = channel(16);
         let sender2 = sender.clone();
         let handle = tokio::task::spawn(async move {
             loop {
@@ -240,7 +242,7 @@ impl DeviceDriver for PrusaDriver {
                         // I should run callbacks based on what has changed in the status but oh well
                     }
                     Err(e) => {
-                        /// I should update to have this properly logged both to standard out, and to database.
+                        // I should update to have this properly logged both to standard out, and to database.
                         eprintln!("error occured in prusa driver: {}", e);
                         continue;
                     }
@@ -253,24 +255,20 @@ impl DeviceDriver for PrusaDriver {
             worker: handle,
             client,
             sender,
-            recv,
-            handler: None,
+            _recv: recv,
         };
         self.clients.insert(serial, lan_client);
         Ok(())
     }
 
-    async fn list_entries(&self, device: &str, dir: &str) -> Result<Vec<FileEntry>, DriverError> {
+    async fn list_entries(&self, _device: &str, _dir: &str) -> Result<Vec<FileEntry>, DriverError> {
         Ok(Vec::new())
     }
 
     async fn disconnect(&mut self, device: &str) -> Result<(), DriverError> {
         let device = self.clients.remove(device);
-        match device {
-            Some(device) => {
-                device.worker.abort();
-            }
-            None => {}
+        if let Some(device) = device {
+            device.worker.abort();
         }
         Ok(())
     }
@@ -299,20 +297,5 @@ impl DeviceDriver for PrusaDriver {
             .ok_or(DriverError::DeviceNotFound(device.into()))?
             .sender
             .subscribe())
-    }
-    /// Register an event callback handler
-    async fn register_handler(
-        &mut self,
-        device: &str,
-        callback: Callback,
-    ) -> Result<(), DriverError> {
-        let client = self
-            .clients
-            .get_mut(device)
-            .ok_or(DriverError::DeviceNotFound(device.into()))?;
-        let recv = client.sender.subscribe();
-        let handle = tokio::spawn(async move { callback(recv).await });
-        client.handler = Some(handle);
-        Ok(())
     }
 }
