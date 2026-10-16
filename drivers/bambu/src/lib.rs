@@ -1,13 +1,15 @@
+use bambu_rs::async_camera::CameraClient;
 use bambu_rs::client::LanMqttClient;
 use bambu_rs::config::ResolvedTarget;
 use bambu_rs::core::model::Model;
-
 use bambu_rs::core::status::PrinterStatus as BambuStatus;
 use bambu_rs::core::status::{DeviceError, Filament, HmsAlert, Ipcam, LightReport};
+use bambu_rs::async_ftp::FtpsClient;
 use openfab_drivers::capabilities::DriverCapabilities;
+use openfab_drivers::files::FileEntry;
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, JobStatusErr, PrintError, StatusErr};
-use openfab_drivers::events::{Event, EventHandler, EventType};
+use openfab_drivers::events::{CameraEvent, Event, EventHandler, EventType};
 use openfab_drivers::status::{JobStatus, PrinterStatus, State};
 use openfab_drivers::utils::get_value_type;
 use openfab_drivers::{Callback, CallbackId, DeviceDriver};
@@ -15,10 +17,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::path::PathBuf;
 use std::time::Duration;
 use tokio::io::AsyncRead;
 use tokio::sync::broadcast::{Receiver, Sender, channel};
+use tokio::sync::watch::{Receiver as Watcher, Sender as FrameSender, channel as camera_feed};
 use tokio::task::JoinHandle;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BambuJobExtensions {
@@ -167,6 +172,11 @@ pub fn try_from_device_status(status: BambuStatus) -> Result<PrinterStatus, Stat
     )?)
 }
 
+pub fn file_entry_convert(v: String) -> openfab_drivers::files::FileEntry {
+    //openfab_drivers::files::FileEntry::new(v.name, v.size, )
+    FileEntry::new(v, PathBuf::new(), None)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ClientTarget {
     ip: String,
@@ -218,7 +228,7 @@ impl EventHandler for Reporter {
             try_from_job_status(&self.last).expect("failed to get last job status");
 
         let job_status = try_from_job_status(&status).expect("failed to get last job status");
-        
+
         if job_status != last_job_status {
             let job_event = match job_status.get_event_type(&last_job_status) {
                 EventType::JobUpdate => Event::JobUpdate(job_status),
@@ -227,13 +237,17 @@ impl EventHandler for Reporter {
                 EventType::PrintResumed => Event::PrintResumed(job_status),
                 EventType::PrintStopped => {
                     let err = match status.error {
-                        Some(ref err) => Some(PrintError::with_extras(
-                            err.code.to_string(),
-                            err.message.clone(),
-                            Some(err.lookup_url.clone()),
-                            ErrorExtras { hms: status.hms.clone() },
-                        )
-                        .expect("failed to serialize errors")),
+                        Some(ref err) => Some(
+                            PrintError::with_extras(
+                                err.code.to_string(),
+                                err.message.clone(),
+                                Some(err.lookup_url.clone()),
+                                ErrorExtras {
+                                    hms: status.hms.clone(),
+                                },
+                            )
+                            .expect("failed to serialize errors"),
+                        ),
                         None => None,
                     };
                     Event::PrintStopped(job_status, err)
@@ -244,7 +258,9 @@ impl EventHandler for Reporter {
                             err.code.to_string(),
                             err.message.clone(),
                             Some(err.lookup_url.clone()),
-                            ErrorExtras { hms: status.hms.clone() },
+                            ErrorExtras {
+                                hms: status.hms.clone(),
+                            },
                         )
                         .expect("failed to serialize errors");
                         Event::Err(serde_json::to_string(&err).expect("failed to serialize error"))
@@ -270,12 +286,123 @@ pub struct BambuDriver {
     clients: HashMap<String, BambuClient>,
 }
 
+pub struct BambuCameraClient {
+    handle: JoinHandle<()>,
+    camera: FrameSender<CameraEvent>,
+    watcher: Watcher<CameraEvent>,
+}
+
+impl BambuCameraClient {
+    pub fn new(resolved: ResolvedTarget) -> Result<Self, DriverError> {
+        let client = Arc::new(CameraClient::new(resolved));
+        let (camera, watcher): (FrameSender<CameraEvent>, Watcher<CameraEvent>) =
+            camera_feed(CameraEvent::Image(vec![]));
+        let camera_sender = camera.clone();
+
+        let handle = tokio::task::spawn(async move {
+            loop {
+                match client.snapshot().await {
+                    Ok(event) => {
+                        camera_sender
+                            .send(CameraEvent::Image(event))
+                            .expect("failed to send event");
+                    }
+                    Err(e) => {
+                        camera_sender
+                            .send(CameraEvent::Error(DriverError::Custom(e.to_string())))
+                            .expect("failed to send error");
+                        eprintln!("camera error: {e}");
+                        continue;
+                    }
+                }
+
+                tokio::time::sleep(Duration::from_millis(10)).await
+            }
+        });
+
+        Ok(Self {
+            camera,
+            watcher,
+            handle,
+        })
+    }
+    pub async fn disconnect(self) {
+        self.handle.abort();
+    }
+
+    pub fn subscribe(&self) -> Watcher<CameraEvent> {
+        self.camera.subscribe()
+    }
+}
+
 pub struct BambuClient {
     client: Arc<LanMqttClient>,
     worker: JoinHandle<()>,
     sender: Sender<Event>,
+    camera: Option<BambuCameraClient>,
+    files: FtpsClient,
     recv: Receiver<Event>,
     handler: Option<JoinHandle<Result<Option<PrinterStatus>, DriverError>>>,
+}
+
+impl BambuClient {
+    pub async fn new(resolved: ResolvedTarget) -> Result<Self, DriverError> {
+        let client = Arc::new(LanMqttClient::new(resolved.clone()));
+        let worker_client = client.clone();
+        let (sender, recv) = channel(20);
+        let sender2 = sender.clone();
+        let files = FtpsClient::new(resolved.clone());
+        let last = match worker_client.fetch_async().await {
+            Ok(event) => {
+                let bambu_status = BambuStatus::from_state(event.get());
+                let status = try_from_device_status(bambu_status.clone())
+                    .expect("failed to parse device status");
+                sender2
+                    .send(Event::StatusUpdate(status))
+                    .expect("failed to send data");
+                bambu_status
+            }
+            Err(e) => {
+                return Err(DriverError::Custom(e.to_string()));
+            }
+        };
+        let mut reporter = Reporter::new(last);
+
+        let handle = tokio::task::spawn(async move {
+            loop {
+                match worker_client.fetch_async().await {
+                    Ok(event) => {
+                        let events = reporter
+                            .process(BambuStatus::from_state(event.get()))
+                            .expect("failed to process event");
+                        for event in events.into_iter() {
+                            sender2.send(event).expect("failed to send event");
+                        }
+                    }
+                    Err(e) => {
+                        /// I should update to have this properly logged both to standard out, and to database.
+                        sender2
+                            .send(Event::Err(e.to_string()))
+                            .expect("failed to send error");
+                        continue;
+                    }
+                }
+
+                tokio::time::sleep(Duration::from_millis(1000)).await
+            }
+        });
+
+        let lan_client = BambuClient {
+            worker: handle,
+            client,
+            sender,
+            recv,
+            files,
+            camera: None,
+            handler: None,
+        };
+        Ok(lan_client)
+    }
 }
 
 impl BambuDriver {
@@ -380,56 +507,7 @@ impl DeviceDriver for BambuDriver {
         let target: ClientTarget = serde_json::from_value(config)?;
         let serial = target.serial.clone();
         let resolved = target.resolve();
-        let client = Arc::new(LanMqttClient::new(resolved));
-        let worker_client = client.clone();
-        let (sender, recv) = channel(20);
-        let sender2 = sender.clone();
-
-        let last = match worker_client.fetch_async().await {
-            Ok(event) => {
-                let bambu_status = BambuStatus::from_state(event.get());
-                let status = try_from_device_status(bambu_status.clone()).expect("failed to parse device status");
-                sender2
-                    .send(Event::StatusUpdate(
-                        status,
-                    ))
-                    .expect("failed to send data");
-                bambu_status
-            }
-            Err(e) => {
-                return Err(DriverError::Custom(e.to_string()));
-            }
-        };
-        let mut reporter = Reporter::new(last);
-
-        let handle = tokio::task::spawn(async move {
-            loop {
-                match worker_client.fetch_async().await {
-                    Ok(event) => {
-                        let events = reporter.process(BambuStatus::from_state(event.get())).expect("failed to process event");
-                        for event in events.into_iter() {
-                            sender2.send(event).expect("failed to send event");
-                        }
-                    }
-                    Err(e) => {
-                        /// I should update to have this properly logged both to standard out, and to database.
-                        sender2
-                            .send(Event::Err(e.to_string()))
-                            .expect("failed to send error");
-                        continue;
-                    }
-                }
-
-                tokio::time::sleep(Duration::from_millis(1000)).await
-            }
-        });
-        let lan_client = BambuClient {
-            worker: handle,
-            client,
-            sender,
-            recv,
-            handler: None,
-        };
+        let lan_client = BambuClient::new(resolved).await?;
         println!("inserted with serial: {}", serial);
         self.clients.insert(serial, lan_client);
 
@@ -440,6 +518,12 @@ impl DeviceDriver for BambuDriver {
         match device {
             Some(device) => {
                 device.worker.abort();
+                match device.camera {
+                    Some(camera) => {
+                        camera.disconnect().await;
+                    }
+                    None => {}
+                };
             }
             None => {}
         }
@@ -459,6 +543,33 @@ impl DeviceDriver for BambuDriver {
             .ok_or(DriverError::DeviceNotFound(device.into()))?
             .sender
             .subscribe())
+    }
+
+    fn subscribe_camera(&self, device: &str) -> Result<Option<Watcher<CameraEvent>>, DriverError> {
+        Ok(self
+            .clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))?
+            .camera
+            .as_ref()
+            .map(|v| v.subscribe()))
+    }
+
+    async fn list_entries(&self, device: &str, dir: &str) -> Result<Vec<FileEntry>, DriverError> {
+        println!("in bambu driver runtime");
+        let files = &self
+            .clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))?
+            .files;
+        eprintln!("in list files after get files");
+        Ok(
+            files.list(dir)
+            .await
+            .map_err(|v| DriverError::Custom(v.to_string()))?
+            .into_iter()
+            .map(|v| file_entry_convert(v))
+            .collect::<Vec<FileEntry>>())
     }
 
     /// Register an event callback handler

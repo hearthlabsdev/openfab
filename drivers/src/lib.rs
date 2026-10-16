@@ -1,3 +1,4 @@
+#![deny(unused)]
 //! # Fabrication Machine Driver SDK
 //!
 //! This crate provides a unified, vendor-agnostic SDK and interface layer for interacting
@@ -124,6 +125,7 @@ pub mod capabilities;
 pub mod config;
 pub mod errors;
 pub mod events;
+pub mod files;
 pub mod firmware;
 pub mod formats;
 pub mod mms;
@@ -135,45 +137,13 @@ pub mod utils;
 use crate::config::DriverMeta;
 use crate::errors::DriverError;
 use crate::events::*;
+use crate::files::FileEntry;
 use crate::status::PrinterStatus;
 
-use serde::{Deserialize, Serialize};
-use std::future::Future;
-use std::pin::Pin;
 use tokio::sync::broadcast::Receiver;
+use tokio::sync::watch::Receiver as Watcher;
 
-/// A thread-safe, sendable boxed future type alias used across async driver boundaries.
-pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
-
-/// A type alias for a dynamic device callback function.
-pub type Callback = Box<
-    dyn FnOnce(Receiver<Event>) -> BoxFuture<'static, Result<Option<PrinterStatus>, DriverError>>
-        + Send
-        + Sync
-        + 'static,
->;
-
-/// A trait representing asynchronous callbacks capable of consuming an SDK event broadcast stream.
-pub trait DeviceCallback: Send + Sync + 'static {
-    /// Executes the callback with the provided event receiver stream.
-    fn call(
-        self,
-        stream: Receiver<Event>,
-    ) -> impl Future<Output = Result<Option<PrinterStatus>, DriverError>> + Send + 'static;
-}
-
-impl<F, Fut> DeviceCallback for F
-where
-    F: FnOnce(Receiver<Event>) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = Result<Option<PrinterStatus>, DriverError>> + Send + 'static,
-{
-    fn call(
-        self,
-        stream: Receiver<Event>,
-    ) -> BoxFuture<'static, Result<Option<PrinterStatus>, DriverError>> {
-        Box::pin((self)(stream))
-    }
-}
+use serde::{Deserialize, Serialize};
 
 /// A unique identifier linking a specific device instance to an event category subscription.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -209,10 +179,9 @@ pub trait DeviceDriver: Send + Sync {
     /// Returns a broadcast receiver stream for listening to live driver events.
     fn subscribe(&self, device: &str) -> Result<Receiver<Event>, DriverError>;
 
-    /// Registers a custom background handler task to process events from a specific device stream.
-    async fn register_handler(
-        &mut self,
-        device: &str,
-        handler: Callback,
-    ) -> Result<(), DriverError>;
+    async fn list_entries(&self, device: &str, dir: &str) -> Result<Vec<FileEntry>, DriverError>;
+
+    fn subscribe_camera(&self, _device: &str) -> Result<Option<Watcher<CameraEvent>>, DriverError> {
+        Ok(None)
+    }
 }

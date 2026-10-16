@@ -7,9 +7,10 @@
 //! events carry non-generic payload structures like [`PrinterStatus`], allowing downstream event loops,
 //! handlers, and UI applications to process telemetry without generic type contagion.
 
+use crate::DriverError;
 use crate::PrinterStatus;
-use crate::errors::StatusErr;
 use crate::errors::PrintError;
+use crate::errors::StatusErr;
 use crate::status::JobStatus;
 use serde::{Deserialize, Serialize};
 
@@ -94,6 +95,7 @@ pub enum Event {
     FileUploaded(FileInfo),
     /// A periodic status snapshot was received from the hardware.
     StatusUpdate(PrinterStatus),
+    //CameraUpdate(CameraStatus),
     /// A driver-level or backend error occurred.
     Err(String),
 }
@@ -185,10 +187,14 @@ impl<E: EventHandler> TryFrom<(&mut E, E::Status)> for EventSet {
     type Error = StatusErr;
     /// Converts a tuple of an [`EventHandler`] mutable reference and its associated `Status`
     /// directly into an [`EventSet`].
-    
     fn try_from((handler, status): (&mut E, E::Status)) -> Result<EventSet, StatusErr> {
         Ok(EventSet {
             events: handler.process(status)?,
         })
     }
+}
+
+pub enum CameraEvent {
+    Image(Vec<u8>),
+    Error(DriverError),
 }

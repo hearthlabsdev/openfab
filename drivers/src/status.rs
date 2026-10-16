@@ -9,12 +9,11 @@
 //! hash map while offering type-safe constructor validation via the [`Extensions`] trait.
 
 use crate::EventType;
+use approx::relative_eq;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use approx::relative_eq;
-
 
 /// A marker trait representing types that can be safely serialized and deserialized
 /// as vendor-specific printer extension payloads.
@@ -118,11 +117,12 @@ impl PrinterStatus {
         })
     }
 
-    pub fn new(bed_temp: f64,
+    pub fn new(
+        bed_temp: f64,
         target_bed_temp: Option<f64>,
         nozzle_temp: f64,
         target_nozzle_temp: Option<f64>,
-        chamber_temp: Option<f64>
+        chamber_temp: Option<f64>,
     ) -> Self {
         Self {
             bed_temp,
@@ -175,7 +175,7 @@ impl JobStatus {
         }
     }
 
-    /// Determines the discrete [`EventType`] by comparing the previous job status state 
+    /// Determines the discrete [`EventType`] by comparing the previous job status state
     /// with the current job status state (`self`).
     pub fn get_event_type(&self, last: &JobStatus) -> EventType {
         if last.state == self.state {
@@ -185,19 +185,21 @@ impl JobStatus {
         match (&last.state, &self.state) {
             // Transition from inactive/ready to printing -> Job Started
             (State::Idle | State::Ready, State::Printing) => EventType::PrintStarted,
-            
+
             // Transition from printing to paused -> Job Paused
             (State::Printing, State::Paused) => EventType::PrintPaused,
-            
+
             // Transition from paused back to printing -> Job Resumed
             (State::Paused, State::Printing) => EventType::PrintResumed,
-            
+
             // Transition from active states to finished or stopped -> Job Stopped/Completed
-            (State::Printing | State::Paused, State::Finished | State::Stopped) => EventType::PrintStopped,
-            
+            (State::Printing | State::Paused, State::Finished | State::Stopped) => {
+                EventType::PrintStopped
+            }
+
             // Transition into an error state
             (_, State::Error) => EventType::Err,
-            
+
             // Fallback for any other state modification
             _ => EventType::JobUpdate,
         }

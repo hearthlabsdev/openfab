@@ -1,17 +1,17 @@
 //! # Error Handling and Failure Types Module
 //!
-//! This module defines unified error enums used throughout the driver SDK. 
-//! 
-//! By centralizing error definitions into categories like [`DriverError`], [`ConfigError`], 
-//! and [`StatusErr`], downstream makerspace applications and UI dashboards can cleanly handle 
-//! communication drops, missing telemetry fields, and configuration mismatches without needing 
+//! This module defines unified error enums used throughout the driver SDK.
+//!
+//! By centralizing error definitions into categories like [`DriverError`], [`ConfigError`],
+//! and [`StatusErr`], downstream makerspace applications and UI dashboards can cleanly handle
+//! communication drops, missing telemetry fields, and configuration mismatches without needing
 //! to parse unstructured strings.
 
 use crate::status::Extensions;
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 use serde_json::Value;
+use std::collections::HashMap;
+use thiserror::Error;
 
 /// Core error types that can occur during driver operations, communications, or parsing.
 #[derive(Debug, thiserror::Error)]
@@ -125,7 +125,7 @@ pub enum JobStatusErr {
 
 /// Specialized print job failure errors.
 ///
-/// Note: Serialization and deserialization derive attributes are included to allow 
+/// Note: Serialization and deserialization derive attributes are included to allow
 /// these errors to cross WebAssembly (WASM) boundaries safely in future front-end integrations.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrintError {

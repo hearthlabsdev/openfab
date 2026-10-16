@@ -53,7 +53,7 @@ pub fn json_to_config(
     schema: &ConfigSchema,
     json: &Value,
 ) -> Result<HashMap<String, String>, ConfigError> {
-    let object = json.as_object().ok_or_else(|| ConfigError::InvalidConfig)?;
+    let object = json.as_object().ok_or(ConfigError::InvalidConfig)?;
 
     let mut form = HashMap::new();
 

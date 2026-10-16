@@ -4,6 +4,7 @@ use openfab_drivers::errors::{DriverError, StatusErr};
 use openfab_drivers::events::{Event, EventType};
 use openfab_drivers::status::PrinterStatus;
 use openfab_drivers::utils::get_value_type;
+use openfab_drivers::files::FileEntry;
 use openfab_drivers::{Callback, CallbackId, DeviceDriver};
 use prusa_rs::api::client::{ApiClient, ClientConfig};
 use prusa_rs::models::status_printer::StatusPrinter;
@@ -258,6 +259,11 @@ impl DeviceDriver for PrusaDriver {
         self.clients.insert(serial, lan_client);
         Ok(())
     }
+
+    async fn list_entries(&self, device: &str, dir: &str) -> Result<Vec<FileEntry>, DriverError> {
+        Ok(Vec::new())
+    }
+
     async fn disconnect(&mut self, device: &str) -> Result<(), DriverError> {
         let device = self.clients.remove(device);
         match device {

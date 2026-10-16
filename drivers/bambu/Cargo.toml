@@ -12,3 +12,6 @@ openfab-drivers = { path = "../" }
 async-trait = "0.1.92"
 serde = { version = "1.0.229", features = ["derive"] }
 uuid = "1.27.0"
+ssdp-client = "2.1.0"
+futures = "0.3.34"
+rustls = "0.23.46"

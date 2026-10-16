@@ -1,18 +1,19 @@
 //! Driver orchestration: configuring, loading/unloading drivers,
 //! and managing driver connections.
 
-use crate::Callback;
 use crate::DeviceDriver;
 use crate::config::{ConfigSchema, DriverMeta};
 use crate::errors::DriverError;
-use crate::events::{Event, EventType};
+use crate::events::Event;
+use crate::files::FileEntry;
+
+use std::sync::Arc;
+
+use tokio::sync::Mutex;
 use tokio::sync::broadcast::Receiver;
 
-use crate::DeviceCallback;
 use async_trait::async_trait;
 use serde_json::Value;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub type DriverHandle = Arc<Mutex<Box<dyn DeviceDriver + Send>>>;
 
@@ -55,19 +56,17 @@ pub trait DriverRuntime: Send + Sync {
         self.get_driver(driver)?.lock().await.register_callback(device, event_type, boxed_cb).await
     }*/
 
-    async fn register_handler(
-        &mut self,
+    async fn list_entries(
+        &self,
         driver: &str,
         device: &str,
-        handler: impl DeviceCallback,
-    ) -> Result<(), DriverError> {
-        self.get_driver(driver)?
+        dir: &str,
+    ) -> Result<Vec<FileEntry>, DriverError> {
+        Ok(self
+            .get_driver(driver)?
             .lock()
             .await
-            .register_handler(
-                device,
-                Box::new(move |stream| Box::pin(handler.call(stream))),
-            )
-            .await
+            .list_entries(device, dir)
+            .await?)
     }
 }

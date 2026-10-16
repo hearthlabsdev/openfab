@@ -1,0 +1,18 @@
+[package]
+name = "openfab-virtual"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+approx = "0.5.1"
+async-trait = "0.1.92"
+libunftp = "0.23.1"
+openfab-drivers = { path = "../" }
+rustls = "0.23.46"
+rustls-pki-types = "1.15.1"
+serde = "1.0.229"
+serde_json = "1.0.154"
+suppaftp = { version = "12.2.0", features = ["tokio", "rustls-ring", "tokio-rustls-ring", "deprecated", "async-secure"] }
+tokio = "1.53.2"
+tokio-rustls = "0.26.6"
+unftp-sbe-fs = "0.4.0"
