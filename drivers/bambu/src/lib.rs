@@ -326,7 +326,7 @@ impl BambuCameraClient {
             handle,
         })
     }
-    pub async fn disconnect(self) {
+    pub async fn disconnect(&self) {
         self.handle.abort();
     }
 
@@ -344,7 +344,24 @@ pub struct BambuClient {
     _recv: Receiver<Event>,
 }
 
+impl Drop for BambuClient {
+    fn drop(&mut self) {
+        // 1. Signal the task to abort immediately, or let dropping `sender` close the channel
+        self.worker.abort(); 
+        
+
+        // Note: If you must wait for the task to finish async cleanup before fully stopping, 
+        // you should trigger that in Rocket's `on_shutdown` fairing prior to `Drop` running.
+    }
+}
+
 impl BambuClient {
+    pub async fn disconnect(&self) {
+        self.worker.abort();
+        /*if let Some(camera) = &self.camera {
+            camera.disconnect().await;
+        }*/
+    }
     pub async fn new(resolved: ResolvedTarget) -> Result<Self, DriverError> {
         let client = Arc::new(LanMqttClient::new(resolved.clone()));
         let worker_client = client.clone();
@@ -512,19 +529,7 @@ impl DeviceDriver for BambuDriver {
         Ok(())
     }
     async fn disconnect(&mut self, device: &str) -> Result<(), DriverError> {
-        let device = self.clients.remove(device);
-        match device {
-            Some(device) => {
-                device.worker.abort();
-                match device.camera {
-                    Some(camera) => {
-                        camera.disconnect().await;
-                    }
-                    None => {}
-                };
-            }
-            None => {}
-        }
+        self.clients.remove(device);
         Ok(())
     }
     async fn upload_file(&mut self) -> Result<(), DriverError> {
@@ -551,6 +556,13 @@ impl DeviceDriver for BambuDriver {
             .ok_or(DriverError::DeviceNotFound(device.into()))?
             .sender
             .subscribe())
+    }
+
+    async fn shutdown(&self) -> Result<(), DriverError> {
+        for (_, client) in self.clients.iter() {
+            client.disconnect().await;
+        }
+        Ok(())
     }
 
     fn subscribe_camera(&self, device: &str) -> Result<Option<Watcher<CameraEvent>>, DriverError> {

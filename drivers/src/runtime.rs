@@ -15,7 +15,7 @@ use tokio::sync::broadcast::Receiver;
 use async_trait::async_trait;
 use serde_json::Value;
 
-pub type DriverHandle = Arc<Mutex<Box<dyn DeviceDriver + Send>>>;
+pub type DriverHandle = Arc<Mutex<Box<dyn DeviceDriver + Send + Sync>>>;
 
 #[async_trait]
 pub trait DriverRuntime: Send + Sync {
@@ -68,5 +68,12 @@ pub trait DriverRuntime: Send + Sync {
             .await
             .list_entries(device, dir)
             .await?)
+    }
+
+    async fn shutdown(&mut self) -> Result<(), DriverError> {
+        for driver_meta in self.index_drivers().await?.iter() {
+            self.unload(&driver_meta.id).await?;
+        }
+        Ok(())
     }
 }

@@ -260,7 +260,26 @@ pub struct VirtualClient {
     ftps: Arc<Mutex<AsyncRustlsFtpStream>>,
 }
 
+impl Drop for VirtualClient {
+    fn drop(&mut self) {
+        // 1. Signal the task to abort immediately, or let dropping `sender` close the channel
+        self.worker.abort(); 
+        
+
+        // Note: If you must wait for the task to finish async cleanup before fully stopping, 
+        // you should trigger that in Rocket's `on_shutdown` fairing prior to `Drop` running.
+    }
+}
+
+impl VirtualClient {
+    pub(crate) async fn disconnect(&self) -> Result<(), DriverError> {
+        self.worker.abort();
+        Ok(())
+    }
+}
+
 impl VirtualDriver {
+    
     pub async fn new() -> Result<Self, DriverError> {
         Ok(Self {
             clients: HashMap::new(),
@@ -372,12 +391,22 @@ impl DeviceDriver for VirtualDriver {
     async fn disconnect(&mut self, device: &str) -> Result<(), DriverError> {
         let device = self.clients.remove(device);
         if let Some(device) = device {
-            device.worker.abort();
+            device.disconnect().await?;
         }
         Ok(())
     }
     async fn upload_file(&mut self) -> Result<(), DriverError> {
         unimplemented!();
+    }
+    async fn shutdown(&self) -> Result<(), DriverError> {
+        /*let keys = self.clients.iter().map(|(k, _)| k.to_string()).collect::<Vec<String>>();
+        for key in keys.into_iter() {
+            self.disconnect(&key).await?;
+        }*/
+        for (_, client) in self.clients.iter() {
+            client.disconnect().await?;
+        }
+        Ok(())
     }
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError> {
         Ok(self

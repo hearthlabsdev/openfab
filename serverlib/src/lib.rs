@@ -15,3 +15,5 @@ pub mod library;
 pub mod prints;
 /// tools to make development easier
 pub mod utils;
+/// used for handling device registration, status, discovery, model inventorying, etc.
+pub mod devices;

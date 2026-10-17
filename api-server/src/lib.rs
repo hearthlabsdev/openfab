@@ -14,7 +14,12 @@ pub fn register_routes(r: Rocket<Build>) -> Rocket<Build> {
     r.mount(
         "/swagger-ui/",
         make_swagger_ui(&SwaggerUIConfig {
-            urls: vec![UrlObject::new("OpenFab", "/api/openapi.json")],
+            urls: vec![
+                UrlObject::new("OpenFab", "/api/openapi.json"),
+                UrlObject::new("OpenFab Libraries", "/api/library/openapi.json"),
+                UrlObject::new("OpenFab Devices", "/api/devices/openapi.json"),
+                UrlObject::new("OpenFab Print Management", "/api/prints/openapi.json"),
+            ],
             ..Default::default()
         }),
     )
@@ -33,29 +38,13 @@ pub fn register_routes(r: Rocket<Build>) -> Rocket<Build> {
             ..Default::default()
         }),
     )
+    .mount("/api/library/", library::get_routes())
+    .mount("/api/devices", devices::get_routes())
+    .mount("/api/prints", prints::get_routes())
     .mount(
         "/api/",
         openapi_get_routes![
-            // library methods
-            library::list_assets,
-            library::get_asset,
-            library::create_asset,
-            library::update_asset,
-            library::delete_asset,
-            // device methods
-            devices::list_devices,
-            devices::get_device,
-            devices::create_device,
-            devices::update_device,
-            devices::delete_device,
             // print methods
-            prints::list_prints,
-            prints::get_print,
-            prints::create_print,
-            prints::get_print_status,
-            prints::pause_print,
-            prints::stop_print,
-            prints::delete_print,
         ],
     )
 }

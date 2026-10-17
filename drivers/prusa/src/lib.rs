@@ -141,6 +141,23 @@ pub struct PrusaClient {
     _recv: Receiver<Event>,
 }
 
+impl Drop for PrusaClient {
+    fn drop(&mut self) {
+        // 1. Signal the task to abort immediately, or let dropping `sender` close the channel
+        self.worker.abort();
+
+        // Note: If you must wait for the task to finish async cleanup before fully stopping, 
+        // you should trigger that in Rocket's `on_shutdown` fairing prior to `Drop` running.
+    }
+}
+
+impl PrusaClient {
+    pub(crate) async fn disconnect(&self) -> Result<(), DriverError> {
+        self.worker.abort();
+        Ok(())
+    }
+}
+
 impl PrusaDriver {
     pub fn new() -> Self {
         Self {
@@ -274,6 +291,16 @@ impl DeviceDriver for PrusaDriver {
     }
     async fn upload_file(&mut self) -> Result<(), DriverError> {
         unimplemented!();
+    }
+    async fn shutdown(&self) -> Result<(), DriverError> {
+        /*let keys = self.clients.iter().map(|(k, _)| k.to_string()).collect::<Vec<String>>();
+        for key in keys.into_iter() {
+            self.disconnect(&key).await?;
+        }*/
+        for (_, client) in self.clients.iter() {
+            client.disconnect().await?;
+        }
+        Ok(())
     }
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError> {
         let full = match self

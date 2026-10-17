@@ -1,11 +1,17 @@
 use crate::accounts::User;
+use crate::devices::DeviceORM;
+use crate::errors::OpenFabErr;
 use crate::library::AssetORM;
 use crate::utils::unix_epoch_seconds;
+use openfab_drivers::status::{JobStatus};
+use ormlite::Model;
 use ormlite::model::Join;
 use ormlite::model::JoinMeta;
-use ormlite::Model;
+use ormlite::postgres::PgPool;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
+use std::collections::HashMap;
 
 use rocket_okapi::okapi::schemars::JsonSchema;
 
@@ -34,6 +40,7 @@ pub struct PrintJobORM {
 
     /// Job creation timestamp
     pub created_at: i64,
+    pub started_at: Option<i64>,
 
     /// Terminal lifecycle state
     pub state: String,
@@ -56,7 +63,24 @@ pub struct PrintJobORM {
     pub notes: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+impl PrintJobORM {
+    pub async fn admin_get_print(pool: &PgPool, uid: Uuid) -> Result<PrintJobORM, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(PrintJobORM::select()
+            .join(PrintJobORM::user())
+            .join(PrintJobORM::asset())
+            .where_("uid = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?)
+    }
+    pub async fn get_print(pool: &PgPool, uid: Uuid) -> Result<PrintJob, OpenFabErr> {
+        let orm = Self::admin_get_print(pool, uid).await?;
+        Ok(orm.into())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PrintJob {
     /// Stable job identifier
     pub uid: Uuid,
@@ -80,7 +104,7 @@ pub struct PrintJob {
 
     /// Terminal lifecycle state
     pub state: String,
-
+    pub started_at: Option<i64>,
     /// When job entered terminal state
     pub completed_at: Option<i64>,
 
@@ -99,6 +123,30 @@ pub struct PrintJob {
     pub notes: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct PrintJobStatus {
+    /// Estimated time remaining until job completion, measured in seconds.
+    pub time_remaining_secs: i64,
+    /// Current progress of the print job represented as a percentage (0 to 100).
+    pub progress: i64,
+
+    pub state: String,
+    /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
+    #[serde(flatten)]
+    extras: HashMap<String, Value>,
+}
+
+impl From<JobStatus> for PrintJobStatus {
+    fn from(status: JobStatus) -> Self {
+        Self {
+            time_remaining_secs: status.time_remaining_secs,
+            progress: status.progress,
+            state: status.state.to_string(),
+            extras: status.extras,
+        }
+    }
+}
+
 impl From<PrintJobORM> for PrintJob {
     fn from(orm: PrintJobORM) -> Self {
         Self {
@@ -110,6 +158,7 @@ impl From<PrintJobORM> for PrintJob {
             estimated_cost: orm.estimated_cost,
             created_at: orm.created_at,
             state: orm.state,
+            started_at: orm.started_at,
             completed_at: orm.completed_at,
             copies: orm.copies,
             priority: orm.priority,
@@ -149,32 +198,137 @@ impl From<PrintJob> for PrintJobORM {
     }
 }*/
 
-#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Model, JsonSchema)]
 #[ormlite(table = "print_job_executions")]
-pub struct PrintJobExecutionORM {
+pub struct PrintJobInstanceORM {
+    #[ormlite(primary_key)]
+    pub uid: Uuid,
+    pub job: Uuid,
+    pub printer: Uuid,
+    pub instance: i32,
+    pub started_at: Option<i64>,
+    pub finished_at: Option<i64>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct PrintJobInstance {
+    pub uid: Uuid,
+    pub job: PrintJob,
+    pub printer: DeviceORM,
+    pub instance: i32,
+    pub events: Vec<PrintJobEvent>,
+    pub started_at: Option<i64>,
+    pub finished_at: Option<i64>,
+    pub error: Option<String>,
+}
+
+impl PrintJobInstanceORM {
+    /// this would be a more expensive query bc of ormlites current limitations so instead this provides a simple index of job instances.
+    pub async fn list_job_instances(
+        pool: &PgPool,
+        job: Uuid,
+    ) -> Result<Vec<PrintJobInstanceORM>, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(PrintJobInstanceORM::select()
+            .where_("job = ?")
+            .bind(job)
+            .fetch_all(&mut *conn)
+            .await?)
+    }
+
+    /// because this is an expensive query that has to be done manually for now, the full information is only available for single objects.
+    /// querying user information as an extraneous requirements will also for now not be supported without explicitly requesting the user information seperately.
+    pub async fn get_job_instance(
+        pool: &PgPool,
+        uid: Uuid,
+    ) -> Result<PrintJobInstance, OpenFabErr> {
+        let print_job = PrintJobORM::get_print(pool, uid).await?;
+
+        let mut conn = pool.acquire().await?;
+        let orm = PrintJobInstanceORM::select()
+            .where_("job = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?;
+
+        let device = DeviceORM::select()
+            .where_("uid = ?")
+            .bind(orm.printer)
+            .fetch_one(&mut *conn)
+            .await?;
+
+        let events = PrintJobEventORM::list_job_instance_events(pool, orm.uid).await?;
+
+        Ok(PrintJobInstance {
+            uid: orm.uid,
+            job: print_job,
+            printer: device,
+            instance: orm.instance,
+            events,
+            started_at: orm.started_at,
+            finished_at: orm.finished_at,
+            error: orm.error,
+        })
+    }
+}
+
+#[derive(Debug, Model, Clone, Serialize, Deserialize)]
+#[ormlite(table = "print_job_events")]
+pub struct PrintJobEventORM {
     #[ormlite(primary_key)]
     pub uid: Uuid,
 
     /// Parent job
-    pub job: Uuid,
-
-    /// Assigned printer
-    pub printer: Uuid,
-
-    /// Attempt number (1, 2, 3...)
-    pub attempt: i32,
+    pub job_instance: Uuid,
 
     /// Execution state
-    pub state: String,
+    pub status: String,
 
-    /// When execution started
-    pub started_at: Option<i64>,
-
-    /// When execution ended
-    pub finished_at: Option<i64>,
-
+    /// When the event was recorded
+    pub timestamp: i64,
     /// Failure reason (if any)
     pub error: Option<String>,
+}
+
+impl PrintJobEventORM {
+    pub async fn list_job_instance_events(
+        pool: &PgPool,
+        job_instance: Uuid,
+    ) -> Result<Vec<PrintJobEvent>, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(PrintJobEventORM::select()
+            .where_("job_instance = ?")
+            .bind(job_instance)
+            .fetch_all(&mut *conn)
+            .await?
+            .into_iter()
+            .map(|v| v.try_into())
+            .collect::<Result<Vec<PrintJobEvent>, OpenFabErr>>()?)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct PrintJobEvent {
+    pub uid: Uuid,
+    pub job_instance: Uuid,
+    pub current_status: PrintJobStatus,
+    pub error: Option<String>,
+    pub timestamp: i64,
+}
+
+impl TryFrom<PrintJobEventORM> for PrintJobEvent {
+    type Error = OpenFabErr;
+
+    fn try_from(orm: PrintJobEventORM) -> Result<Self, Self::Error> {
+        Ok(Self {
+            uid: orm.uid,
+            job_instance: orm.job_instance,
+            current_status: serde_json::from_str(&orm.status)?,
+            timestamp: orm.timestamp,
+            error: orm.error,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Model, JsonSchema)]
@@ -186,6 +340,7 @@ pub struct PrintQueueORM {
     pub description: Option<String>,
     pub created_at: i64,
     pub last_active: i64,
+    pub mime: Option<Vec<String>>,
     /// has the queue been advertised to the network
     pub advertised: bool,
 }
@@ -199,6 +354,7 @@ impl PrintQueueORM {
             created_at: unix_epoch_seconds(),
             last_active: unix_epoch_seconds(),
             advertised: false,
+            mime: None,
         }
     }
 
@@ -206,5 +362,39 @@ impl PrintQueueORM {
         let mut queue = Self::new(name);
         queue.description = Some(description);
         queue
+    }
+    pub async fn list(pool: &PgPool) -> Result<Vec<PrintQueueORM>, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(PrintQueueORM::select().fetch_all(&mut *conn).await?)
+    }
+
+    pub async fn get_queue(pool: &PgPool, uid: Uuid) -> Result<PrintQueueORM, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(PrintQueueORM::select()
+            .where_("uid = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?)
+    }
+
+    pub async fn list_prints(pool: &PgPool, queue: Uuid) -> Result<Vec<PrintJob>, OpenFabErr> {
+        Ok(Self::admin_list_prints(pool, queue)
+            .await?
+            .into_iter()
+            .map(|v| v.into())
+            .collect::<Vec<PrintJob>>())
+    }
+    pub async fn admin_list_prints(
+        pool: &PgPool,
+        queue: Uuid,
+    ) -> Result<Vec<PrintJobORM>, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(PrintJobORM::select()
+            .join(PrintJobORM::user())
+            .join(PrintJobORM::asset())
+            .where_("queue = ?")
+            .bind(queue)
+            .fetch_all(&mut *conn)
+            .await?)
     }
 }

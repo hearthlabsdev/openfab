@@ -1,11 +1,11 @@
 use futures_util::Stream;
 use openfab::oidc::OidcClaims;
+use rand::Rng;
+use rand::distr::Alphanumeric;
 use rocket::Request;
 use rocket::http::{ContentType, Status};
 use rocket::response::{Responder, Response};
 use rocket_oidc::{OIDCGuard, auth::ApiKeyGuard};
-use rand::distr::Alphanumeric;
-use rand::Rng;
 use std::io;
 use std::pin::Pin;
 use std::task::{Context as TaskContext, Poll};
@@ -133,3 +133,16 @@ pub fn random_string(len: usize) -> String {
         .map(char::from)
         .collect()
 }
+
+/*
+// a way to abstract pagination, things to consider: binding, and ordering.
+#[async_trait::async_trait]
+pub trait Pagination: ormlite::Model {
+    fn paginate(pool: &PgPool, page: Option<i64>) -> Result<Vec<Self>, OpenFabErr> {
+        Ok(Self::select()
+            .limit(PAGE_SIZE)
+            .offset(page)
+            .fetch_all(&mut *conn)
+            .await?)
+    }
+}*/

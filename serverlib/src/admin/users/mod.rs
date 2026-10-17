@@ -1,8 +1,8 @@
 //! This module is intended to handle listing active users
 
+use crate::utils::random_string;
 use crate::utils::unix_epoch_seconds;
 use ormlite::Model;
-use crate::utils::random_string;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 

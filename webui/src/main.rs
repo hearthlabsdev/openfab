@@ -5,7 +5,6 @@
 
 #![deny(unused)]
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
-
 use openfab_bambu::BambuDriver;
 use openfab_drivers::native::NativeRuntime;
 use openfab_virtual::VirtualDriver;
@@ -58,8 +57,7 @@ fn page_not_found(req: &Request) -> RawHtml<Template> {
     ))
 }
 
-#[launch]
-async fn rocket() -> _ {
+async fn rocket() -> rocket::Rocket<rocket::Build> {
     // Build Rocket
     
     println!("current time UTC: {}", time::OffsetDateTime::now_utc());
@@ -165,4 +163,15 @@ async fn rocket() -> _ {
     let state = AuthState::from_oidc_config(oidc).await.unwrap();
     state.set_local_client(client).await;
     state.setup(rocket)
+}
+
+#[tokio::main]
+async fn main() {
+    match rocket().await.launch().await {
+        Ok(_) => println!("graceful shutdown successful"),
+        Err(_e) => {
+
+        },
+    };
+    //rocket.state::<RuntimeManager<NativeRuntime>>().unwrap().runtime().shutdown().await.expect("failed to shutdown");
 }

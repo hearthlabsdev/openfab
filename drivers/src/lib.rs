@@ -171,6 +171,8 @@ pub trait DeviceDriver: Send + Sync {
     /// Gracefully disconnects and tears down workers for the specified device identifier.
     async fn disconnect(&mut self, device: &str) -> Result<(), DriverError>;
 
+    async fn shutdown(&self) -> Result<(), DriverError>;
+
     /// Uploads a print or fabrication file to the device storage.
     async fn upload_file(&mut self) -> Result<(), DriverError>;
 

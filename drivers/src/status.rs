@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fmt;
 
 /// A marker trait representing types that can be safely serialized and deserialized
 /// as vendor-specific printer extension payloads.
@@ -47,6 +48,23 @@ pub enum State {
     Ready,
     /// catch all
     Unknown(String),
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            State::Idle => write!(f, "Idle"),
+            State::Busy => write!(f, "Busy"),
+            State::Printing => write!(f, "Printing"),
+            State::Paused => write!(f, "Paused"),
+            State::Finished => write!(f, "Finished"),
+            State::Stopped => write!(f, "Stopped"),
+            State::Error => write!(f, "Error"),
+            State::Attention => write!(f, "Attention"),
+            State::Ready => write!(f, "Ready"),
+            State::Unknown(s) => write!(f, "Unknown({})", s),
+        }
+    }
 }
 
 /// Core, vendor-agnostic status metrics reported by a 3D printer.
@@ -146,7 +164,7 @@ pub struct JobStatus {
     pub state: State,
     /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
     #[serde(flatten)]
-    extras: HashMap<String, Value>,
+    pub extras: HashMap<String, Value>,
 }
 impl JobStatus {
     pub fn with_extras<E: Extensions>(

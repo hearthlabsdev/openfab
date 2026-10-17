@@ -5,9 +5,9 @@ use ormlite::Model;
 use rocket::FromForm;
 use rocket_oidc::claims::CoreClaims;
 use rocket_oidc::utils::string_or_vec;
+use rocket_okapi::okapi::schemars::JsonSchema;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
-use rocket_okapi::okapi::schemars::JsonSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Error)]

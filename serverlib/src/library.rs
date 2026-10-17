@@ -3,14 +3,17 @@ use crate::utils::ResultStream;
 use crate::utils::unix_epoch_seconds;
 use minio_rsc::http::Method;
 use ormlite::model::JoinMeta;
+use ormlite::postgres::PgPool;
 use ormlite::{Model, model::Join};
 use rocket::fs::TempFile;
 use secret_ref::*;
 
-use serde_derive::{Deserialize, Serialize};
-use rocket_okapi::okapi::schemars::JsonSchema;
-use uuid::Uuid;
+pub const PAGE_SIZE: usize = 20;
+
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
+use rocket_okapi::okapi::schemars::JsonSchema;
+use serde_derive::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize, JsonSchema)]
 #[ormlite(table = "libraries")]
@@ -37,6 +40,37 @@ impl LibraryORM {
             updated_at: unix_epoch_seconds(),
             public,
         }
+    }
+
+    pub async fn list(pool: &PgPool) -> Result<Vec<LibraryORM>, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(LibraryORM::select().fetch_all(&mut *conn).await?)
+    }
+
+    pub async fn list_assets(
+        pool: &PgPool,
+        uid: Uuid,
+        page: Option<i64>,
+    ) -> Result<Vec<AssetORM>, OpenFabErr> {
+        let page: usize = (page.unwrap_or(1) - 1).abs().try_into().unwrap_or(0);
+        let mut conn = pool.acquire().await?;
+        Ok(AssetORM::select()
+            .where_("library = ?")
+            .bind(uid)
+            .order_desc("created_at")
+            .limit(PAGE_SIZE)
+            .offset(page * PAGE_SIZE)
+            .fetch_all(&mut *conn)
+            .await?)
+    }
+
+    pub async fn get_asset(pool: &PgPool, uid: Uuid) -> Result<AssetORM, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        Ok(AssetORM::select()
+            .where_("uid = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?)
     }
 }
 

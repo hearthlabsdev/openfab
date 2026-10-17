@@ -1,5 +1,5 @@
 use rocket::{delete, get, post, put};
-use rocket_okapi::openapi;
+use rocket_okapi::{openapi, openapi_get_routes};
 use uuid::Uuid;
 
 #[openapi(tag = "Devices")]
@@ -30,4 +30,14 @@ pub(crate) async fn update_device(id: Uuid) {
 #[delete("/devices/delete/<id>")]
 pub(crate) async fn delete_device(id: Uuid) {
     unimplemented!();
+}
+
+pub fn get_routes() -> Vec<rocket::Route> {
+    openapi_get_routes![
+        list_devices,
+        get_device,
+        create_device,
+        update_device,
+        delete_device,
+    ]
 }
