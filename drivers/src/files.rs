@@ -7,7 +7,8 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileEntry {
     pub name: String,
-    pub size: Option<u64>,
+    pub size: i64,
+    pub modified: i64,
     pub path: PathBuf,
     #[serde(flatten)]
     extras: HashMap<String, Value>,
@@ -23,7 +24,8 @@ impl FileEntry {
     pub fn with_extras<E: Extensions, P: AsRef<Path>>(
         name: impl Into<String>,
         path: P,
-        size: Option<u64>,
+        modified: i64,
+        size: i64,
         extra: E,
     ) -> Result<Self, serde_json::Error> {
         let val = serde_json::to_value(extra)?;
@@ -34,14 +36,16 @@ impl FileEntry {
             name: name.into(),
             path: path.as_ref().to_path_buf(),
             size,
+            modified,
             extras,
         })
     }
 
-    pub fn new<P: AsRef<Path>>(name: impl Into<String>, path: P, size: Option<u64>) -> Self {
+    pub fn new<P: AsRef<Path>>(name: impl Into<String>, path: P, modified: i64, size: i64) -> Self {
         Self {
             name: name.into(),
             path: path.as_ref().to_path_buf(),
+            modified,
             size,
             extras: HashMap::new(),
         }

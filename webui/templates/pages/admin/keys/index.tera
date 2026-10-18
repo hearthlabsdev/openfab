@@ -55,7 +55,7 @@
                     </td>
 
                     <td class="result-table__cell result-table__cell--owner">
-                        {{ key.owner }}
+                        {{ key.owner.fname }} {{ key.owner.lname }}
                     </td>
 
                     <td class="result-table__cell result-table__cell--owner">
@@ -67,11 +67,11 @@
                     </td>
 
                     <td class="result-table__cell result-table__cell--expires">
-                        {{ key.expires }}
+                        {{ key.expires_at }}
                     </td>
 
                     <td class="result-table__cell result-table__cell--created">
-                        {{ key.created }}
+                        {{ key.created_at }}
                     </td>
 
                     <td class="result-table__cell result-table__cell--actions">

@@ -83,6 +83,7 @@ async fn rocket() -> rocket::Rocket<rocket::Build> {
             .expect("failed to create secret ref"),
         bucket: "openfab".to_string(),
         secure: false,
+        primary_hash_alg: Some("blake3".into()),
     };
 
     let oidc = OIDCConfig {

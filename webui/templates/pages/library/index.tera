@@ -24,9 +24,11 @@
             </select>
         {% endif %}
         
-        <a href="/library/upload" class="btn btn-primary">
+        {% if library is defined %}
+        <a href="/library/{{ library }}/upload" class="btn btn-primary">
             Upload Asset
         </a>
+        {% endif %}
         <a href="/library/create" class="btn btn-primary">
             Create a Library
         </a>
@@ -100,7 +102,7 @@
 
                     <div class="asset-card-actions">
                         <a
-                            href="/library/assets/{{ asset.uid }}"
+                            href="/library/assets/{{ asset.uid }}/info"
                             class="btn btn-secondary"
                         >
                             View
@@ -144,10 +146,11 @@
         <div class="asset-empty-icon">📁</div>
         <h2>No assets yet</h2>
         <p>Upload an asset to start building your library.</p>
-
-        <a href="/library/upload" class="btn btn-primary">
+        {% if library is defined %}
+        <a href="/library/{{ library }}/upload" class="btn btn-primary">
             Upload Asset
         </a>
+        {% endif %}
     </div>
 {% endif %}
 

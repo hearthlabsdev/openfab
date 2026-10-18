@@ -1,6 +1,8 @@
 pub mod devices;
+pub mod errors;
 pub mod library;
 pub mod prints;
+pub mod utils;
 
 use rocket::{Build, Rocket};
 use rocket_okapi::{

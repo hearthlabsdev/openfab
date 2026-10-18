@@ -131,6 +131,18 @@
                 </div>
             {% endif %}
 
+            {% if asset.hash_alg is defined and asset.hash_alg is not none %}
+                <div class="asset-detail-field">
+                    <dt>Hash Algorithm</dt>
+                    <dd>{{ asset.hash_alg }}</dd>
+                </div>
+            {% endif %}
+            {% if asset.hash is defined and asset.hash is not none %}
+                <div class="asset-detail-field">
+                    <dt>Cryptographic Hash</dt>
+                    <dd>{{ asset.hash }}</dd>
+                </div>
+            {% endif %}
             {% if asset.license is defined and asset.license is not none %}
                 <div class="asset-detail-field">
                     <dt>License</dt>

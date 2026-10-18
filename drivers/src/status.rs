@@ -85,7 +85,7 @@ pub struct PrinterStatus {
     pub chamber_temp: Option<f64>,
     /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
     #[serde(flatten)]
-    extra: HashMap<String, Value>,
+    pub extra: HashMap<String, Value>,
 }
 
 impl PartialEq for PrinterStatus {

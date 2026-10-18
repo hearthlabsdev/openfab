@@ -87,6 +87,7 @@ async fn run() -> anyhow::Result<()> {
         &args.store_secret,
         &args.store_bucket,
         args.store_secure,
+        "blake3"
     )?;
 
     let Some(dir) = args.prusa_settings else {
@@ -290,7 +291,7 @@ async fn import_asset(
         asset_kind, uid, filename
     );
 
-    object_store.upload_bytes(&key, data.clone()).await?;
+    let (hash_alg, hash) = object_store.upload_bytes(&key, data.clone()).await?;
 
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64;
 
@@ -299,6 +300,8 @@ async fn import_asset(
         name: filename.to_owned(),
         key,
         library,
+        hash,
+        hash_alg,
         mime: mime_for_filename(filename),
         owner: Uuid::nil(),
         size: data.len() as i64,

@@ -1,3 +1,6 @@
+use serverlib::errors::AuthErr;
+use serverlib::admin::apikeys::{ApiKeyORM};
+use serverlib::errors::OpenFabErr;
 use ormlite::{Model, postgres::PgPool};
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
@@ -14,52 +17,25 @@ use uuid::Uuid;
 use crate::accounts::User;
 use crate::utils::Guard;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Model)]
-#[ormlite(table = "api_keys")]
-pub struct ApiKeyORM {
-    #[ormlite(primary_key)]
-    uid: Uuid,
-    keyid: String,
-    owner: Uuid,
-    /// the user who's permissions this key is allowed to inherit
-    account: Option<Uuid>,
-    access_key: String,
-    // expiration as unix epoch
-    expires: i64,
-    created: i64,
-}
-
-impl ApiKeyORM {
-    pub fn generate(owner: Uuid, account: Uuid, expires: i64, keyid: Option<String>) -> Self {
-        unimplemented!();
-    }
-}
-
 #[get("/keys")]
-async fn index(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
+async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
     let mut conn = pool.acquire().await.unwrap();
     let user = User::select()
         .where_("subject = ?")
         .bind(guard.claims.sub.to_string())
         .fetch_one(&mut *conn)
-        .await
-        .expect("failed to fetch current user");
+        .await?;
 
-    let keys = ApiKeyORM::select()
-        .where_("owner = ?")
-        .bind(user.uid())
-        .fetch_all(&mut *conn)
-        .await
-        .expect("failed to fetch API Keys");
+    let keys = ApiKeyORM::list_for_owner(&mut *conn, user.uid()).await?;
 
-    RawHtml(Template::render(
+    Ok(RawHtml(Template::render(
         "pages/admin/keys/index",
         context! { api_keys: keys },
-    ))
+    )))
 }
 
 #[get("/keys/create")]
-async fn create_access_key_page(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
+async fn create_access_key_page(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
     unimplemented!();
 }
 

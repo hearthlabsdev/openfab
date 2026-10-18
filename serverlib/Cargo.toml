@@ -18,7 +18,7 @@ openfab-drivers = { path = "../drivers" }
 serde_derive = "1.0.229"
 reqwest = "0.12.28"
 argon2 = "0.6.0"
-rocket-oidc = { git = "https://github.com/vivianlazaras/rocket-oidc" }
+rocket-oidc = { git = "https://github.com/vivianlazaras/rocket-oidc", features = ["openapi"] }
 openfab = { path = "../core", features = ["oidc"] }
 tokio-utils = "0.1.2"
 tokio-util = "0.7.20"
@@ -29,3 +29,6 @@ rand_core = "0.10.1"
 rocket_okapi = { version = "0.9.0", features = ["swagger", "rapidoc", "uuid"]}
 schemars = { version = "0.8", features = ["uuid1"] }
 libm = "0.2.16"
+hex = "0.4.3"
+blake3 = "1.8.7"
+sha2 = "0.11.1"

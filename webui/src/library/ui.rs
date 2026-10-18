@@ -1,8 +1,10 @@
-use crate::errors::OpenFabErr;
+use serverlib::errors::{OpenFabErr, UploadErr};
 use crate::library::ObjectStore;
 use crate::library::{AssetORM, LibraryORM};
 use crate::utils::Guard;
+use crate::utils::unix_epoch_seconds;
 use serverlib::utils::ResultStream;
+use serverlib::accounts::User;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::form::{Form, FromForm};
@@ -39,6 +41,8 @@ pub struct AssetInfo {
     /// Last time this asset was used in a print job or queue.
     pub last_used_at: Option<i64>,
 
+    pub hash_alg: String,
+    pub hash: String,
     /// Whether this asset is publicly accessible (e.g. for embedding or sharing)
     pub public: bool,
     /// Optional license or usage terms (e.g. "CC-BY-SA 4.0")
@@ -58,6 +62,8 @@ impl AssetInfo {
             created_at: orm.created_at,
             updated_at: orm.updated_at,
             last_used_at: orm.last_used_at,
+            hash_alg: orm.hash_alg,
+            hash: orm.hash,
             public: orm.public,
             license: orm.license,
         })
@@ -68,33 +74,31 @@ impl AssetInfo {
 pub struct AssetForm<'r> {
     pub name: String,
     pub library: Uuid,
-    pub mime: String,
-    pub owner: String,
-    pub size: i64,
     pub public: bool,
     pub license: Option<String>,
     pub file: TempFile<'r>,
 }
 
 impl AssetForm<'_> {
-    pub async fn into_asset(self, store: &ObjectStore) -> Result<AssetORM, String> {
+    pub async fn into_asset(self, store: &ObjectStore, owner: Uuid) -> Result<AssetORM, UploadErr> {
         let uid = uuid::Uuid::new_v4();
         let filename = format!("/assets/{}", uid);
-        store
+        let info = store
             .upload_temp_file(&filename, &self.file)
-            .await
-            .map_err(|e| e.to_string())?;
+            .await?;
 
         Ok(AssetORM {
             uid,
             name: self.name,
             library: self.library,
             key: filename,
-            mime: self.mime,
-            owner: uuid::Uuid::parse_str(&self.owner).map_err(|e| e.to_string())?,
-            size: self.size,
-            created_at: chrono::Utc::now().timestamp(),
-            updated_at: chrono::Utc::now().timestamp(),
+            mime: info.mime,
+            owner,
+            hash_alg: info.hash_alg,
+            hash: info.hash,
+            size: info.size,
+            created_at: unix_epoch_seconds(),
+            updated_at: unix_epoch_seconds(),
             last_used_at: None,
             public: self.public,
             license: self.license,
@@ -155,28 +159,33 @@ pub async fn index_assets(
     ))
 }
 
-#[get("/upload")]
-pub async fn create_form(guard: Guard, store: &State<ObjectStore>) -> RawHtml<Template> {
-    let uid = Uuid::new_v4();
-    let key = format!("/assets/{}", uid);
-    let url = store.presigned_put_url(&key, 3600).await.unwrap();
+#[get("/<library>/upload")]
+pub async fn create_form(guard: Guard, store: &State<ObjectStore>, library: Uuid) -> RawHtml<Template> {
     RawHtml(Template::render(
         "pages/library/create",
-        context! { uid, url },
+        context! { library },
     ))
 }
 
 #[post("/upload", data = "<asset_form>")]
 pub async fn create_asset(
+    guard: Guard,
     store: &State<ObjectStore>,
     asset_form: Form<AssetForm<'_>>,
     pool: &State<PgPool>,
-) -> Redirect {
-    let mut conn = pool.acquire().await.unwrap();
+) -> Result<Redirect, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    
+    let user = User::select()
+        .where_("subject = ?")
+        .bind(guard.claims.sub)
+        .fetch_one(&mut *conn)
+        .await?;
+    
     let asset_form = asset_form.into_inner();
-    let asset = asset_form.into_asset(&store).await.unwrap();
-    asset.insert(&mut *conn).await.unwrap();
-    Redirect::to("/library")
+    let asset = asset_form.into_asset(&store, user.uid).await?;
+    asset.insert(&mut *conn).await?;
+    Ok(Redirect::to("/library"))
 }
 
 #[get("/assets/<uid>/download")]
@@ -193,24 +202,24 @@ pub async fn download(pool: &State<PgPool>, store: &State<ObjectStore>, uid: Uui
     Redirect::to(url)
 }
 
-#[get("/assets/<uid>")]
+#[get("/assets/<uid>/info")]
 pub async fn get_asset(
     pool: &State<PgPool>,
     store: &State<ObjectStore>,
     uid: Uuid,
-) -> RawHtml<Template> {
-    let mut conn = pool.acquire().await.unwrap();
+) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
     let asset = AssetORM::select()
         .where_("uid = ?")
         .bind(uid)
         .fetch_one(&mut *conn)
-        .await
-        .unwrap();
+        .await?;
     let info = AssetInfo::from_asset_orm(asset, &store).await.unwrap();
-    RawHtml(Template::render(
+    println!("asset: {:?}", info);
+    Ok(RawHtml(Template::render(
         "pages/library/asset",
         context! { asset: info },
-    ))
+    )))
 }
 
 #[get("/assets/<uid>/fetch")]

@@ -1,12 +1,15 @@
-use crate::errors::OpenFabErr;
-use crate::utils::ResultStream;
+use crate::errors::{OpenFabErr, UploadErr};
 use crate::utils::unix_epoch_seconds;
+use crate::utils::{FileID, ResultStream};
+use blake3;
+use hex;
 use minio_rsc::http::Method;
 use ormlite::model::JoinMeta;
 use ormlite::postgres::PgPool;
 use ormlite::{Model, model::Join};
 use rocket::fs::TempFile;
 use secret_ref::*;
+use sha2::{Digest, Sha256};
 
 pub const PAGE_SIZE: usize = 20;
 
@@ -14,6 +17,16 @@ use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
 use rocket_okapi::okapi::schemars::JsonSchema;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct FileInfo {
+    pub name: String,
+    pub size: i64,
+    pub hash_alg: String,
+    pub hash: String,
+    pub mime: String,
+    pub modified: i64,
+}
 
 #[derive(Debug, Model, Clone, Serialize, Deserialize, JsonSchema)]
 #[ormlite(table = "libraries")]
@@ -108,10 +121,14 @@ pub struct AssetORM {
     /// Owning user (for permissions and sharing)
     pub owner: Uuid,
 
+    pub hash_alg: String,
+    pub hash: String,
+
     /// Size of the file in bytes.
     pub size: i64,
 
     pub created_at: i64,
+    /// when the file was last modified
     pub updated_at: i64,
     /// Last time this asset was used in a print job or queue.
     pub last_used_at: Option<i64>,
@@ -122,6 +139,21 @@ pub struct AssetORM {
     pub license: Option<String>,
 }
 
+impl FileID for AssetORM {
+    fn hash_alg(&self) -> &str {
+        &self.hash_alg
+    }
+    fn hash(&self) -> &str {
+        &self.hash
+    }
+    fn size(&self) -> i64 {
+        self.size
+    }
+    fn modified(&self) -> i64 {
+        self.updated_at
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ObjectStoreConfig {
@@ -130,6 +162,8 @@ pub struct ObjectStoreConfig {
     pub secret_key: SecretRef,
     pub bucket: String,
     pub secure: bool,
+    /// primary algorithm name, e.g. "sha256" or "blake3"
+    pub primary_hash_alg: Option<String>,
 }
 
 impl ObjectStoreConfig {
@@ -148,6 +182,9 @@ impl ObjectStoreConfig {
                 .expose(),
             &self.bucket,
             self.secure,
+            self.primary_hash_alg
+                .as_ref()
+                .map_or("sha256", |v| v.as_str()),
         )
     }
 }
@@ -162,6 +199,8 @@ pub struct StorageBackend {
 pub struct ObjectStore {
     client: Minio,
     bucket: String,
+    /// primary algorithm name, e.g. "sha256" or "blake3"
+    primary_hash_alg: String,
 }
 
 impl ObjectStore {
@@ -172,6 +211,7 @@ impl ObjectStore {
         secret_key: &str,
         bucket: &str,
         secure: bool,
+        primary_hash_alg: &str,
     ) -> Result<Self, OpenFabErr> {
         let provider = StaticProvider::new(access_key, secret_key, None);
         let client = Minio::builder()
@@ -183,6 +223,7 @@ impl ObjectStore {
         Ok(ObjectStore {
             client,
             bucket: bucket.to_string(),
+            primary_hash_alg: primary_hash_alg.to_string(),
         })
     }
 
@@ -191,22 +232,68 @@ impl ObjectStore {
         &self,
         key: &str,
         data: Vec<u8>,
-    ) -> Result<(), minio_rsc::error::Error> {
+    ) -> Result<(String, String), UploadErr> {
+        let blake3_hex = blake3::hash(&data).to_hex().to_string();
+        // Compute SHA-256 hex
+        let mut sha_hasher = Sha256::new();
+        sha_hasher.update(&data);
+        let sha256_hex = hex::encode(sha_hasher.finalize());
+
+        // Choose the algorithm to report according to configuration (fallback to sha256)
+        let chosen_alg = if self.primary_hash_alg.is_empty() {
+            "sha256"
+        } else {
+            self.primary_hash_alg.as_str()
+        };
+
+        let chosen_hash = match chosen_alg {
+            "blake3" => blake3_hex.clone(),
+            "sha256" => sha256_hex.clone(),
+            other => {
+                // unknown algorithm -> fallback to sha256 but still return the configured name
+                eprintln!(
+                    "warning: unknown hash algorithm `{}`, falling back to sha256",
+                    other
+                );
+                sha256_hex.clone()
+            }
+        };
         self.client
             .put_object(&self.bucket, key, data.into())
             .await
             .expect("failed to put object");
-        Ok(())
+
+        Ok((chosen_alg.into(), chosen_hash))
     }
 
     pub async fn upload_temp_file(
         &self,
         key: &str,
         tempfile: &TempFile<'_>,
-    ) -> Result<(), minio_rsc::error::Error> {
+    ) -> Result<FileInfo, UploadErr> {
+        let path = tempfile.path().ok_or(UploadErr::InvalidPath)?;
+        let mime = tempfile
+            .content_type()
+            .map(|v| v.0.to_string())
+            .ok_or(UploadErr::IndeterminateFileType)?;
+        // Read file bytes (upload_bytes expects Vec<u8> anyway)
+        let data = tokio::fs::read(&path).await?;
+
         let data = tokio::fs::read(tempfile.path().unwrap()).await?;
-        self.upload_bytes(key, data).await?;
-        Ok(())
+
+        let len = data.len();
+
+        let (hash_alg, hash) = self.upload_bytes(key, data).await?;
+        let file_info = FileInfo {
+            name: key.to_string(),
+            size: len as i64,
+            hash,
+            hash_alg,
+            mime,
+            modified: unix_epoch_seconds(),
+        };
+
+        Ok(file_info)
     }
 
     /// Generate a presigned PUT URL.

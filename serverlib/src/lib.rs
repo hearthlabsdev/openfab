@@ -1,4 +1,5 @@
 #![deny(unused)]
+#![warn(unused_variables)]
 //! This crate provides core utilities, as well as database, and JSON models used by the API server, and web UI.
 //! I have yet to choose if this crate will also be used for the SDK or not.
 
@@ -6,6 +7,8 @@
 pub mod accounts;
 /// administrative user, group, api key, and access code management.
 pub mod admin;
+/// used for handling device registration, status, discovery, model inventorying, etc.
+pub mod devices;
 /// a module that contains primary error types used throughout this project
 /// NOTE: this includes errors used by the web UI and the API server not underlying driver errors.
 pub mod errors;
@@ -15,5 +18,3 @@ pub mod library;
 pub mod prints;
 /// tools to make development easier
 pub mod utils;
-/// used for handling device registration, status, discovery, model inventorying, etc.
-pub mod devices;

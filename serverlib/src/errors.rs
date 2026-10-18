@@ -2,9 +2,42 @@ use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use rocket::{Request, Response, http::Status, response::Redirect, response::Responder};
 use thiserror::Error;
 
+#[derive(Debug, Error)]
+pub enum FileMatchErr {
+    #[error("hash algorithm mismatch: expected `{0}`, found `{1}`")]
+    HashAlg(String, String),
+
+    #[error("hash mismatch: expected `{0}`, found `{1}`")]
+    Hash(String, String),
+
+    #[error("size mismatch: expected `{0}`, found `{1}`")]
+    Size(i64, i64),
+
+    #[error("modified timestamp mismatch: expected `{0}`, found `{1}`")]
+    Modified(i64, i64),
+
+    #[error("file paths didn't match: expected `{0}` found `{1}`")]
+    Path(String, String),
+}
+
+#[derive(Debug, Error)]
+pub enum UploadErr {
+    #[error("unable to determine file type")]
+    IndeterminateFileType,
+    #[error("failed to get path for TempFile")]
+    InvalidPath,
+    #[error("file I/O error: {0}")]
+    IOError(#[from] std::io::Error),
+    #[error("minio-rsc error: {0}")]
+    MinIO(#[from] minio_rsc::error::Error),
+}
+
 /// general purpose error
 #[derive(Debug, Error)]
 pub enum OpenFabErr {
+    /// failed to upload a file to backend storage
+    #[error("failed to upload file: {0}")]
+    UploadErr(#[from] UploadErr),
     /// database error, usually involving the ORM
     #[error("database error: {0}")]
     OrmLite(#[from] ormlite::Error),
@@ -51,13 +84,20 @@ pub enum OpenFabErr {
 }
 
 impl OpenFabErr {
-    pub(crate) fn match_status_message(&self) -> (Status, String) {
+    pub fn match_status_message(&self) -> (Status, String) {
         let (status, message) = match &self {
             OpenFabErr::AuthErr(auth_err) => {
                 // Delegate to AuthErr's status mapping
                 match auth_err {
                     AuthErr::InvalidPassword => (Status::Unauthorized, "invalid password".into()),
                     AuthErr::UserNotFound => (Status::Unauthorized, "user not found".into()),
+                    AuthErr::ApiKeyNotFound => (Status::Unauthorized, "api key not found".into()),
+                    AuthErr::ApiKeyInvalid => (Status::Unauthorized, "api key is invalid".into()),
+                    AuthErr::ApiKeyExpired => (Status::Unauthorized, "api key has expired".into()),
+                    AuthErr::ApiKeyCreationFailed => (
+                        Status::InternalServerError,
+                        "api key creation failed".into(),
+                    ),
                 }
             }
             OpenFabErr::UuidParseErr(_) => (Status::BadRequest, "failed to parse uuid".into()),
@@ -139,4 +179,12 @@ pub enum AuthErr {
     /// user was not found
     #[error("user not found in database")]
     UserNotFound,
+    #[error("api key not found in database")]
+    ApiKeyNotFound,
+    #[error("api key has expired")]
+    ApiKeyExpired,
+    #[error("api key is invalid")]
+    ApiKeyInvalid,
+    #[error("api key creation failed")]
+    ApiKeyCreationFailed,
 }

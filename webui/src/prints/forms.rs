@@ -43,7 +43,7 @@ impl PrintForm {
             estimated_cost: None,
             created_at: unix_epoch_seconds(),
             state: "pending".into(),
-            completed_at: None,
+            count: 0,
             copies: Some(self.copies),
             priority: Some(self.priority),
 

@@ -1,18 +1,19 @@
+use crate::errors::FileMatchErr;
 use futures_util::Stream;
-use openfab::oidc::OidcClaims;
 use rand::Rng;
 use rand::distr::Alphanumeric;
 use rocket::Request;
 use rocket::http::{ContentType, Status};
 use rocket::response::{Responder, Response};
-use rocket_oidc::{OIDCGuard, auth::ApiKeyGuard};
+use rocket_oidc::OIDCGuard;
 use std::io;
 use std::pin::Pin;
 use std::task::{Context as TaskContext, Poll};
 use tokio::io::{AsyncRead, ReadBuf};
 use tokio_util::bytes::Bytes;
 
-pub type ApiGuard = ApiKeyGuard<OidcClaims>;
+//pub type ApiGuard = ApiKeyGuard<crate::accounts::UserID>;
+
 pub type Guard = OIDCGuard<crate::accounts::UserID>;
 
 use argon2::{
@@ -146,3 +147,35 @@ pub trait Pagination: ormlite::Model {
             .await?)
     }
 }*/
+
+pub trait FileID {
+    fn hash_alg(&self) -> &str;
+    fn hash(&self) -> &str;
+    fn size(&self) -> i64;
+    fn modified(&self) -> i64;
+    fn verify(&self, other: &Self) -> Result<(), FileMatchErr> {
+        if self.hash_alg() != other.hash_alg() {
+            return Err(FileMatchErr::HashAlg(
+                self.hash_alg().to_string(),
+                other.hash_alg().to_string(),
+            ));
+        }
+
+        if self.hash() != other.hash() {
+            return Err(FileMatchErr::Hash(
+                self.hash().to_string(),
+                other.hash().to_string(),
+            ));
+        }
+
+        if self.size() != other.size() {
+            return Err(FileMatchErr::Size(self.size(), other.size()));
+        }
+
+        if self.modified() != other.modified() {
+            return Err(FileMatchErr::Modified(self.modified(), other.modified()));
+        }
+
+        Ok(())
+    }
+}

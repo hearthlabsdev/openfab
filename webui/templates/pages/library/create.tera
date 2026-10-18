@@ -156,43 +156,9 @@
                 >
             </div>
 
+            <input type="hidden" name="library" value="{{ library }}"/>
+
             <div class="asset-form-row">
-                <div class="form-group">
-                    <label for="mime">MIME type</label>
-
-                    <input
-                        id="mime"
-                        name="mime"
-                        type="text"
-                        placeholder="image/png"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="size">File size</label>
-
-                    <input
-                        id="size"
-                        name="size"
-                        type="number"
-                        placeholder="0"
-                        required
-                    >
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="owner">Owner</label>
-
-                <input
-                    id="owner"
-                    name="owner"
-                    type="text"
-                    placeholder="Owner UUID"
-                    required
-                >
-            </div>
 
             <div class="form-group">
                 <label for="license">License</label>
