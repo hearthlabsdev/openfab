@@ -1,6 +1,3 @@
-use serverlib::errors::AuthErr;
-use serverlib::admin::apikeys::{ApiKeyORM};
-use serverlib::errors::OpenFabErr;
 use ormlite::{Model, postgres::PgPool};
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
@@ -12,6 +9,9 @@ use rocket::{
 };
 use rocket_dyn_templates::{Template, context};
 use serde_derive::{Deserialize, Serialize};
+use serverlib::admin::apikeys::ApiKeyORM;
+use serverlib::errors::AuthErr;
+use serverlib::errors::OpenFabErr;
 use uuid::Uuid;
 
 use crate::accounts::User;
@@ -35,7 +35,10 @@ async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, 
 }
 
 #[get("/keys/create")]
-async fn create_access_key_page(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+async fn create_access_key_page(
+    guard: Guard,
+    pool: &State<PgPool>,
+) -> Result<RawHtml<Template>, OpenFabErr> {
     unimplemented!();
 }
 

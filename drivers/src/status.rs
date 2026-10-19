@@ -1,3 +1,4 @@
+#![deny(missing_docs)]
 //! # Printer Status and Telemetry Module
 //!
 //! This module provides core, vendor-agnostic data structures for representing 3D printer
@@ -13,8 +14,10 @@ use approx::relative_eq;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::fmt;
+use std::fmt::Debug;
+use std::str::FromStr;
+use std::convert::Infallible;
 
 /// A marker trait representing types that can be safely serialized and deserialized
 /// as vendor-specific printer extension payloads.
@@ -40,6 +43,10 @@ pub enum State {
     Finished,
     /// The print job was stopped or aborted prematurely.
     Stopped,
+    /// the print is offline.
+    Offline,
+    /// the printer is slicing a file
+    Slicing,
     /// The printer has encountered a fatal error.
     Error,
     /// The printer requires user attention or intervention (e.g., filament change or sensor warning).
@@ -48,6 +55,13 @@ pub enum State {
     Ready,
     /// catch all
     Unknown(String),
+}
+
+impl State {
+    /// matches against State::Ready || State::Idle to determine readyness status for a new print job.
+    pub fn is_ready(&self) -> bool {
+        *self == State::Ready || *self == State::Idle
+    }
 }
 
 impl fmt::Display for State {
@@ -62,7 +76,42 @@ impl fmt::Display for State {
             State::Error => write!(f, "Error"),
             State::Attention => write!(f, "Attention"),
             State::Ready => write!(f, "Ready"),
+            State::Slicing => write!(f, "Slicing"),
+            State::Offline => write!(f, "Offline"),
             State::Unknown(s) => write!(f, "Unknown({})", s),
+        }
+    }
+}
+
+impl FromStr for State {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lower = s.to_ascii_lowercase();
+
+        match lower.as_str() {
+            "idle" => Ok(State::Idle),
+            "busy" => Ok(State::Busy),
+            "printing" => Ok(State::Printing),
+            "paused" => Ok(State::Paused),
+            "finished" => Ok(State::Finished),
+            "stopped" => Ok(State::Stopped),
+            "error" => Ok(State::Error),
+            "attention" => Ok(State::Attention),
+            "ready" => Ok(State::Ready),
+            "slicing" => Ok(State::Slicing),
+            "offline" => Ok(State::Offline),
+            _ => {
+                // If it starts with "unknown(" (case-insensitive check), peel out the inner value
+                if let Some(inner) = s.strip_prefix("Unknown(")
+                    .or_else(|| s.strip_prefix("unknown("))
+                    .and_then(|rem| rem.strip_suffix(')')) 
+                {
+                    Ok(State::Unknown(inner.to_string()))
+                } else {
+                    Ok(State::Unknown(s.to_string()))
+                }
+            }
         }
     }
 }
@@ -73,6 +122,8 @@ impl fmt::Display for State {
 /// flattened `extra` map for vendor-specific properties.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterStatus {
+    /// what state the printer is currently in
+    pub state: State,
     /// Current measured temperature of the heated bed in degrees Celsius.
     pub bed_temp: f64,
     /// Target temperature of the heated bed, if active.
@@ -103,6 +154,7 @@ impl PartialEq for PrinterStatus {
             && f64_opt_eq(&self.target_nozzle_temp, &other.target_nozzle_temp)
             && f64_opt_eq(&self.chamber_temp, &other.chamber_temp)
             && self.extra == other.extra
+            && self.state == other.state
     }
 }
 
@@ -114,6 +166,7 @@ impl PrinterStatus {
     /// Returns a [`serde_json::Error`] if the provided `extra` extension struct fails
     /// to serialize into a valid JSON object map.
     pub fn with_extras<E: Extensions>(
+        state: State,
         bed_temp: f64,
         target_bed_temp: Option<f64>,
         nozzle_temp: f64,
@@ -131,11 +184,14 @@ impl PrinterStatus {
             nozzle_temp,
             target_nozzle_temp,
             chamber_temp,
+            state,
             extra: extras,
         })
     }
 
+    /// create a new printer status object the given arguments
     pub fn new(
+        state: State,
         bed_temp: f64,
         target_bed_temp: Option<f64>,
         nozzle_temp: f64,
@@ -148,56 +204,21 @@ impl PrinterStatus {
             nozzle_temp,
             target_nozzle_temp,
             chamber_temp,
+            state,
             extra: HashMap::new(),
         }
     }
-}
 
-/// Information tracking the progress and timing of an active print job.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct JobStatus {
-    /// Estimated time remaining until job completion, measured in seconds.
-    pub time_remaining_secs: i64,
-    /// Current progress of the print job represented as a percentage (0 to 100).
-    pub progress: i64,
-
-    pub state: State,
-    /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
-    #[serde(flatten)]
-    pub extras: HashMap<String, Value>,
-}
-impl JobStatus {
-    pub fn with_extras<E: Extensions>(
-        time_remaining_secs: i64,
-        progress: i64,
-        state: State,
-        extra: E,
-    ) -> Result<Self, serde_json::Error> {
-        let val = serde_json::to_value(extra)?;
-        let mut extras: HashMap<String, Value> = serde_json::from_value(val)?;
-        extras.retain(|_, v| !v.is_null());
-        Ok(Self {
-            time_remaining_secs,
-            progress,
-            state,
-            extras,
-        })
-    }
-
-    pub fn new(time_remaining_secs: i64, progress: i64, state: State) -> Self {
-        Self {
-            time_remaining_secs,
-            progress,
-            state,
-            extras: HashMap::new(),
-        }
+    /// determine if the printer is reporting a ready state
+    pub fn is_ready(&self) -> bool {
+        self.state.is_ready()
     }
 
     /// Determines the discrete [`EventType`] by comparing the previous job status state
     /// with the current job status state (`self`).
-    pub fn get_event_type(&self, last: &JobStatus) -> EventType {
+    pub fn get_event_type(&self, last: &PrinterStatus) -> EventType {
         if last.state == self.state {
-            return EventType::JobUpdate;
+            return EventType::StatusUpdate;
         }
 
         match (&last.state, &self.state) {
@@ -219,9 +240,49 @@ impl JobStatus {
             (_, State::Error) => EventType::Err,
 
             // Fallback for any other state modification
-            _ => EventType::JobUpdate,
+            _ => EventType::StatusUpdate,
         }
     }
+}
+
+/// Information tracking the progress and timing of an active print job.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct JobStatus {
+    /// Estimated time remaining until job completion, measured in seconds.
+    pub time_remaining_secs: i64,
+    /// Current progress of the print job represented as a percentage (0 to 100).
+    pub progress: i64,
+
+    /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
+    #[serde(flatten)]
+    pub extras: HashMap<String, Value>,
+}
+impl JobStatus {
+    /// construct a new [`JobStatus`] with the given extra vendor specific values.
+    pub fn with_extras<E: Extensions>(
+        time_remaining_secs: i64,
+        progress: i64,
+        extra: E,
+    ) -> Result<Self, serde_json::Error> {
+        let val = serde_json::to_value(extra)?;
+        let mut extras: HashMap<String, Value> = serde_json::from_value(val)?;
+        extras.retain(|_, v| !v.is_null());
+        Ok(Self {
+            time_remaining_secs,
+            progress,
+            extras,
+        })
+    }
+
+    /// construct a new [`JobStatus`] without any vendor specific extras.
+    pub fn new(time_remaining_secs: i64, progress: i64) -> Self {
+        Self {
+            time_remaining_secs,
+            progress,
+            extras: HashMap::new(),
+        }
+    }
+
 }
 
 /// Status telemetry regarding a file upload operation sent to the printer.

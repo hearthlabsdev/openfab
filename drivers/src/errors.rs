@@ -40,6 +40,9 @@ pub enum DriverError {
     #[error("couldn't find driver")]
     DriverNotFound,
 
+    #[error("failed to upload file: {0}")]
+    UploadFailure(std::io::Error),
+
     /// A configuration value did not match the expected type schema.
     /// Carries the expected type description and the found type description.
     #[error("configuration wasn't the expected type expect: {0} found {1}")]

@@ -55,7 +55,11 @@ impl DriverRuntime for NativeRuntime {
 
     async fn unload(&mut self, id: &str) -> Result<(), DriverError> {
         let driver = self.drivers.remove(id).ok_or(DriverError::DriverNotFound)?;
-        Arc::into_inner(driver).ok_or(DriverError::Custom("failed to collapse arc".to_string()))?.into_inner().shutdown().await?;
+        Arc::into_inner(driver)
+            .ok_or(DriverError::Custom("failed to collapse arc".to_string()))?
+            .into_inner()
+            .shutdown()
+            .await?;
         Ok(())
     }
 

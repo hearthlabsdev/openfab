@@ -122,17 +122,17 @@
 #[macro_use]
 extern crate serde_derive;
 pub mod advertise;
-pub mod discovery;
-pub mod ipputils;
-pub mod utils;
-pub mod pwg;
-pub mod rfc;
-pub mod state;
-pub mod config;
-pub mod errors;
 /// used for JSON API types and handlers
 /// this includes definitions for anything outside of the scope of IPP including: library, device management, user and group management, and policy management.
 pub mod api;
+pub mod config;
+pub mod discovery;
+pub mod errors;
+pub mod ipputils;
+pub mod pwg;
+pub mod rfc;
+pub mod state;
+pub mod utils;
 //pub mod gcode;
 
 #[cfg(feature = "oidc")]

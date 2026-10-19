@@ -143,8 +143,15 @@ use crate::status::PrinterStatus;
 
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::watch::Receiver as Watcher;
+use tokio::io::AsyncRead;
 
 use serde::{Deserialize, Serialize};
+
+use std::path::Path;
+use std::pin::Pin;
+
+/// Boxed async reader type used for object-safe upload_file signature.
+pub type BoxAsyncRead = Pin<Box<dyn AsyncRead + Send + Unpin>>;
 
 /// A unique identifier linking a specific device instance to an event category subscription.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -174,7 +181,13 @@ pub trait DeviceDriver: Send + Sync {
     async fn shutdown(&self) -> Result<(), DriverError>;
 
     /// Uploads a print or fabrication file to the device storage.
-    async fn upload_file(&mut self) -> Result<(), DriverError>;
+    async fn upload_file(&mut self, device: &str, path: &Path, reader: BoxAsyncRead) -> Result<(), DriverError>;
+
+    async fn upload_bytes(&mut self, device: &str, path: &Path, file: Vec<u8>) -> Result<usize, DriverError> {
+        let len = file.len();
+        self.upload_file(device, path, Box::pin(std::io::Cursor::new(file))).await?;
+        Ok(len)
+    }
 
     /// Retrieves an immediate snapshot of the current printer status.
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError>;

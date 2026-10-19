@@ -66,13 +66,20 @@ impl ThemePicker {
     pub async fn select(jar: &CookieJar<'_>, pool: &PgPool) -> Result<ThemeORM, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let theme_id: Uuid = match jar.get("theme") {
-            Some(value) => { println!("theme: {}", value.to_string()); value.to_string().parse().expect("failed to get theme cookie") },
+            Some(value) => {
+                println!("theme: {}", value.to_string());
+                value
+                    .to_string()
+                    .parse()
+                    .expect("failed to get theme cookie")
+            }
             None => SettingsORM::select()
                 .where_("key = 'theme'")
                 .fetch_one(&mut *conn)
                 .await
                 .map(|v| v.value.parse())
-                .unwrap().expect("failed to get theme"),//_or(Ok(Uuid::nil()))?,
+                .unwrap()
+                .expect("failed to get theme"), //_or(Ok(Uuid::nil()))?,
         };
         println!("theme id: {}", theme_id);
         let theme = if theme_id == Uuid::nil() {
@@ -82,7 +89,8 @@ impl ThemePicker {
                 .where_("uid = ?")
                 .bind(theme_id)
                 .fetch_one(&mut *conn)
-                .await.expect("failed to feme theme")
+                .await
+                .expect("failed to feme theme")
         };
         Ok(theme)
     }
@@ -91,7 +99,6 @@ impl ThemePicker {
 // this provides the default / currently set server side base theme
 #[get("/base.css")]
 pub async fn base_theme(jar: &CookieJar<'_>, pool: &State<PgPool>) -> RawCss<Template> {
-    
     let theme = ThemePicker::select(jar, pool).await.unwrap();
     println!("theme: {:?}", theme);
     RawCss(Template::render("styles/base", context! { theme }))

@@ -11,8 +11,8 @@ use rocket::response::content::RawHtml;
 use rocket::{Route, State, get, post, routes};
 use rocket_dyn_templates::{Template, context};
 
-use serverlib::admin::users::UserActivationCode;
 use serverlib::admin::ActivationCodeORM;
+use serverlib::admin::users::UserActivationCode;
 
 #[get("/users")]
 pub async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {

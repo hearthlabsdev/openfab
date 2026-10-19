@@ -1,6 +1,13 @@
+use crate::devices::DeviceFileORM;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use rocket::{Request, Response, http::Status, response::Redirect, response::Responder};
 use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum DeviceError {
+    #[error("the device isn't ready for a print")]
+    NotReady,
+}
 
 #[derive(Debug, Error)]
 pub enum FileMatchErr {
@@ -18,6 +25,15 @@ pub enum FileMatchErr {
 
     #[error("file paths didn't match: expected `{0}` found `{1}`")]
     Path(String, String),
+
+    #[error("file not found on device")]
+    FileNotFound(DeviceFileORM),
+
+    #[error("failed to connect to device {1} using driver {0}")]
+    DriverErr(String, String),
+
+    #[error("match device_files record not found for file: {0} on device: {1}")]
+    RecordNotFound(String, String),
 }
 
 #[derive(Debug, Error)]
@@ -32,12 +48,28 @@ pub enum UploadErr {
     MinIO(#[from] minio_rsc::error::Error),
 }
 
+#[derive(Debug, Error)]
+pub enum DownloadErr {
+    #[error("file I/O error: {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("minio-rsc error: {0}")]
+    MinIO(#[from] minio_rsc::error::Error),
+}
+
 /// general purpose error
 #[derive(Debug, Error)]
 pub enum OpenFabErr {
     /// failed to upload a file to backend storage
     #[error("failed to upload file: {0}")]
     UploadErr(#[from] UploadErr),
+
+    #[error("failed to download data: {0}")]
+    DownloadErr(#[from] DownloadErr),
+
+    #[error("failed to match file: {0}")]
+    FileMatchErr(#[from] FileMatchErr),
+
     /// database error, usually involving the ORM
     #[error("database error: {0}")]
     OrmLite(#[from] ormlite::Error),
@@ -77,6 +109,9 @@ pub enum OpenFabErr {
     /// a driver  or device required a configuraiton opton that wasn't found.
     #[error("failed to parse config missing: {1} from {0}")]
     MissingConfigOption(String, String),
+
+    #[error("device error: {0}")]
+    DeviceError(#[from] DeviceError),
 
     /// JSON Serialization or Deserializaton error
     #[error("json serialization error: {0}")]

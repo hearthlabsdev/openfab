@@ -9,22 +9,15 @@ use rocket_okapi::{openapi, openapi_get_routes};
 use serverlib::prints::{
     PrintJob, PrintJobInstance, PrintJobInstanceORM, PrintJobORM, PrintQueueORM,
 };
+use serverlib::library::ObjectStore;
+use serverlib::setup::NativeManager;
 use uuid::Uuid;
 
 use serverlib::errors::OpenFabErr;
 
+/// gets information about a print
 #[openapi(tag = "Prints")]
-#[get("/queue/jobs/<uid>")]
-pub(crate) async fn list_prints(
-    guard: ApiGuard,
-    pool: &State<PgPool>,
-    uid: Uuid,
-) -> Result<Json<Vec<PrintJob>>, ErrorResponse> {
-    Ok(Json(PrintQueueORM::list_prints(pool, uid).await?))
-}
-
-#[openapi(tag = "Prints")]
-#[get("/jobs/<uid>")]
+#[get("/jobs/<uid>/info")]
 pub(crate) async fn get_print(
     guard: ApiGuard,
     pool: &State<PgPool>,
@@ -41,15 +34,27 @@ pub(crate) async fn create_print(guard: ApiGuard) -> Result<Json<PrintJob>, Erro
 
 #[openapi(tag = "Prints")]
 #[get("/jobs/<uid>/instances")]
-pub(crate) async fn list_instances(guard: ApiGuard, pool: &State<PgPool>, uid: Uuid) -> Result<Json<Vec<PrintJobInstance>>, ErrorResponse> {
+pub(crate) async fn list_instances(
+    guard: ApiGuard,
+    pool: &State<PgPool>,
+    uid: Uuid,
+) -> Result<Json<Vec<PrintJobInstance>>, ErrorResponse> {
     Err(ErrorResponse::unimplemented("print_job_instances"))
 }
 
 #[openapi(tag = "Prints")]
-#[post("/jobs/<uid>/start")]
-pub(crate) async fn start_print(guard: ApiGuard, pool: &State<PgPool>, uid: Uuid) -> Result<Json<PrintJob>, ErrorResponse> {
-    
-    Err(ErrorResponse::unimplemented("start_print"))
+#[post("/jobs/<uid>/start?<device>")]
+pub(crate) async fn start_print(
+    guard: ApiGuard,
+    rt: &State<NativeManager>,
+    pool: &State<PgPool>,
+    store: &State<ObjectStore>,
+    uid: Uuid,
+    device: Option<Uuid>,
+) -> Result<Json<PrintJobInstance>, ErrorResponse> {
+    let mut job = PrintJobORM::admin_get_print(pool, uid).await.expect("print failure");
+    let instance = job.start(rt.runtime(), device, pool, store).await?;
+    Ok(Json(instance))
 }
 
 #[openapi(tag = "Prints")]
@@ -80,7 +85,7 @@ pub(crate) async fn get_print_status(
     uid: Uuid,
 ) -> Result<Json<PrintJobInstance>, ErrorResponse> {
     Ok(Json(
-        PrintJobInstanceORM::get_job_instance(pool, uid).await?,
+        PrintJobInstanceORM::get_instance(pool, uid).await?,
     ))
 }
 
@@ -114,8 +119,9 @@ pub(crate) async fn stop_print(
     Err(ErrorResponse::unimplemented("stop_print"))
 }
 
+/// get info on a specific Queue
 #[openapi(tag = "Queues")]
-#[get("/queue/jobs/<uid>/info")]
+#[get("/queues/<uid>/info")]
 pub(crate) async fn queue_info(
     guard: ApiGuard,
     pool: &State<PgPool>,
@@ -124,13 +130,26 @@ pub(crate) async fn queue_info(
     Ok(Json(PrintQueueORM::get_queue(pool, uid).await?))
 }
 
+/// lists queues on the server
 #[openapi(tag = "Queues")]
-#[get("/queue")]
+#[get("/queues")]
 pub(crate) async fn list_queues(
     guard: ApiGuard,
     pool: &State<PgPool>,
 ) -> Result<Json<Vec<PrintQueueORM>>, ErrorResponse> {
     Ok(Json(PrintQueueORM::list(pool).await?))
+}
+
+
+/// lists the prints in the given queue
+#[openapi(tag = "Queues")]
+#[get("/queues/<uid>/jobs")]
+pub(crate) async fn list_prints(
+    guard: ApiGuard,
+    pool: &State<PgPool>,
+    uid: Uuid,
+) -> Result<Json<Vec<PrintJob>>, ErrorResponse> {
+    Ok(Json(PrintQueueORM::list_prints(pool, uid).await?))
 }
 
 pub fn get_routes() -> Vec<rocket::Route> {

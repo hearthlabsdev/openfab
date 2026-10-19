@@ -1,6 +1,9 @@
-use crate::errors::{OpenFabErr, UploadErr};
+use crate::errors::{DownloadErr, OpenFabErr, UploadErr};
 use crate::utils::unix_epoch_seconds;
 use crate::utils::{FileID, ResultStream};
+
+use tokio::io::AsyncReadExt;
+
 use blake3;
 use hex;
 use minio_rsc::http::Method;
@@ -137,6 +140,13 @@ pub struct AssetORM {
     pub public: bool,
     /// Optional license or usage terms (e.g. "CC-BY-SA 4.0")
     pub license: Option<String>,
+}
+
+impl AssetORM {
+    pub async fn download_bytes(&self, store: &ObjectStore) -> Result<Vec<u8>, DownloadErr> {
+        // should this update last used?
+        Ok(store.download_bytes(&self.key).await?)
+    }
 }
 
 impl FileID for AssetORM {
@@ -325,12 +335,18 @@ impl ObjectStore {
         Ok(url)
     }
 
-    pub async fn get_streamed(&self, key: String) -> Result<ResultStream, OpenFabErr> {
+    pub async fn download_bytes(&self, key: &str) -> Result<Vec<u8>, DownloadErr> {
+        let mut buf = Vec::new();
+        self.get_streamed(key).await?.read_to_end(&mut buf).await?;
+        Ok(buf)
+    }
+
+    pub async fn get_streamed(&self, key: impl Into<String>) -> Result<ResultStream, DownloadErr> {
         let res = self
             .client
             .executor(Method::GET)
             .bucket_name(&self.bucket)
-            .object_name(key)
+            .object_name(key.into())
             .send_ok()
             .await?;
 

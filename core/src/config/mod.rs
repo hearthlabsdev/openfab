@@ -6,14 +6,14 @@ pub mod builders;
 // Rocket-specific configuration integration.
 //pub mod rocket;
 
-use builders::*;
 use crate::errors::*;
+use builders::*;
 
-use std::path::PathBuf;
 use std::net::IpAddr;
+use std::path::PathBuf;
 
+use secret_ref::SecretPolicy;
 use secret_ref::SecretRef;
-use secret_ref::{SecretPolicy};
 
 use std::fmt;
 
@@ -53,7 +53,6 @@ pub struct ServerConfig {
 /// [`ServerConfig`] to initialize themselves.
 #[async_trait::async_trait]
 pub trait WebServerEngine: Sized {
-
     /// Performs engine-specific setup using the provided server configuration
     /// and secret resolution policy.
     async fn setup_configuration(
@@ -77,7 +76,6 @@ pub struct APIEndpoint {
 }
 
 impl APIEndpoint {
-
     /// Creates a new API endpoint.
     ///
     /// Returns an error if the provided port is zero.
@@ -121,7 +119,11 @@ impl APIEndpoint {
 
     /// Returns the URL scheme (`http` or `https`).
     pub fn scheme(&self) -> &'static str {
-        if self.ssl != Some(false) { "https" } else { "http" }
+        if self.ssl != Some(false) {
+            "https"
+        } else {
+            "http"
+        }
     }
 
     /// Returns the `host:port` authority string.
@@ -204,7 +206,6 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-
     /// Creates a [`DatabaseConfigBuilder`] initialized with a host and port.
     ///
     /// Returns an error if the port is zero.

@@ -42,7 +42,7 @@ pub mod attributes;
 /// represents a 3D collection (may replace with proper crate later).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Vec3D {
-    /// x aspect of the 3D point/scalar. 
+    /// x aspect of the 3D point/scalar.
     pub x: i32,
     /// y aspect of the 3D point/scalar.
     pub y: i32,
@@ -52,8 +52,8 @@ pub struct Vec3D {
 
 use std::collections::BTreeMap;
 
-use ipp::prelude::IppValue;
 use crate::ipputils::{AttrMap, AttributeGroup, IntegerRange};
+use ipp::prelude::IppValue;
 
 pub mod presets;
 
@@ -167,27 +167,54 @@ impl Material {
     /// Converts this `Material` into an IPP `Collection` for use in `materials-col`.
     pub fn to_ipp(&self) -> IppValue {
         let mut map = BTreeMap::new();
-        map.insert(tags::MATERIAL_NAME.into(), IppValue::TextWithoutLanguage(self.name.clone()));
-        map.insert(tags::MATERIAL_KEY.into(), IppValue::TextWithoutLanguage(self.key.clone()));
-        map.insert(tags::MATERIAL_TYPE.into(), IppValue::TextWithoutLanguage(self.material_type.clone()));
-        map.insert(tags::MATERIAL_FILL_DENSITY.into(), IppValue::Integer(self.fill_density));
-        map.insert(tags::MATERIAL_PURPOSE.into(), IppValue::Array(
-            self.purpose.iter().map(|s| IppValue::TextWithoutLanguage(s.clone())).collect()
-        ));
+        map.insert(
+            tags::MATERIAL_NAME.into(),
+            IppValue::TextWithoutLanguage(self.name.clone()),
+        );
+        map.insert(
+            tags::MATERIAL_KEY.into(),
+            IppValue::TextWithoutLanguage(self.key.clone()),
+        );
+        map.insert(
+            tags::MATERIAL_TYPE.into(),
+            IppValue::TextWithoutLanguage(self.material_type.clone()),
+        );
+        map.insert(
+            tags::MATERIAL_FILL_DENSITY.into(),
+            IppValue::Integer(self.fill_density),
+        );
+        map.insert(
+            tags::MATERIAL_PURPOSE.into(),
+            IppValue::Array(
+                self.purpose
+                    .iter()
+                    .map(|s| IppValue::TextWithoutLanguage(s.clone()))
+                    .collect(),
+            ),
+        );
         if let Some(amount) = self.amount {
             map.insert(tags::MATERIAL_AMOUNT.into(), IppValue::Integer(amount));
         }
         if let Some(ref units) = self.amount_units {
-            map.insert(tags::MATERIAL_AMOUNT_UNITS.into(), IppValue::TextWithoutLanguage(units.clone()));
+            map.insert(
+                tags::MATERIAL_AMOUNT_UNITS.into(),
+                IppValue::TextWithoutLanguage(units.clone()),
+            );
         }
         if let Some(ref color) = self.color {
-            map.insert(tags::MATERIAL_COLOR.into(), IppValue::TextWithoutLanguage(color.clone()));
+            map.insert(
+                tags::MATERIAL_COLOR.into(),
+                IppValue::TextWithoutLanguage(color.clone()),
+            );
         }
         if let Some(d) = self.diameter {
             map.insert(tags::MATERIAL_DIAMETER.into(), IppValue::Integer(d));
         }
         if let Some(dt) = self.diameter_tolerance {
-            map.insert(tags::MATERIAL_DIAMETER_TOLERANCE.into(), IppValue::Integer(dt));
+            map.insert(
+                tags::MATERIAL_DIAMETER_TOLERANCE.into(),
+                IppValue::Integer(dt),
+            );
         }
         if let Some(nd) = self.nozzle_diameter {
             map.insert(tags::MATERIAL_NOZZLE_DIAMETER.into(), IppValue::Integer(nd));
@@ -196,7 +223,10 @@ impl Material {
             map.insert(tags::MATERIAL_RATE.into(), IppValue::Integer(r));
         }
         if let Some(ref ru) = self.rate_units {
-            map.insert(tags::MATERIAL_RATE_UNITS.into(), IppValue::TextWithoutLanguage(ru.clone()));
+            map.insert(
+                tags::MATERIAL_RATE_UNITS.into(),
+                IppValue::TextWithoutLanguage(ru.clone()),
+            );
         }
         if let Some(ret) = self.retraction {
             map.insert(tags::MATERIAL_RETRACTION.into(), IppValue::Boolean(ret));
@@ -217,15 +247,26 @@ impl Material {
             key: attrs.get_str(group, tags::MATERIAL_KEY)?.to_string(),
             material_type: attrs.get_str(group, tags::MATERIAL_TYPE)?.to_string(),
             fill_density: attrs.get_i32(group, tags::MATERIAL_FILL_DENSITY)?,
-            purpose: attrs.get_strings(group, tags::MATERIAL_PURPOSE).unwrap_or_default().into_iter().map(|v| v.to_string()).collect::<Vec<String>>(),
+            purpose: attrs
+                .get_strings(group, tags::MATERIAL_PURPOSE)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<String>>(),
             amount: attrs.get_i32(group, tags::MATERIAL_AMOUNT),
-            amount_units: attrs.get_str(group, tags::MATERIAL_AMOUNT_UNITS).map(str::to_owned),
-            color: attrs.get_str(group, tags::MATERIAL_COLOR).map(str::to_owned),
+            amount_units: attrs
+                .get_str(group, tags::MATERIAL_AMOUNT_UNITS)
+                .map(str::to_owned),
+            color: attrs
+                .get_str(group, tags::MATERIAL_COLOR)
+                .map(str::to_owned),
             diameter: attrs.get_i32(group, tags::MATERIAL_DIAMETER),
             diameter_tolerance: attrs.get_i32(group, tags::MATERIAL_DIAMETER_TOLERANCE),
             nozzle_diameter: attrs.get_i32(group, tags::MATERIAL_NOZZLE_DIAMETER),
             rate: attrs.get_i32(group, tags::MATERIAL_RATE),
-            rate_units: attrs.get_str(group, tags::MATERIAL_RATE_UNITS).map(str::to_owned),
+            rate_units: attrs
+                .get_str(group, tags::MATERIAL_RATE_UNITS)
+                .map(str::to_owned),
             retraction: attrs.get_bool(group, tags::MATERIAL_RETRACTION),
             shell_thickness: attrs.get_i32(group, tags::MATERIAL_SHELL_THICKNESS),
             temperature: attrs.get_i32(group, tags::MATERIAL_TEMPERATURE),

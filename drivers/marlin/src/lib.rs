@@ -1,13 +1,12 @@
-
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 /// Represents the execution status of a single G-code line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineStatus {
-    Pending,   // Line has not yet been sent to the printer
-    Success,   // Line executed successfully
-    Error,     // Printer returned an error for this line
+    Pending, // Line has not yet been sent to the printer
+    Success, // Line executed successfully
+    Error,   // Printer returned an error for this line
 }
 
 /// Represents a single line in a print job.
@@ -37,7 +36,10 @@ impl PrintJob {
                 status: LineStatus::Pending,
             })
             .collect();
-        PrintJob { lines, current_line: 0 }
+        PrintJob {
+            lines,
+            current_line: 0,
+        }
     }
 
     /// Marks a line as succeeded
@@ -56,7 +58,9 @@ impl PrintJob {
 
     /// Returns the next pending line index
     pub fn next_pending(&self) -> Option<usize> {
-        self.lines.iter().position(|l| l.status == LineStatus::Pending)
+        self.lines
+            .iter()
+            .position(|l| l.status == LineStatus::Pending)
     }
 }
 
@@ -80,7 +84,7 @@ impl GuestDriver for MarlinDriver {
     }
 
     fn startjob(&self, job: Job) -> Result<u64, String> {
-        
+
         Ok(0)
     }
 

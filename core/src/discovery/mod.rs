@@ -46,8 +46,8 @@
 
 pub mod verify;
 use crate::IppPrinter;
-use mdns_sd::{ServiceDaemon, ServiceEvent};
 use crate::utils::unix_now;
+use mdns_sd::{ServiceDaemon, ServiceEvent};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use thiserror::Error;

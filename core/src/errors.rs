@@ -1,7 +1,7 @@
 //! A module that contains all the errors used by this crate.
 
-use thiserror::Error;
 use secret_ref::RefParseError;
+use thiserror::Error;
 
 /// Top-level error returned by printing / runtime operations.
 #[derive(Debug, Error)]

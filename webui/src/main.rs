@@ -4,12 +4,12 @@
 //! 3. Device selection is an internal policy decision
 
 #![deny(unused)]
-use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use openfab_bambu::BambuDriver;
 use openfab_drivers::native::NativeRuntime;
-use openfab_virtual::VirtualDriver;
 use openfab_prusa::PrusaDriver;
+use openfab_virtual::VirtualDriver;
 use ormlite::postgres::PgPool;
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use rocket::Request;
 use rocket::config::Config;
 use rocket::data::{Limits, ToByteUnit};
@@ -26,7 +26,7 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use webui::accounts::AccountConfig;
 use webui::library::ObjectStoreConfig;
-use webui::setup::RuntimeManager;
+use serverlib::setup::RuntimeManager;
 #[macro_use]
 extern crate rocket;
 
@@ -59,7 +59,7 @@ fn page_not_found(req: &Request) -> RawHtml<Template> {
 
 async fn rocket() -> rocket::Rocket<rocket::Build> {
     // Build Rocket
-    
+
     println!("current time UTC: {}", time::OffsetDateTime::now_utc());
 
     let custom_limits = Limits::default()
@@ -101,7 +101,9 @@ async fn rocket() -> rocket::Rocket<rocket::Build> {
     let runtime = NativeRuntime::new();
     let mut manager = RuntimeManager::new(runtime);
     let bambu = BambuDriver::new();
-    let vdriver = VirtualDriver::new().await.expect("failed to setup virtual driver");
+    let vdriver = VirtualDriver::new()
+        .await
+        .expect("failed to setup virtual driver");
     let prusa = PrusaDriver::new();
     manager
         .load_driver(bambu)
@@ -112,7 +114,7 @@ async fn rocket() -> rocket::Rocket<rocket::Build> {
         .load_driver(prusa)
         .await
         .expect("failed to load drivers");
-    
+
     manager
         .load_driver(vdriver)
         .await
@@ -170,9 +172,7 @@ async fn rocket() -> rocket::Rocket<rocket::Build> {
 async fn main() {
     match rocket().await.launch().await {
         Ok(_) => println!("graceful shutdown successful"),
-        Err(_e) => {
-
-        },
+        Err(_e) => {}
     };
     //rocket.state::<RuntimeManager<NativeRuntime>>().unwrap().runtime().shutdown().await.expect("failed to shutdown");
 }

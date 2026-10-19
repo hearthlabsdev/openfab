@@ -7,7 +7,7 @@ use openfab_drivers::events::Event;
 use openfab_drivers::files::FileEntry;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
-use openfab_drivers::status::PrinterStatus;
+use openfab_drivers::status::{PrinterStatus, State};
 use openfab_drivers::utils::config_to_json;
 use ormlite::Model;
 use ormlite::postgres::PgConnection;
@@ -16,8 +16,16 @@ use rocket_okapi::okapi::schemars::JsonSchema;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::path::Path;
 use tokio::sync::broadcast::Receiver;
 use uuid::Uuid;
+use std::str::FromStr;
+
+pub enum FileStatus {
+    Conflict(FileEntry, DeviceFileORM),
+    NotFound(DeviceFileORM),
+    Matched(DeviceFileORM),
+}
 
 /// inorder to build out this table, files will have to be downloaded to be hashed.
 #[derive(Debug, Clone, Serialize, Deserialize, Model, JsonSchema)]
@@ -52,7 +60,7 @@ pub struct DeviceFileORM {
 
 impl DeviceFileORM {
     /// this is a shallow check
-    pub fn check_against_device(&self, file: &FileEntry) -> Result<(), FileMatchErr> {
+    pub fn check_against_device(&self, file: &FileEntry) -> Result<&Self, FileMatchErr> {
         if file.size != self.size {
             return Err(FileMatchErr::Size(self.size, file.size));
         }
@@ -66,7 +74,100 @@ impl DeviceFileORM {
             ));
         }
 
-        Ok(())
+        Ok(self)
+    }
+
+    async fn from_asset<P: AsRef<Path>>(
+        asset: &AssetORM,
+        device: Uuid,
+        upload_dir: P,
+    ) -> Result<Self, OpenFabErr> {
+        let mut upload_dir = upload_dir.as_ref().to_path_buf();
+        upload_dir.push(&asset.name);
+        let record = Self {
+            uid: Uuid::new_v4(),
+            device,
+            path: upload_dir.display().to_string(),
+            hash: asset.hash.clone(),
+            hash_alg: asset.hash_alg.clone(),
+            modified: asset.modified(),
+            size: asset.size,
+            first_seen: unix_epoch_seconds(),
+            uploaded: true,
+        };
+        Ok(record)
+    }
+
+    pub async fn check_upload_safety<R: DriverRuntime>(
+        rt: &R,
+        asset: &AssetORM,
+        device: &DeviceORM,
+        pool: &PgPool,
+    ) -> Result<FileStatus, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        match Self::check_asset(rt, asset, device, &mut *conn).await {
+            // file exists in the database, it exists on the device, and it matches the file on the device it's safe to upload
+            Ok(record) => Ok(FileStatus::Matched(record)),
+            // database record wasn't found, create it then rerun the check
+            Err(FileMatchErr::RecordNotFound(_, _)) => {
+                let record = Self::from_asset(
+                    asset,
+                    device.uid,
+                    device
+                        .upload_dir
+                        .as_ref()
+                        .map(|v| v.as_str())
+                        .unwrap_or("/"),
+                )
+                .await?;
+                match record.check_device(rt, device).await {
+                    Ok(record) => Ok(FileStatus::Matched(record)),
+                    Err(FileMatchErr::FileNotFound(record)) => Ok(FileStatus::NotFound(record)),
+                    Err(val) => Err(OpenFabErr::FileMatchErr(val)),
+                }
+            }
+            // file wasn't found on the device but was found in the database, it's safe to upload the file
+            Err(FileMatchErr::FileNotFound(record)) => Ok(FileStatus::NotFound(record)),
+            // the file exists in the database, and on the device but the file doesn't match records, it needs to be redownload, rehashed to verify
+            Err(val) => Err(OpenFabErr::FileMatchErr(val)),
+        }
+    }
+
+    /// attempts to grab the asset file from the database, then check it against the files on the physical device to ensure they haven't changed since last hash calculation.
+    pub async fn check_asset<R: DriverRuntime>(
+        rt: &R,
+        asset: &AssetORM,
+        device: &DeviceORM,
+        conn: &mut PgConnection,
+    ) -> Result<Self, FileMatchErr> {
+        let file = Self::select()
+            .where_("hash_alg = ? and hash = ?")
+            .bind(&asset.hash_alg)
+            .bind(&asset.hash)
+            .fetch_one(&mut *conn)
+            .await
+            .map_err(|_| FileMatchErr::RecordNotFound(asset.name.clone(), device.name.clone()))?;
+
+        Ok(file.check_device(rt, device).await?)
+    }
+
+    /// check the device to see if it has the matching file, if the file exists and it matches the database record
+    /// this method returns a reference to the database object
+    pub async fn check_device<R: DriverRuntime>(
+        &self,
+        rt: &R,
+        device: &DeviceORM,
+    ) -> Result<Self, FileMatchErr> {
+        Ok(rt
+            .list_entries(&device.driver_id, &device.serial, "/")
+            .await
+            .map_err(|_| FileMatchErr::DriverErr(device.driver_id.clone(), device.serial.clone()))?
+            .into_iter()
+            .filter(|v| self.path == v.path)
+            .map(|v| Ok(self.check_against_device(&v)?.clone()))
+            .next()
+            .ok_or(FileMatchErr::FileNotFound(self.clone()))
+            .flatten()?)
     }
 
     pub async fn list_files(
@@ -92,7 +193,7 @@ impl DeviceFileORM {
     ) -> Result<Vec<Self>, OpenFabErr> {
         // grab device to get driver_id, and serial number
         let device = DeviceORM::select()
-            .where_("uid = ?")
+            .where_("devices.uid = ?")
             .bind(device)
             .fetch_one(&mut *conn)
             .await?;
@@ -206,6 +307,9 @@ pub struct DeviceORM {
     /// Last successful discovery or IPP query
     pub last_seen: i64,
 
+    /// upload directory where gcode is stored
+    pub upload_dir: Option<String>,
+
     /// Operational status
     pub status: String,
 
@@ -253,7 +357,7 @@ impl DeviceORM {
     pub async fn get_device(pool: &PgPool, uid: Uuid) -> Result<Self, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let device = DeviceORM::select()
-            .where_("uid = ?")
+            .where_("devices.uid = ?")
             .bind(uid)
             .fetch_one(&mut *conn)
             .await?;
@@ -273,14 +377,6 @@ impl DeviceORM {
         Ok(logs)
     }
 
-    pub async fn start_print<R: DriverRuntime>(
-        rt: &R,
-        asset: &DeviceFileORM,
-        store: &ObjectStore,
-    ) -> Result<Receiver<Event>, OpenFabErr> {
-        unimplemented!();
-    }
-
     /// a wrapper around start_print that compares asset to see if a device file can be found.
     pub async fn start_asset_print<R: DriverRuntime>(
         rt: &R,
@@ -288,6 +384,15 @@ impl DeviceORM {
         store: &ObjectStore,
     ) -> Result<Receiver<Event>, OpenFabErr> {
         unimplemented!();
+    }
+
+    pub async fn get_by_queue(pool: &PgPool, queue: Uuid) -> Result<Self, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        Ok(Self::select()
+            .where_("queue = ?")
+            .bind(queue)
+            .fetch_one(&mut *conn)
+            .await?)
     }
 }
 
@@ -388,6 +493,7 @@ pub struct DeviceLog {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct DeviceStatus {
+    state: String,
     /// Current measured temperature of the heated bed in degrees Celsius.
     pub bed_temp: f64,
     /// Target temperature of the heated bed, if active.
@@ -406,6 +512,7 @@ pub struct DeviceStatus {
 impl From<PrinterStatus> for DeviceStatus {
     fn from(status: PrinterStatus) -> Self {
         Self {
+            state: status.state.to_string(),
             bed_temp: status.bed_temp,
             target_bed_temp: status.target_bed_temp,
             nozzle_temp: status.nozzle_temp,
@@ -419,6 +526,7 @@ impl From<PrinterStatus> for DeviceStatus {
 impl From<DeviceStatus> for PrinterStatus {
     fn from(status: DeviceStatus) -> Self {
         Self {
+            state: State::from_str(&status.state).expect("failed to parse state"),
             bed_temp: status.bed_temp,
             target_bed_temp: status.target_bed_temp,
             nozzle_temp: status.nozzle_temp,

@@ -1,11 +1,11 @@
 //! Builders for constructing validated server and database configuration.
 
+use crate::config::ServerConfig;
 use crate::config::{DatabaseConfig, DatabaseDriver};
-use crate::errors::{ServerConfigError, DatabaseConfigError};
-use crate::config::{ServerConfig};
+use crate::errors::{DatabaseConfigError, ServerConfigError};
 
-use std::path::PathBuf;
 use std::net::IpAddr;
+use std::path::PathBuf;
 
 use secret_ref::SecretRef;
 
@@ -48,7 +48,6 @@ pub struct ServerConfigBuilder {
 }
 
 impl ServerConfigBuilder {
-
     /// Creates a new empty builder.
     pub fn new() -> Self {
         Self::default()
@@ -115,9 +114,11 @@ impl ServerConfigBuilder {
     pub fn tls_enabled(&self) -> bool {
         match self.ssl {
             Some(v) => v,
-            None => self.cert_file.is_some()
-                || self.key_file.is_some()
-                || self.self_signed.unwrap_or(false),
+            None => {
+                self.cert_file.is_some()
+                    || self.key_file.is_some()
+                    || self.self_signed.unwrap_or(false)
+            }
         }
     }
 
@@ -141,7 +142,6 @@ impl ServerConfigBuilder {
     /// This checks TLS configuration consistency and ensures
     /// required fields are present.
     pub fn build(self) -> Result<ServerConfig, ServerConfigError> {
-
         let cert = self.cert_file.is_some();
         let key = self.key_file.is_some();
         let self_signed = self.self_signed.unwrap_or(false);
@@ -201,7 +201,6 @@ pub struct DatabaseConfigBuilder {
 }
 
 impl DatabaseConfigBuilder {
-
     /// Sets the database name.
     pub fn database(mut self, name: impl Into<String>) -> Self {
         self.database = Some(name.into());
@@ -234,7 +233,6 @@ impl DatabaseConfigBuilder {
 
     /// Validates and builds a [`DatabaseConfig`].
     pub fn build(self) -> Result<DatabaseConfig, DatabaseConfigError> {
-        
         Ok(DatabaseConfig {
             host: self.host.ok_or(DatabaseConfigError::MissingHost)?,
             port: self.port.ok_or(DatabaseConfigError::MissingPort)?,
@@ -267,7 +265,10 @@ impl DatabaseConfigBuilder {
     /// Returns whether the configured database host refers to a local address.
     pub fn is_local(&self) -> Result<bool, DatabaseConfigError> {
         Ok(matches!(
-            self.host.as_ref().ok_or(DatabaseConfigError::MissingHost)?.as_str(),
+            self.host
+                .as_ref()
+                .ok_or(DatabaseConfigError::MissingHost)?
+                .as_str(),
             "localhost" | "127.0.0.1" | "::1"
         ))
     }

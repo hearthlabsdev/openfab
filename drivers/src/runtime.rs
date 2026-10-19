@@ -6,7 +6,9 @@ use crate::config::{ConfigSchema, DriverMeta};
 use crate::errors::DriverError;
 use crate::events::Event;
 use crate::files::FileEntry;
+use crate::status::PrinterStatus;
 
+use std::path::Path;
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
@@ -27,6 +29,10 @@ pub trait DriverRuntime: Send + Sync {
 
     fn get_driver(&self, id: &str) -> Result<DriverHandle, DriverError>;
 
+    async fn upload_bytes<P: AsRef<Path> + std::marker::Send>(&self, driver_id: &str, device: &str, path: P, file: Vec<u8>) -> Result<usize, DriverError> {
+        self.get_driver(driver_id)?.lock().await.upload_bytes(device, path.as_ref(), file).await
+    }
+
     async fn index_drivers(&self) -> Result<Vec<DriverMeta>, DriverError>;
 
     async fn subscribe(&self, driver: &str, device: &str) -> Result<Receiver<Event>, DriverError> {
@@ -37,6 +43,10 @@ pub trait DriverRuntime: Send + Sync {
         let driver = driver.lock().await;
 
         Ok(driver.metadata().config_schema().clone())
+    }
+
+    async fn get_status(&self, driver: &str, device: &str) -> Result<PrinterStatus, DriverError> {
+        self.get_driver(driver)?.lock().await.get_status(device).await
     }
 
     async fn add_device(&self, id: &str, config: Value) -> Result<(), DriverError> {

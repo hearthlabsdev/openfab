@@ -1,8 +1,11 @@
 use crate::accounts::User;
-use crate::devices::DeviceORM;
-use crate::errors::OpenFabErr;
+use crate::devices::FileStatus;
+use crate::devices::{DeviceFileORM, DeviceORM};
+use crate::errors::{OpenFabErr, DeviceError};
 use crate::library::AssetORM;
+use crate::library::ObjectStore;
 use crate::utils::unix_epoch_seconds;
+use openfab_drivers::runtime::DriverRuntime;
 use openfab_drivers::status::JobStatus;
 use ormlite::Model;
 use ormlite::model::Join;
@@ -70,7 +73,7 @@ impl PrintJobORM {
         Ok(PrintJobORM::select()
             .join(PrintJobORM::user())
             .join(PrintJobORM::asset())
-            .where_("uid = ?")
+            .where_("print_jobs.uid = ?")
             .bind(uid)
             .fetch_one(&mut *conn)
             .await?)
@@ -79,14 +82,67 @@ impl PrintJobORM {
         let orm = Self::admin_get_print(pool, uid).await?;
         Ok(orm.into())
     }
-    pub async fn start(
+
+    pub async fn start<R: DriverRuntime>(
         &mut self,
-        device: Uuid,
-        conn: &mut ormlite::postgres::PgConnection,
+        rt: &R,
+        device: Option<Uuid>,
+        pool: &PgPool,
+        store: &ObjectStore,
     ) -> Result<PrintJobInstance, OpenFabErr> {
-        let instance = PrintJobInstanceORM::create_instance(self, device, conn).await?;
+        
+        let device = match device {
+            Some(device) => DeviceORM::get_device(pool, device)
+                .await
+                .expect("failed to get device"),
+            None => DeviceORM::get_by_queue(pool, self.queue)
+                .await
+                .expect("caused by get_by_queue"),
+        };
+
+        let status = rt.get_status(&device.driver_id, &device.serial).await?;
+        if !status.state.is_ready() {
+            return Err(OpenFabErr::DeviceError(DeviceError::NotReady));
+        }
+
+        let mut instance = PrintJobInstanceORM::create_instance(self, device.uid, pool)
+            .await
+            .expect("failed to create instance");
         self.count += 1;
-        unimplemented!();
+
+        // make sure it is safe to upload the asset to the print
+        // this also should return a status indicating if the file needs to be uploaded to the printer or not
+        // fixed to use FileStatus
+        let record = DeviceFileORM::check_upload_safety(rt, &self.asset, &device, pool)
+            .await
+            .expect("upload safety verification failure");
+        // now the file needs to be uploaded
+        let file = match record {
+            FileStatus::Matched(record) => {
+                // file is matched, print can begin as is
+                #[cfg(debug_assertions)]
+                eprintln!("file matched: {:?}", record);
+                record
+            }
+            FileStatus::NotFound(record) => {
+                // file needs to be uploaded to the device
+                let data = self.asset.download_bytes(store).await?;
+                rt.upload_bytes(&device.driver_id, &device.serial, &record.path, data)
+                    .await?;
+                record
+            }
+            FileStatus::Conflict(_, _) => {
+                panic!("this shouldn't happen with how the code is written rn")
+            }
+        };
+        // then the print needs to be started
+        //rt.start_print(&device.driver_id, &device.serial, &file.path).await?;
+        let mut conn = pool.acquire().await?;
+        instance.state = "printing".into();
+        let instance = instance.update_all_fields(&mut *conn).await?;
+        Ok(PrintJobInstanceORM::get_instance(pool, instance.uid)
+            .await
+            .expect("failed to get instance"))
     }
 }
 
@@ -137,7 +193,6 @@ pub struct PrintJobStatus {
     /// Current progress of the print job represented as a percentage (0 to 100).
     pub progress: i64,
 
-    pub state: String,
     /// Private catch-all for vendor-specific JSON fields, flattened during serialization.
     #[serde(flatten)]
     extras: HashMap<String, Value>,
@@ -148,7 +203,6 @@ impl From<JobStatus> for PrintJobStatus {
         Self {
             time_remaining_secs: status.time_remaining_secs,
             progress: status.progress,
-            state: status.state.to_string(),
             extras: status.extras,
         }
     }
@@ -210,6 +264,7 @@ pub struct PrintJobInstanceORM {
     pub job: Uuid,
     pub printer: Uuid,
     pub instance: i32,
+    pub state: String,
     pub started_at: Option<i64>,
     pub finished_at: Option<i64>,
     pub error: Option<String>,
@@ -222,6 +277,7 @@ impl PrintJobInstanceORM {
             job: job.uid,
             printer: device,
             instance: job.count + 1,
+            state: "pending".into(),
             started_at: Some(unix_epoch_seconds()),
             finished_at: None,
             error: None,
@@ -230,8 +286,9 @@ impl PrintJobInstanceORM {
     pub(crate) async fn create_instance(
         job: &mut PrintJobORM,
         device: Uuid,
-        conn: &mut ormlite::postgres::PgConnection,
+        pool: &PgPool,
     ) -> Result<PrintJobInstanceORM, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
         let instance = Self::create(job, device);
         Ok(instance.insert(&mut *conn).await?)
     }
@@ -265,30 +322,50 @@ impl PrintJobInstanceORM {
 
     /// because this is an expensive query that has to be done manually for now, the full information is only available for single objects.
     /// querying user information as an extraneous requirements will also for now not be supported without explicitly requesting the user information seperately.
-    pub async fn get_job_instance(
+    pub async fn get_instances(
         pool: &PgPool,
-        uid: Uuid,
-    ) -> Result<PrintJobInstance, OpenFabErr> {
-        let print_job = PrintJobORM::get_print(pool, uid).await?;
+        print_job_uid: Uuid,
+    ) -> Result<Vec<PrintJobInstance>, OpenFabErr> {
+        let print_job = PrintJobORM::get_print(pool, print_job_uid).await?;
+        let mut results = Vec::new();
+        let mut conn = pool.acquire().await?;
+        for orm in PrintJobInstanceORM::select()
+            .where_("job = ?")
+            .bind(print_job_uid)
+            .fetch_all(&mut *conn)
+            .await?
+        {
+            let device = DeviceORM::get_device(pool, orm.printer).await?;
 
+            let events = PrintJobInstanceORM::list_events(pool, orm.uid).await?;
+
+            results.push(PrintJobInstance {
+                uid: orm.uid,
+                job: print_job.clone(),
+                printer: device,
+                instance: orm.instance,
+                events,
+                started_at: orm.started_at,
+                finished_at: orm.finished_at,
+                error: orm.error,
+            });
+        }
+        Ok(results)
+    }
+    pub async fn get_instance(pool: &PgPool, uid: Uuid) -> Result<PrintJobInstance, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let orm = PrintJobInstanceORM::select()
-            .where_("job = ?")
+            .where_("uid = ?")
             .bind(uid)
             .fetch_one(&mut *conn)
             .await?;
 
-        let device = DeviceORM::select()
-            .where_("uid = ?")
-            .bind(orm.printer)
-            .fetch_one(&mut *conn)
-            .await?;
-
+        let job = PrintJobORM::get_print(pool, orm.job).await?;
+        let device = DeviceORM::get_device(pool, orm.printer).await?;
         let events = PrintJobInstanceORM::list_events(pool, orm.uid).await?;
-
         Ok(PrintJobInstance {
             uid: orm.uid,
-            job: print_job,
+            job,
             printer: device,
             instance: orm.instance,
             events,
@@ -392,7 +469,7 @@ impl PrintQueueORM {
     pub async fn get_queue(pool: &PgPool, uid: Uuid) -> Result<PrintQueueORM, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         Ok(PrintQueueORM::select()
-            .where_("uid = ?")
+            .where_("print_queues.uid = ?")
             .bind(uid)
             .fetch_one(&mut *conn)
             .await?)

@@ -3,10 +3,10 @@ use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
 use crate::devices::{DeviceConfigORM, DeviceORM};
 use crate::errors::OpenFabErr;
-use serverlib::prints::{PrintJobORM, PrintQueueORM};
-use crate::setup::NativeManager;
+use serverlib::setup::NativeManager;
 use crate::utils::{Guard, unix_epoch_seconds};
 use ormlite::model::ModelBuilder;
+use serverlib::prints::{PrintJobORM, PrintQueueORM};
 
 use openfab_drivers::events::Event;
 use openfab_drivers::native::NativeRuntime;
@@ -295,7 +295,11 @@ pub async fn device_files(
         .await
         .unwrap();
 
-    let files = rt.runtime().list_entries(&device.driver_id, &device.serial, "/").await.expect("failed to list files");
+    let files = rt
+        .runtime()
+        .list_entries(&device.driver_id, &device.serial, "/")
+        .await
+        .expect("failed to list files");
     RawHtml(Template::render(
         "pages/devices/files",
         context! { device, files },

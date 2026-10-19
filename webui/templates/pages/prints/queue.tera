@@ -40,7 +40,7 @@
                     <tr class="result-table__row">
 
                         <td class="result-table__cell result-table__cell--name">
-                            {{ print.name }}
+                            <a href="/library/assets/{{ print.asset.uid }}/info">{{ print.name }}</a>
                         </td>
 
                         <td class="result-table__cell result-table__cell--submitted">

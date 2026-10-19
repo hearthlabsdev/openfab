@@ -60,9 +60,10 @@ impl OpenApiResponderInner for ErrorResponse {
 impl<'r> Responder<'r, 'static> for ErrorResponse {
     fn respond_to(self, _request: &Request) -> rocket::response::Result<'static> {
         let status = Status::from_code(self.status).unwrap_or(Status::InternalServerError);
+        let response = serde_json::to_string(&self).expect("failed to serialize message");
         Response::build()
             .status(status)
-            .sized_body(self.message.len(), std::io::Cursor::new(self.message))
+            .sized_body(response.len(), std::io::Cursor::new(response))
             .ok()
     }
 }

@@ -2,10 +2,10 @@ use crate::devices::DeviceModelORM;
 use crate::errors::OpenFabErr;
 use crate::library::{AssetORM, ObjectStore};
 use crate::settings::DeviceModelInfo;
+use crate::settings::SettingsORM;
 use crate::settings::materials::FilamentORM;
 use crate::ui::themes::ThemeORM;
 use crate::utils::Guard;
-use crate::settings::SettingsORM;
 use crate::utils::unix_epoch_seconds;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
@@ -175,7 +175,11 @@ pub async fn create_style(
 }
 
 #[post("/styles/<uid>/apply")]
-pub async fn apply_style(guard: Guard, pool: &State<PgPool>, uid: Uuid) -> Result<Redirect, OpenFabErr> {
+pub async fn apply_style(
+    guard: Guard,
+    pool: &State<PgPool>,
+    uid: Uuid,
+) -> Result<Redirect, OpenFabErr> {
     let mut conn = pool.acquire().await?;
     let mut setting = SettingsORM::select()
         .where_("key = 'theme'")

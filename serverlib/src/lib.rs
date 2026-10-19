@@ -7,6 +7,8 @@
 pub mod accounts;
 /// administrative user, group, api key, and access code management.
 pub mod admin;
+/// a module for abstracting database, API calls, and websocket commands for fetch, query, etc. this module is heavily a work in progress
+pub mod backend;
 /// used for handling device registration, status, discovery, model inventorying, etc.
 pub mod devices;
 /// a module that contains primary error types used throughout this project
@@ -16,5 +18,7 @@ pub mod errors;
 pub mod library;
 /// models for interacting with prints including queuing, print status, etc.
 pub mod prints;
+/// used to handle runtime configuration
+pub mod setup;
 /// tools to make development easier
 pub mod utils;

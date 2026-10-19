@@ -41,7 +41,7 @@ impl FileEntry {
         })
     }
 
-    pub fn new<P: AsRef<Path>>(name: impl Into<String>, path: P, modified: i64, size: i64) -> Self {
+    pub fn new<P: AsRef<Path>>(name: impl Into<String>, path: P, size: i64, modified: i64) -> Self {
         Self {
             name: name.into(),
             path: path.as_ref().to_path_buf(),

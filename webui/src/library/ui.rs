@@ -1,14 +1,14 @@
-use serverlib::errors::{OpenFabErr, UploadErr};
 use crate::library::ObjectStore;
 use crate::library::{AssetORM, LibraryORM};
 use crate::utils::Guard;
 use crate::utils::unix_epoch_seconds;
-use serverlib::utils::ResultStream;
-use serverlib::accounts::User;
 use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::form::{Form, FromForm};
 use rocket::fs::TempFile;
+use serverlib::accounts::User;
+use serverlib::errors::{OpenFabErr, UploadErr};
+use serverlib::utils::ResultStream;
 
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
@@ -83,9 +83,7 @@ impl AssetForm<'_> {
     pub async fn into_asset(self, store: &ObjectStore, owner: Uuid) -> Result<AssetORM, UploadErr> {
         let uid = uuid::Uuid::new_v4();
         let filename = format!("/assets/{}", uid);
-        let info = store
-            .upload_temp_file(&filename, &self.file)
-            .await?;
+        let info = store.upload_temp_file(&filename, &self.file).await?;
 
         Ok(AssetORM {
             uid,
@@ -160,7 +158,11 @@ pub async fn index_assets(
 }
 
 #[get("/<library>/upload")]
-pub async fn create_form(guard: Guard, store: &State<ObjectStore>, library: Uuid) -> RawHtml<Template> {
+pub async fn create_form(
+    guard: Guard,
+    store: &State<ObjectStore>,
+    library: Uuid,
+) -> RawHtml<Template> {
     RawHtml(Template::render(
         "pages/library/create",
         context! { library },
@@ -175,13 +177,13 @@ pub async fn create_asset(
     pool: &State<PgPool>,
 ) -> Result<Redirect, OpenFabErr> {
     let mut conn = pool.acquire().await?;
-    
+
     let user = User::select()
         .where_("subject = ?")
         .bind(guard.claims.sub)
         .fetch_one(&mut *conn)
         .await?;
-    
+
     let asset_form = asset_form.into_inner();
     let asset = asset_form.into_asset(&store, user.uid).await?;
     asset.insert(&mut *conn).await?;

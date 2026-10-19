@@ -1,14 +1,16 @@
 #![deny(unused)]
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, StatusErr};
-use openfab_drivers::events::{Event};
-use openfab_drivers::status::PrinterStatus;
+use openfab_drivers::events::Event;
 use openfab_drivers::files::FileEntry;
-use openfab_drivers::{DeviceDriver};
+use openfab_drivers::status::{PrinterStatus, State as PrinterState};
+use openfab_drivers::{BoxAsyncRead, DeviceDriver};
 use prusa_rs::api::client::{ApiClient, ClientConfig};
 use prusa_rs::models::status_printer::StatusPrinter;
+use prusa_rs::models::status_printer::State as PrusaState;
 
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -28,10 +30,7 @@ pub struct PrinterStatusMsg {
 
 impl PrinterStatusMsg {
     pub fn new(ok: Option<bool>, message: Option<String>) -> Self {
-        Self {
-            ok,
-            message
-        }
+        Self { ok, message }
     }
 }
 
@@ -91,13 +90,26 @@ impl From<&StatusPrinter> for PrusaExtensions {
     }
 }
 
+pub fn match_state(state: PrusaState) -> PrinterState {
+    match state {
+        PrusaState::Idle => PrinterState::Idle,
+        PrusaState::Busy => PrinterState::Busy,
+        PrusaState::Printing => PrinterState::Printing,
+        PrusaState::Paused => PrinterState::Paused,
+        PrusaState::Finished => PrinterState::Finished,
+        PrusaState::Stopped => PrinterState::Stopped,
+        PrusaState::Error => PrinterState::Error,
+        PrusaState::Attention => PrinterState::Attention,
+        PrusaState::Ready => PrinterState::Ready,
+    }
+}
+
 pub fn try_from_printer_status(status: StatusPrinter) -> Result<PrinterStatus, StatusErr> {
     Ok(PrinterStatus::with_extras(
+        match_state(status.state),
         status.temp_bed.ok_or(StatusErr::MissingBedTemp)?,
         status.target_bed,
-        status
-            .temp_nozzle
-            .ok_or(StatusErr::MissingNozzleTemp)?,
+        status.temp_nozzle.ok_or(StatusErr::MissingNozzleTemp)?,
         status.target_nozzle,
         None,
         PrusaExtensions::from(&status),
@@ -146,7 +158,7 @@ impl Drop for PrusaClient {
         // 1. Signal the task to abort immediately, or let dropping `sender` close the channel
         self.worker.abort();
 
-        // Note: If you must wait for the task to finish async cleanup before fully stopping, 
+        // Note: If you must wait for the task to finish async cleanup before fully stopping,
         // you should trigger that in Rocket's `on_shutdown` fairing prior to `Drop` running.
     }
 }
@@ -289,7 +301,12 @@ impl DeviceDriver for PrusaDriver {
         }
         Ok(())
     }
-    async fn upload_file(&mut self) -> Result<(), DriverError> {
+    async fn upload_file(
+        &mut self,
+        _device: &str,
+        _path: &Path,
+        _reader: BoxAsyncRead,
+    ) -> Result<(), DriverError> {
         unimplemented!();
     }
     async fn shutdown(&self) -> Result<(), DriverError> {

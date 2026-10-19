@@ -5,16 +5,17 @@ use bambu_rs::client::LanMqttClient;
 use bambu_rs::config::ResolvedTarget;
 use bambu_rs::core::model::Model;
 use bambu_rs::core::status::PrinterStatus as BambuStatus;
-use bambu_rs::core::status::{DeviceError, Filament, HmsAlert, Ipcam, LightReport};
-use openfab_drivers::DeviceDriver;
+use bambu_rs::core::status::{DeviceError, GcodeState, Filament, HmsAlert, Ipcam, LightReport};
+use openfab_drivers::{BoxAsyncRead, DeviceDriver};
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, JobStatusErr, PrintError, StatusErr};
 use openfab_drivers::events::{CameraEvent, Event, EventHandler, EventType};
 use openfab_drivers::files::FileEntry;
-use openfab_drivers::status::{JobStatus, PrinterStatus, State};
+use openfab_drivers::status::{JobStatus, PrinterStatus, State as PrinterState};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -24,6 +25,21 @@ use tokio::task::JoinHandle;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+pub fn match_state(state: GcodeState) -> PrinterState {
+    match state {
+        GcodeState::Idle => PrinterState::Idle,
+        GcodeState::Prepare => PrinterState::Busy,
+        GcodeState::Running => PrinterState::Printing,
+        GcodeState::Pause => PrinterState::Paused,
+        GcodeState::Finish => PrinterState::Finished,
+        GcodeState::Failed => PrinterState::Error,
+        GcodeState::Slicing => PrinterState::Busy,
+        GcodeState::Init => PrinterState::Ready,
+        GcodeState::Offline => PrinterState::Attention,
+        GcodeState::Unknown => PrinterState::Unknown("GcodeState::Unknown".to_string()),
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BambuJobExtensions {
@@ -61,22 +77,12 @@ impl From<&BambuStatus> for BambuJobExtensions {
 }
 
 pub fn try_from_job_status(status: &BambuStatus) -> Result<JobStatus, JobStatusErr> {
-    let state = match status.gcode_state.as_ref().map(|v| v.as_str()) {
-        Some("IDLE") => State::Idle,
-        Some("RUNNING") => State::Printing,
-        Some("PAUSE") => State::Paused,
-        Some("FINISH") => State::Finished,
-        Some("FAILED") => State::Error,
-        Some(val) => State::Unknown(val.to_string()),
-        None => return Err(JobStatusErr::MissingJobState),
-    };
     Ok(JobStatus::with_extras(
         status
             .remaining_time_min
             .ok_or(JobStatusErr::MissingTimeRemaining)?
             * 60,
         status.mc_percent.ok_or(JobStatusErr::MissingProgress)?,
-        state,
         BambuJobExtensions::from(status),
     )?)
 }
@@ -162,7 +168,10 @@ impl From<BambuStatus> for BambuExtensions {
 }
 
 pub fn try_from_device_status(status: BambuStatus) -> Result<PrinterStatus, StatusErr> {
+    let state = match_state(status.state().expect("failed to get printer state"));
+    
     Ok(PrinterStatus::with_extras(
+        state,
         status.bed_temper.ok_or(StatusErr::MissingBedTemp)?,
         status.bed_target,
         status.nozzle_temper.ok_or(StatusErr::MissingNozzleTemp)?,
@@ -174,7 +183,7 @@ pub fn try_from_device_status(status: BambuStatus) -> Result<PrinterStatus, Stat
 
 pub fn file_entry_convert(v: String) -> openfab_drivers::files::FileEntry {
     //openfab_drivers::files::FileEntry::new(v.name, v.size, )
-    FileEntry::new(v, PathBuf::new(), None)
+    FileEntry::new(v, PathBuf::new(), 0, 0)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -224,13 +233,17 @@ impl EventHandler for Reporter {
     type Status = BambuStatus;
     fn process(&mut self, status: Self::Status) -> Result<Vec<Event>, StatusErr> {
         let mut events = Vec::new();
+        
+        let last_printer_status = try_from_device_status(self.last.clone())?;
+        let printer_status = try_from_device_status(status.clone())?;
+        
         let last_job_status =
             try_from_job_status(&self.last).expect("failed to get last job status");
 
         let job_status = try_from_job_status(&status).expect("failed to get last job status");
 
         if job_status != last_job_status {
-            let job_event = match job_status.get_event_type(&last_job_status) {
+            let job_event = match printer_status.get_event_type(&last_printer_status) {
                 EventType::JobUpdate => Event::JobUpdate(job_status),
                 EventType::PrintStarted => Event::PrintStarted(job_status),
                 EventType::PrintPaused => Event::PrintPaused(job_status),
@@ -271,11 +284,10 @@ impl EventHandler for Reporter {
             };
             events.push(job_event);
         }
-        let last_printer_status = try_from_device_status(self.last.clone())?;
-        let printer_status = try_from_device_status(status.clone())?;
         if last_printer_status != printer_status {
             events.push(Event::StatusUpdate(printer_status));
         }
+        
         self.last = status;
         Ok(events)
     }
@@ -347,10 +359,9 @@ pub struct BambuClient {
 impl Drop for BambuClient {
     fn drop(&mut self) {
         // 1. Signal the task to abort immediately, or let dropping `sender` close the channel
-        self.worker.abort(); 
-        
+        self.worker.abort();
 
-        // Note: If you must wait for the task to finish async cleanup before fully stopping, 
+        // Note: If you must wait for the task to finish async cleanup before fully stopping,
         // you should trigger that in Rocket's `on_shutdown` fairing prior to `Drop` running.
     }
 }
@@ -532,7 +543,9 @@ impl DeviceDriver for BambuDriver {
         self.clients.remove(device);
         Ok(())
     }
-    async fn upload_file(&mut self) -> Result<(), DriverError> {
+    async fn upload_file(&mut self, _device: &str,
+        _path: &Path,
+        _reader: BoxAsyncRead) -> Result<(), DriverError> {
         unimplemented!();
     }
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError> {

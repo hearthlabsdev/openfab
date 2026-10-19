@@ -1,13 +1,14 @@
 #![deny(unused)]
 use libunftp::ServerBuilder;
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
-use openfab_drivers::errors::{DriverError};
-use openfab_drivers::events::{Event};
+use openfab_drivers::errors::DriverError;
+use openfab_drivers::events::Event;
 use openfab_drivers::files::FileEntry;
 use openfab_drivers::status::{JobStatus, PrinterStatus, State};
-use openfab_drivers::{DeviceDriver};
+use openfab_drivers::{BoxAsyncRead, DeviceDriver};
 use std::net::IpAddr;
 use suppaftp::tokio::AsyncRustlsConnector;
+//use suppaftp::types::FtpError;
 use tokio::sync::Mutex;
 use tokio_rustls::TlsConnector as RustlsTlsConnnector;
 use unftp_sbe_fs::Filesystem;
@@ -19,6 +20,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use suppaftp::tokio::AsyncRustlsFtpStream;
+use tokio::io::AsyncRead;
 use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
@@ -84,16 +86,12 @@ pub enum VirtualDriverError {
 
 pub struct FTPSServer {
     path: PathBuf,
-    addr: IpAddr,
-    port: u16,
     handle: tokio::task::JoinHandle<()>,
 }
 
 impl FTPSServer {
     pub async fn new<P: AsRef<Path>>(
         path: P,
-        addr: IpAddr,
-        port: u16,
     ) -> Result<Self, DriverError> {
         let ftp_home = path.as_ref().to_path_buf();
         let home = ftp_home.clone();
@@ -108,12 +106,13 @@ impl FTPSServer {
         .build()
         .map_err(|e| DriverError::Custom(e.to_string()))?;
         let handle = tokio::task::spawn(async move {
-            server.listen("127.0.0.1:2121").await.expect("failed to run server");
+            server
+                .listen("127.0.0.1:2121")
+                .await
+                .expect("failed to run server");
         });
         Ok(Self {
             path: home,
-            addr,
-            port,
             handle,
         })
     }
@@ -122,32 +121,65 @@ impl FTPSServer {
     }
     pub async fn default() -> Result<Self, DriverError> {
         let home = std::env::temp_dir();
-        let addr = IpAddr::V4([127, 0, 0, 1].into());
-        Self::new(home, addr, 2121).await
+        //let addr = IpAddr::V4([127, 0, 0, 1].into());
+        Self::new(home).await
     }
     pub fn close(&self) {
         self.handle.abort()
     }
 
-    pub async fn connect(&self, domain: &str) -> Result<AsyncRustlsFtpStream, DriverError> {
+    /*pub async fn connect(&self, domain: &str) -> Result<FTPSClient, DriverError> {
+        Ok(FTPSClient::new(self.server.addr, self.server.port, domain))
+    }*/
+}
 
-        let mut stream =
-            AsyncRustlsFtpStream::connect(format!("{}:{}", self.addr, self.port))
-                .await
-                .map_err(|e| DriverError::Custom(e.to_string()))?
-                .into_secure(
-                    AsyncRustlsConnector::from(RustlsTlsConnnector::from(
-                        lan_client_config().map_err(|e| DriverError::Custom(e.to_string()))?,
-                    )),
-                    domain,
-                )
-                .await
-                .map_err(|e| DriverError::Custom(e.to_string()))?;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FTPSClient {
+    addr: IpAddr,
+    port: u16,
+    domain: String,
+}
+
+impl Default for FTPSClient {
+    fn default() -> FTPSClient {
+        Self {
+            addr: "127.0.0.1".parse().expect("failed to parse IP addr"),
+            port: 2121,
+            domain: "localhost".into(),
+        }
+    }
+}
+
+impl FTPSClient {
+     
+    pub(crate) async fn connect(&self) -> Result<AsyncRustlsFtpStream, DriverError> {
+        let mut stream = AsyncRustlsFtpStream::connect(format!("{}:{}", self.addr, self.port))
+            .await
+            .map_err(|e| DriverError::Custom(e.to_string()))?
+            .into_secure(
+                AsyncRustlsConnector::from(RustlsTlsConnnector::from(
+                    lan_client_config().map_err(|e| DriverError::Custom(e.to_string()))?,
+                )),
+                &self.domain,
+            )
+            .await
+            .map_err(|e| DriverError::Custom(e.to_string()))?;
         stream
             .login("", "")
             .await
             .map_err(|e| DriverError::Custom(e.to_string()))?;
+        stream
+            .transfer_type(suppaftp::types::FileType::Binary).await
+            .map_err(|e| DriverError::Custom(e.to_string()))?;
         Ok(stream)
+    }
+
+    pub fn from_config(config: &VirtualClientConfig) -> Self {
+        Self {
+            addr: config.ftps_addr.unwrap_or("127.0.0.1".parse().expect("failed to parse link local addr")),
+            port: config.ftps_port.unwrap_or(2121),
+            domain: config.ftps_domain.clone().unwrap_or("localhost".into()),
+        }
     }
 }
 
@@ -159,6 +191,9 @@ pub struct VirtualClientConfig {
     target_bed_temp: f64,
     increment: f64,
     poll_interval: i64,
+    ftps_addr: Option<IpAddr>,
+    ftps_port: Option<u16>,
+    ftps_domain: Option<String>,
 }
 
 pub struct VirtualDriver {
@@ -207,6 +242,7 @@ impl VirtualState {
 
     pub fn printer_status(&self) -> PrinterStatus {
         PrinterStatus::new(
+            State::Printing,
             self.bed_temp,
             Some(self.config.target_bed_temp),
             self.nozzle_temp,
@@ -246,7 +282,6 @@ impl VirtualState {
         JobStatus::new(
             self.calculate_time_remaining(),
             self.progress,
-            State::Printing,
         )
     }
 }
@@ -257,16 +292,15 @@ pub struct VirtualClient {
     // dropping the last receiver closest the channel
     _recv: Receiver<Event>,
     state: Arc<Mutex<VirtualState>>,
-    ftps: Arc<Mutex<AsyncRustlsFtpStream>>,
+    ftps: FTPSClient,
 }
 
 impl Drop for VirtualClient {
     fn drop(&mut self) {
         // 1. Signal the task to abort immediately, or let dropping `sender` close the channel
-        self.worker.abort(); 
-        
+        self.worker.abort();
 
-        // Note: If you must wait for the task to finish async cleanup before fully stopping, 
+        // Note: If you must wait for the task to finish async cleanup before fully stopping,
         // you should trigger that in Rocket's `on_shutdown` fairing prior to `Drop` running.
     }
 }
@@ -276,10 +310,24 @@ impl VirtualClient {
         self.worker.abort();
         Ok(())
     }
+
+    pub(crate) async fn upload_file<R: AsyncRead + Unpin, P: AsRef<Path>>(
+        &self,
+        path: P,
+        mut reader: R,
+    ) -> Result<u64, DriverError> {
+        let path = path.as_ref().display().to_string();
+        Ok(self
+            .ftps
+            .connect()
+            .await?
+            .put_file(path, &mut reader)
+            .await
+            .map_err(|e| DriverError::Custom(e.to_string()))?)
+    }
 }
 
 impl VirtualDriver {
-    
     pub async fn new() -> Result<Self, DriverError> {
         Ok(Self {
             clients: HashMap::new(),
@@ -353,6 +401,7 @@ impl DeviceDriver for VirtualDriver {
     // Requires &self or &mut self to be callable on a `dyn DeviceDriver`
     async fn connect(&mut self, config: Value) -> Result<(), DriverError> {
         let config: VirtualClientConfig = serde_json::from_value(config)?;
+        let ftps = FTPSClient::from_config(&config);
         let serial = config.serial.clone();
         let poll_interval = config.poll_interval;
         let state = Arc::new(Mutex::new(VirtualState::new(config)));
@@ -360,9 +409,8 @@ impl DeviceDriver for VirtualDriver {
         let (sender, recv) = channel(16);
         let sender2 = sender.clone();
         let state_mtx = state.clone();
-        let stream = self.server.connect("localhost").await?;
         
-        let ftps = Arc::new(Mutex::new(stream));
+        
         let handle = tokio::task::spawn(async move {
             loop {
                 let mut state = state_mtx.lock().await;
@@ -395,8 +443,18 @@ impl DeviceDriver for VirtualDriver {
         }
         Ok(())
     }
-    async fn upload_file(&mut self) -> Result<(), DriverError> {
-        unimplemented!();
+    async fn upload_file(
+        &mut self,
+        device: &str,
+        path: &Path,
+        reader: BoxAsyncRead,
+    ) -> Result<(), DriverError> {
+        self.clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))?
+            .upload_file(path, reader)
+            .await?;
+        Ok(())
     }
     async fn shutdown(&self) -> Result<(), DriverError> {
         /*let keys = self.clients.iter().map(|(k, _)| k.to_string()).collect::<Vec<String>>();
@@ -406,6 +464,7 @@ impl DeviceDriver for VirtualDriver {
         for (_, client) in self.clients.iter() {
             client.disconnect().await?;
         }
+        self.server.handle.abort();
         Ok(())
     }
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError> {
@@ -434,14 +493,28 @@ impl DeviceDriver for VirtualDriver {
             .get(device)
             .ok_or(DriverError::DeviceNotFound(device.into()))?
             .ftps
-            .lock()
-            .await
-            .list(Some(dir))
+            .connect()
+            .await?
+            .mlsd(Some(dir))
             .await
             .map_err(|e| DriverError::Custom(e.to_string()))?
             .into_iter()
-            .map(|v| FileEntry::new(&v, PathBuf::new(), None))
-            .collect::<Vec<FileEntry>>())
+            .map(|v| {
+                let file = suppaftp::list::ListParser::parse_mlsd(&v)
+                    .map_err(|e| DriverError::Custom(e.to_string()))?;
+                let mut path = PathBuf::new();
+                let ts: i64 = file
+                    .modified()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_err(|_| DriverError::Custom(format!("failed to get unix epoch")))?
+                    .as_secs()
+                    .try_into()
+                    .map_err(|_| DriverError::Custom(format!("failed to convert to i64")))?;
+
+                path.push(dir);
+                path.push(v.clone());
+                Ok(FileEntry::new(file.name(), path, file.size() as i64, ts))
+            })
+            .collect::<Result<Vec<FileEntry>, DriverError>>()?)
     }
-    
 }

@@ -87,7 +87,7 @@ async fn run() -> anyhow::Result<()> {
         &args.store_secret,
         &args.store_bucket,
         args.store_secure,
-        "blake3"
+        "blake3",
     )?;
 
     let Some(dir) = args.prusa_settings else {
