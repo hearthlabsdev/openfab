@@ -200,4 +200,18 @@ pub trait DeviceDriver: Send + Sync {
     fn subscribe_camera(&self, _device: &str) -> Result<Option<Watcher<CameraEvent>>, DriverError> {
         Ok(None)
     }
+
+    async fn start_print(&self, _device: &str, _path: &Path) -> Result<(), DriverError> {
+        Ok(())
+    }
+    async fn pause_print(&self, _device: &str) -> Result<(), DriverError> {
+        Ok(())
+    }
+
+    async fn resume_print(&self, _device: &str) -> Result<(), DriverError> {
+        Ok(())
+    }
+    async fn stop_print(&self, _device: &str) -> Result<(), DriverError> {
+        Ok(())
+    }
 }

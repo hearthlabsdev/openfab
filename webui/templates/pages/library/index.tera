@@ -51,7 +51,8 @@
             <div class="asset-card-preview">
                 {% if asset.mime == "image/png" %}
                     <img class="asset-preview" src="{{ asset.url }}"/>
-                
+                {% elif asset.mime == "image/jpeg" %}
+                    <img class="asset-preview" src="{{ asset.url }}"/>
                 {% elif asset.mime == "image/svg+xml" %}
                     <svg class="asset-preview" src="{{ asset.url }}">
 
@@ -119,6 +120,13 @@
                             class="btn btn-primary"    
                         >
                             Print
+                        </a>
+                        <a
+                            onclick="return confirm('Are you sure you want to delete this asset?');"
+                            href="/library/assets/{{ asset.uid }}/delete"
+                            class="btn btn-danger"
+                        >
+                            Delete
                         </a>
                     </div>
 

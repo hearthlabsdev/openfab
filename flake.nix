@@ -53,6 +53,7 @@
             pkgs.openssl
             pkgs.libva
             pkgs.libclang
+            pkgs.fontconfig
           ];
         };
 
@@ -69,6 +70,7 @@
             glib
             libva
             nodejs
+            fontconfig
           ];
 
           VULKAN_DIR = "${pkgs.vulkan-loader}";

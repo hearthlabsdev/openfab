@@ -5,14 +5,16 @@ use ormlite::postgres::PgPool;
 use rocket::State;
 use rocket::serde::json::Json;
 use rocket::{delete, get, post, put};
-use rocket_okapi::{openapi, openapi_get_routes};
+use rocket_okapi::{openapi, openapi_get_routes_spec};
+use serverlib::devices::DeviceORM;
+use serverlib::library::ObjectStore;
 use serverlib::prints::{
     PrintJob, PrintJobInstance, PrintJobInstanceORM, PrintJobORM, PrintQueueORM,
 };
-use serverlib::library::ObjectStore;
 use serverlib::setup::NativeManager;
 use uuid::Uuid;
 
+use openfab_drivers::runtime::DriverRuntime;
 use serverlib::errors::OpenFabErr;
 
 /// gets information about a print
@@ -52,7 +54,9 @@ pub(crate) async fn start_print(
     uid: Uuid,
     device: Option<Uuid>,
 ) -> Result<Json<PrintJobInstance>, ErrorResponse> {
-    let mut job = PrintJobORM::admin_get_print(pool, uid).await.expect("print failure");
+    let mut job = PrintJobORM::admin_get_print(pool, uid)
+        .await
+        .expect("print failure");
     let instance = job.start(rt.runtime(), device, pool, store).await?;
     Ok(Json(instance))
 }
@@ -84,39 +88,7 @@ pub(crate) async fn get_print_status(
     pool: &State<PgPool>,
     uid: Uuid,
 ) -> Result<Json<PrintJobInstance>, ErrorResponse> {
-    Ok(Json(
-        PrintJobInstanceORM::get_instance(pool, uid).await?,
-    ))
-}
-
-#[openapi(tag = "Prints")]
-#[put("/jobs/<uid>/pause")]
-pub(crate) async fn pause_print(
-    guard: ApiGuard,
-    pool: &State<PgPool>,
-    uid: Uuid,
-) -> Result<Json<PrintJobInstance>, ErrorResponse> {
-    Err(ErrorResponse::unimplemented("pause_print"))
-}
-
-#[openapi(tag = "Prints")]
-#[put("/jobs/<uid>/resume")]
-pub(crate) async fn resume_print(
-    guard: ApiGuard,
-    pool: &State<PgPool>,
-    uid: Uuid,
-) -> Result<Json<PrintJobInstance>, ErrorResponse> {
-    Err(ErrorResponse::unimplemented("resume_print"))
-}
-
-#[openapi(tag = "Prints")]
-#[put("/jobs/<uid>/stop")]
-pub(crate) async fn stop_print(
-    guard: ApiGuard,
-    pool: &State<PgPool>,
-    uid: Uuid,
-) -> Result<Json<PrintJobInstance>, ErrorResponse> {
-    Err(ErrorResponse::unimplemented("stop_print"))
+    Ok(Json(PrintJobInstanceORM::get_instance(pool, uid).await?))
 }
 
 /// get info on a specific Queue
@@ -127,7 +99,11 @@ pub(crate) async fn queue_info(
     pool: &State<PgPool>,
     uid: Uuid,
 ) -> Result<Json<PrintQueueORM>, ErrorResponse> {
-    Ok(Json(PrintQueueORM::get_queue(pool, uid).await?))
+    Ok(Json(
+        PrintQueueORM::get_queue(pool, uid)
+            .await
+            .expect("failed to get queue"),
+    ))
 }
 
 /// lists queues on the server
@@ -140,7 +116,6 @@ pub(crate) async fn list_queues(
     Ok(Json(PrintQueueORM::list(pool).await?))
 }
 
-
 /// lists the prints in the given queue
 #[openapi(tag = "Queues")]
 #[get("/queues/<uid>/jobs")]
@@ -152,14 +127,12 @@ pub(crate) async fn list_prints(
     Ok(Json(PrintQueueORM::list_prints(pool, uid).await?))
 }
 
-pub fn get_routes() -> Vec<rocket::Route> {
-    openapi_get_routes![
+pub fn get_routes() -> (Vec<rocket::Route>, okapi::openapi3::OpenApi) {
+    openapi_get_routes_spec![
         list_prints,
         get_print,
         create_print,
         get_print_status,
-        pause_print,
-        stop_print,
         delete_print,
         queue_info,
         list_queues,

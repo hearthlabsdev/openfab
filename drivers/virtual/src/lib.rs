@@ -4,7 +4,7 @@ use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::DriverError;
 use openfab_drivers::events::Event;
 use openfab_drivers::files::FileEntry;
-use openfab_drivers::status::{JobStatus, PrinterStatus, State};
+use openfab_drivers::status::{JobStatus, PrinterStatus, State as PrinterState};
 use openfab_drivers::{BoxAsyncRead, DeviceDriver};
 use std::net::IpAddr;
 use suppaftp::tokio::AsyncRustlsConnector;
@@ -90,9 +90,7 @@ pub struct FTPSServer {
 }
 
 impl FTPSServer {
-    pub async fn new<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<Self, DriverError> {
+    pub async fn new<P: AsRef<Path>>(path: P) -> Result<Self, DriverError> {
         let ftp_home = path.as_ref().to_path_buf();
         let home = ftp_home.clone();
         let server = ServerBuilder::new(Box::new(move || {
@@ -111,10 +109,7 @@ impl FTPSServer {
                 .await
                 .expect("failed to run server");
         });
-        Ok(Self {
-            path: home,
-            handle,
-        })
+        Ok(Self { path: home, handle })
     }
     pub fn path(&self) -> &PathBuf {
         &self.path
@@ -151,7 +146,6 @@ impl Default for FTPSClient {
 }
 
 impl FTPSClient {
-     
     pub(crate) async fn connect(&self) -> Result<AsyncRustlsFtpStream, DriverError> {
         let mut stream = AsyncRustlsFtpStream::connect(format!("{}:{}", self.addr, self.port))
             .await
@@ -169,14 +163,19 @@ impl FTPSClient {
             .await
             .map_err(|e| DriverError::Custom(e.to_string()))?;
         stream
-            .transfer_type(suppaftp::types::FileType::Binary).await
+            .transfer_type(suppaftp::types::FileType::Binary)
+            .await
             .map_err(|e| DriverError::Custom(e.to_string()))?;
         Ok(stream)
     }
 
     pub fn from_config(config: &VirtualClientConfig) -> Self {
         Self {
-            addr: config.ftps_addr.unwrap_or("127.0.0.1".parse().expect("failed to parse link local addr")),
+            addr: config.ftps_addr.unwrap_or(
+                "127.0.0.1"
+                    .parse()
+                    .expect("failed to parse link local addr"),
+            ),
             port: config.ftps_port.unwrap_or(2121),
             domain: config.ftps_domain.clone().unwrap_or("localhost".into()),
         }
@@ -203,6 +202,8 @@ pub struct VirtualDriver {
 }
 
 pub struct VirtualState {
+    pub paused: bool,
+    pub state: PrinterState,
     pub bed_temp: f64,
     pub nozzle_temp: f64,
     pub time: i64,
@@ -213,6 +214,8 @@ pub struct VirtualState {
 impl VirtualState {
     pub fn new(config: VirtualClientConfig) -> Self {
         Self {
+            paused: false,
+            state: PrinterState::Idle,
             bed_temp: 0.0,
             nozzle_temp: 0.0,
             progress: 0,
@@ -221,6 +224,10 @@ impl VirtualState {
         }
     }
     pub fn increment(&mut self) {
+        self.state = PrinterState::Printing;
+        if self.paused {
+            return;
+        }
         self.time += self.config.poll_interval;
         if self.bed_temp < self.config.target_bed_temp {
             self.bed_temp += self.config.increment;
@@ -238,11 +245,28 @@ impl VirtualState {
         self.nozzle_temp = 0.0;
         self.time = 0;
         self.progress = 0;
+        self.state = PrinterState::Idle;
+    }
+
+    pub fn start_print(&mut self) {
+        self.state = PrinterState::Printing;
+    }
+
+    pub fn pause_print(&mut self) {
+        self.paused = true;
+    }
+
+    pub fn resume_print(&mut self) {
+        self.paused = false;
+    }
+
+    pub fn stop_print(&mut self) {
+        self.reset();
     }
 
     pub fn printer_status(&self) -> PrinterStatus {
         PrinterStatus::new(
-            State::Printing,
+            self.state.clone(),
             self.bed_temp,
             Some(self.config.target_bed_temp),
             self.nozzle_temp,
@@ -279,10 +303,7 @@ impl VirtualState {
     }
 
     pub fn job_status(&self) -> JobStatus {
-        JobStatus::new(
-            self.calculate_time_remaining(),
-            self.progress,
-        )
+        JobStatus::new(self.calculate_time_remaining(), self.progress)
     }
 }
 
@@ -333,6 +354,12 @@ impl VirtualDriver {
             clients: HashMap::new(),
             server: FTPSServer::default().await?,
         })
+    }
+
+    pub fn get_device(&self, device: &str) -> Result<&VirtualClient, DriverError> {
+        self.clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))
     }
 
     pub fn metadata() -> DriverMeta {
@@ -409,8 +436,7 @@ impl DeviceDriver for VirtualDriver {
         let (sender, recv) = channel(16);
         let sender2 = sender.clone();
         let state_mtx = state.clone();
-        
-        
+
         let handle = tokio::task::spawn(async move {
             loop {
                 let mut state = state_mtx.lock().await;
@@ -516,5 +542,23 @@ impl DeviceDriver for VirtualDriver {
                 Ok(FileEntry::new(file.name(), path, file.size() as i64, ts))
             })
             .collect::<Result<Vec<FileEntry>, DriverError>>()?)
+    }
+
+    async fn start_print(&self, device: &str, _path: &Path) -> Result<(), DriverError> {
+        self.get_device(device)?.state.lock().await.start_print();
+        Ok(())
+    }
+    async fn pause_print(&self, device: &str) -> Result<(), DriverError> {
+        self.get_device(device)?.state.lock().await.pause_print();
+        Ok(())
+    }
+
+    async fn resume_print(&self, device: &str) -> Result<(), DriverError> {
+        self.get_device(device)?.state.lock().await.resume_print();
+        Ok(())
+    }
+    async fn stop_print(&self, device: &str) -> Result<(), DriverError> {
+        self.get_device(device)?.state.lock().await.stop_print();
+        Ok(())
     }
 }

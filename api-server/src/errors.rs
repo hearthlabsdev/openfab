@@ -41,6 +41,24 @@ impl From<OpenFabErr> for ErrorResponse {
     }
 }
 
+impl From<ormlite::Error> for ErrorResponse {
+    fn from(err: ormlite::Error) -> Self {
+        ErrorResponse {
+            message: err.to_string(),
+            status: 500,
+        }
+    }
+}
+
+impl From<ormlite::SqlxError> for ErrorResponse {
+    fn from(err: ormlite::SqlxError) -> Self {
+        ErrorResponse {
+            message: err.to_string(),
+            status: 500,
+        }
+    }
+}
+
 impl OpenApiResponderInner for ErrorResponse {
     fn responses(generator: &mut OpenApiGenerator) -> Result<Responses, OpenApiError> {
         let mut responses = Responses::default();

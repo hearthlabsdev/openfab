@@ -1,7 +1,7 @@
 use crate::accounts::User;
 use crate::devices::FileStatus;
 use crate::devices::{DeviceFileORM, DeviceORM};
-use crate::errors::{OpenFabErr, DeviceError};
+use crate::errors::{DeviceError, OpenFabErr};
 use crate::library::AssetORM;
 use crate::library::ObjectStore;
 use crate::utils::unix_epoch_seconds;
@@ -68,7 +68,7 @@ pub struct PrintJobORM {
 }
 
 impl PrintJobORM {
-    pub async fn admin_get_print(pool: &PgPool, uid: Uuid) -> Result<PrintJobORM, OpenFabErr> {
+    pub async fn admin_get_print(pool: &PgPool, uid: Uuid) -> Result<PrintJobORM, ormlite::Error> {
         let mut conn = pool.acquire().await?;
         Ok(PrintJobORM::select()
             .join(PrintJobORM::user())
@@ -90,7 +90,6 @@ impl PrintJobORM {
         pool: &PgPool,
         store: &ObjectStore,
     ) -> Result<PrintJobInstance, OpenFabErr> {
-        
         let device = match device {
             Some(device) => DeviceORM::get_device(pool, device)
                 .await
@@ -466,7 +465,7 @@ impl PrintQueueORM {
         Ok(PrintQueueORM::select().fetch_all(&mut *conn).await?)
     }
 
-    pub async fn get_queue(pool: &PgPool, uid: Uuid) -> Result<PrintQueueORM, OpenFabErr> {
+    pub async fn get_queue(pool: &PgPool, uid: Uuid) -> Result<PrintQueueORM, ormlite::Error> {
         let mut conn = pool.acquire().await?;
         Ok(PrintQueueORM::select()
             .where_("print_queues.uid = ?")

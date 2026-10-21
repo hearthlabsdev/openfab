@@ -32,3 +32,6 @@ libm = "0.2.16"
 hex = "0.4.3"
 blake3 = "1.8.7"
 sha2 = "0.11.1"
+
+[features]
+#database = ["dep:ormlite"]

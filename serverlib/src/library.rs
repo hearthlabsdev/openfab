@@ -143,6 +143,48 @@ pub struct AssetORM {
 }
 
 impl AssetORM {
+    pub fn blank(
+        owner: Uuid,
+        library: Uuid,
+        name: impl Into<String>,
+        public: bool,
+        license: Option<String>,
+    ) -> Self {
+        let uid = Uuid::new_v4();
+        Self {
+            uid,
+            owner,
+            library,
+            name: name.into(),
+            mime: "unset".into(),
+            key: format!("/assets/{}", uid),
+            hash: "unset".into(),
+            hash_alg: "unset".into(),
+            size: 0,
+            created_at: unix_epoch_seconds(),
+            updated_at: 0,
+            last_used_at: None,
+            public,
+            license,
+        }
+    }
+    /// delete the asset with the given uid and it's respective backend object
+    pub async fn delete(store: &ObjectStore, pool: &PgPool, uid: Uuid) -> Result<Self, OpenFabErr> {
+        let mut conn = pool.acquire().await?;
+        let asset = AssetORM::select()
+            .where_("uid = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?;
+
+        store.delete_object(&asset.key).await?;
+        asset.clone().delete(&mut *conn).await?;
+        Ok(asset)
+    }
+
+    pub fn is_blank(&self) -> bool {
+        self.size == 0 || self.mime == "unset" || self.hash == "unset"
+    }
     pub async fn download_bytes(&self, store: &ObjectStore) -> Result<Vec<u8>, DownloadErr> {
         // should this update last used?
         Ok(store.download_bytes(&self.key).await?)
@@ -235,6 +277,10 @@ impl ObjectStore {
             bucket: bucket.to_string(),
             primary_hash_alg: primary_hash_alg.to_string(),
         })
+    }
+
+    pub async fn delete_object(&self, key: &str) -> Result<(), OpenFabErr> {
+        Ok(self.client.remove_object(&self.bucket, key).await?)   
     }
 
     /// Upload raw bytes (server‑side upload).

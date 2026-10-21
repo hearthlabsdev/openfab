@@ -1,0 +1,49 @@
+export component NavSection {
+    in property <string> text;
+
+    VerticalLayout {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        height: 32px;
+
+        Text {
+            text: root.text;
+            color: #6c7086;
+            font-size: 11px;
+            font-weight: 700;
+        }
+    }
+}
+
+export component NavLink {
+    in property <string> text;
+    in property <string> route;
+    callback clicked(string);
+
+    Rectangle {
+        height: 32px;
+        border-radius: 4px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+
+        touch := TouchArea {
+            clicked => {
+                root.clicked(root.route);
+            }
+        }
+
+        background: touch.has-hover ? #313244 : transparent;
+
+        HorizontalLayout {
+            padding-left: 8px;
+
+            Text {
+                text: root.text;
+                color: #bac2de;
+                font-size: 13px;
+                vertical-alignment: center;   // Centers text inside its own stretched box
+                horizontal-alignment: center;
+            }
+        }
+    }
+}

@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 ormlite = "0.25.0"
 rocket = { version = "0.5.1", features = ["uuid", "json"] }
-rocket_okapi = { version = "0.9.0", features = ["swagger", "rapidoc", "uuid"]}
+rocket_okapi = { version = "0.9.0", features = ["swagger", "rapidoc", "uuid"] }
 schemars = { version = "0.8", features = ["uuid1"] }
 serde = { version = "1.0.229", features = ["derive"]}
 serde_json = "1.0.154"
@@ -14,3 +14,5 @@ uuid = { version = "1.28.0", features = ["serde", "v4"]}
 serverlib = { path = "../serverlib" }
 okapi = "0.7.0"
 thiserror = "2.0.21"
+openfab-drivers = { path = "../drivers" }
+openfab-sdk = { path = "../sdk", features = ["schema"] }

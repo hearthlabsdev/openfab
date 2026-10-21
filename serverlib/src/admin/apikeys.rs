@@ -14,7 +14,7 @@ pub struct ApiKeyORM {
     uid: Uuid,
     keyid: String,
     #[ormlite(column = "owner")]
-    owner: Join<User>,
+    pub owner: Join<User>,
     /// the user who's permissions this key is allowed to inherit
     /// this is different from the owner, which is the account that created the key
     /// this is used to assign a bot user to the key, so that it can be used to perform actions as a restricted user.

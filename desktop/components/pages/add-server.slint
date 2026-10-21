@@ -1,0 +1,77 @@
+import { Button, HorizontalBox, LineEdit, VerticalBox } from "std-widgets.slint";
+import { FormBasePage } from "forms.slint";
+
+export component ConnectServerPage inherits FormBasePage {
+    page-title: "Connect to server";
+
+    callback submit();
+    callback use-sso();
+    callback create-account();
+
+    VerticalBox {
+        spacing: 14px;
+
+        VerticalBox {
+            spacing: 6px;
+
+            Text {
+                text: "URL";
+            }
+
+            LineEdit {
+                placeholder-text: "https://server.example.com";
+            }
+        }
+
+        VerticalBox {
+            spacing: 6px;
+
+            Text {
+                text: "Username";
+            }
+
+            LineEdit {
+                placeholder-text: "your-username";
+            }
+        }
+
+        VerticalBox {
+            spacing: 6px;
+
+            Text {
+                text: "Password";
+            }
+
+            LineEdit {
+                placeholder-text: "••••••••";
+                input-type: password;
+            }
+        }
+
+        HorizontalBox {
+            spacing: 12px;
+            alignment: end;
+
+            Button {
+                text: "Use SSO";
+                clicked => {
+                    root.use-sso();
+                }
+            }
+
+            Button {
+                text: "Create Account";
+                clicked => {
+                    root.create-account();
+                }
+            }
+
+            Button {
+                text: "Submit";
+                clicked => {
+                    root.submit();
+                }
+            }
+        }
+    }
+}

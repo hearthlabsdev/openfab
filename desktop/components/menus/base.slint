@@ -1,0 +1,96 @@
+import { NavLink, NavSection } from "../utils/nav.slint";
+
+export component MainMenu {
+    callback navigate(string);
+    
+    Rectangle {
+        width: 240px;
+        background: #11111b;
+
+        Flickable {
+            viewport-height: 500px;
+
+            VerticalLayout {
+                padding: 16px;
+                spacing: 20px;
+                alignment: center;
+
+                NavLink {
+                    text: "Dashboard";
+                    route: "/accounts/dashboard";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+
+                NavSection {
+                    text: "Devices";
+                }
+
+                NavLink {
+                    text: "All Devices";
+                    route: "/devices";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+
+                NavSection {
+                    text: "Jobs";
+                }
+
+                NavLink {
+                    text: "Queue";
+                    route: "/prints";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+
+                NavLink {
+                    text: "History";
+                    route: "/prints/history";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+
+                NavSection {
+                    text: "Files";
+                }
+
+                NavLink {
+                    text: "Library";
+                    route: "/library";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+
+                NavSection {
+                    text: "Access";
+                }
+
+                NavLink {
+                    text: "Admin";
+                    route: "/admin/users";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+
+                NavSection {
+                    text: "System";
+                }
+
+                NavLink {
+                    text: "Settings";
+                    route: "/settings";
+                    clicked => {
+                        root.navigate(self.route);
+                    }
+                }
+            }
+        }
+    }
+}

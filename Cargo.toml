@@ -14,6 +14,6 @@ members = [
     "drivers/virtual",
     "slicers/cura", 
     "slicers/slic3r"
-]
+, "desktop", "sdk"]
 
 resolver = "2"

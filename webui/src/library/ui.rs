@@ -224,6 +224,17 @@ pub async fn get_asset(
     )))
 }
 
+#[get("/assets/<uid>/delete")]
+pub async fn delete_asset(
+    guard: Guard,
+    pool: &State<PgPool>,
+    store: &State<ObjectStore>,
+    uid: Uuid,
+) -> Result<Redirect, OpenFabErr> {
+    let asset = AssetORM::delete(store, pool, uid).await?;
+    Ok(Redirect::to(format!("/library/{}", asset.library)))
+}
+
 #[get("/assets/<uid>/fetch")]
 pub async fn asset_proxy(
     store: &State<ObjectStore>,
@@ -254,6 +265,7 @@ pub fn get_routes() -> Vec<Route> {
         index_assets,
         download,
         get_asset,
-        asset_proxy
+        asset_proxy,
+        delete_asset
     ]
 }

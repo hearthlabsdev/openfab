@@ -1,10 +1,13 @@
+#![allow(unused)]
 pub mod devices;
 pub mod errors;
 pub mod library;
 pub mod prints;
 pub mod utils;
 
+use okapi::merge::marge_spec_list as merge_spec_list;
 use rocket::{Build, Rocket};
+use rocket::{get, serde::json::Json};
 use rocket_okapi::{
     openapi_get_routes,
     rapidoc::{GeneralConfig, HideShowConfig, RapiDocConfig, make_rapidoc},
@@ -12,16 +15,28 @@ use rocket_okapi::{
     swagger_ui::{SwaggerUIConfig, make_swagger_ui},
 };
 
+#[get("/openapi-spec.json")]
+pub fn spec_route() -> &'static str {
+    include_str!("openapi-spec.json")
+}
+
 pub fn register_routes(r: Rocket<Build>) -> Rocket<Build> {
+    let (library_routes, library_spec) = library::get_routes();
+    let (device_routes, device_spec) = devices::get_routes();
+    let (print_routes, print_spec) = prints::get_routes();
+
+    let spec = merge_spec_list(&[
+        ("/api/library", library_spec),
+        ("/api/devices", device_spec),
+        ("/api/prints", print_spec),
+    ])
+    .expect("failed to merge spec");
+    let json = serde_json::to_string_pretty(&spec).unwrap();
+    std::fs::write("openapi-spec.json", json).unwrap();
     r.mount(
         "/swagger-ui/",
         make_swagger_ui(&SwaggerUIConfig {
-            urls: vec![
-                UrlObject::new("OpenFab", "/api/openapi.json"),
-                UrlObject::new("OpenFab Libraries", "/api/library/openapi.json"),
-                UrlObject::new("OpenFab Devices", "/api/devices/openapi.json"),
-                UrlObject::new("OpenFab Print Management", "/api/prints/openapi.json"),
-            ],
+            urls: vec![UrlObject::new("OpenFab", "/api/openapi-spec.json")],
             ..Default::default()
         }),
     )
@@ -29,7 +44,7 @@ pub fn register_routes(r: Rocket<Build>) -> Rocket<Build> {
         "/rapidoc/",
         make_rapidoc(&RapiDocConfig {
             general: GeneralConfig {
-                spec_urls: vec![UrlObject::new("OpenFab", "/api/openapi.json")],
+                spec_urls: vec![UrlObject::new("OpenFab", "/api/openapi-spec.json")],
                 ..Default::default()
             },
             hide_show: HideShowConfig {
@@ -40,12 +55,13 @@ pub fn register_routes(r: Rocket<Build>) -> Rocket<Build> {
             ..Default::default()
         }),
     )
-    .mount("/api/library/", library::get_routes())
-    .mount("/api/devices", devices::get_routes())
-    .mount("/api/prints", prints::get_routes())
+    .mount("/api/library/", library_routes)
+    .mount("/api/devices", device_routes)
+    .mount("/api/prints", print_routes)
     .mount(
         "/api/",
-        openapi_get_routes![
+        rocket::routes![
+            spec_route,
             // print methods
         ],
     )

@@ -14,9 +14,16 @@ use rocket_okapi::util::add_schema_response;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serverlib::accounts::User;
 use serverlib::admin::apikeys::ApiKeyORM;
+use uuid::Uuid;
 
 pub struct ApiGuard {
     pub api_key: ApiKeyORM,
+}
+
+impl ApiGuard {
+    pub fn owner(&self) -> Uuid {
+        self.api_key.owner.id
+    }
 }
 
 #[rocket::async_trait]
