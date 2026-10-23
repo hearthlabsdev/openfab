@@ -6,12 +6,13 @@ use ormlite::Model;
 use ormlite::postgres::PgPool;
 use rocket::form::{Form, FromForm};
 use rocket::fs::TempFile;
-use serverlib::accounts::User;
-use serverlib::errors::{OpenFabErr, UploadErr};
-use serverlib::utils::ResultStream;
-
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
+use serverlib::accounts::User;
+use serverlib::admin::permissions::*;
+use serverlib::devices::DeviceORM;
+use serverlib::errors::{OpenFabErr, UploadErr};
+use serverlib::utils::ResultStream;
 
 use rocket::response::stream::ReaderStream;
 use rocket::{Responder, Response, State};
@@ -104,9 +105,17 @@ impl AssetForm<'_> {
     }
 }
 
-#[get("/")]
-pub async fn index(store: &State<ObjectStore>, pool: &State<PgPool>) -> RawHtml<Template> {
+#[get("/?<device>")]
+pub async fn index(
+    guard: Guard,
+    store: &State<ObjectStore>,
+    pool: &State<PgPool>,
+    device: Option<Uuid>,
+) -> Result<RawHtml<Template>, OpenFabErr> {
+    check_subject_permission(pool, &guard.claims.sub, READ_LIBRARY, None).await?;
     let mut conn = pool.acquire().await.unwrap();
+    let devices = DeviceORM::list_devices(pool).await?;
+    println!("devices: {:?}", devices);
     let assets: Option<Uuid> = None;
     let libraries = LibraryORM::select()
         .where_("public = true")
@@ -115,19 +124,27 @@ pub async fn index(store: &State<ObjectStore>, pool: &State<PgPool>) -> RawHtml<
         .expect("failed to fetch libraries");
     println!("libraries length: {}", libraries.len());
 
-    RawHtml(Template::render(
+    Ok(RawHtml(Template::render(
         "pages/library/index",
-        context! { assets, libraries },
-    ))
+        context! { assets, libraries, devices, device },
+    )))
 }
 
-#[get("/<library>?<page>")]
+#[get("/<library>?<page>&<device>")]
 pub async fn index_assets(
+    guard: Guard,
     store: &State<ObjectStore>,
     pool: &State<PgPool>,
     library: Uuid,
     page: Option<isize>,
-) -> RawHtml<Template> {
+    device: Option<Uuid>,
+) -> Result<RawHtml<Template>, OpenFabErr> {
+    check_subject_permission(pool, &guard.claims.sub, READ_LIBRARY, Some(library)).await?;
+    let devices = DeviceORM::list_devices(pool).await?;
+    let device = match device {
+        Some(device) => Some(DeviceORM::get_device(pool, device).await?),
+        None => None,
+    };
     let page_size: usize = 20;
     let page: usize = (page.unwrap_or(1) - 1).abs().try_into().unwrap_or(0);
     let mut conn = pool.acquire().await.unwrap();
@@ -151,10 +168,10 @@ pub async fn index_assets(
         .await
         .expect("failed to fetch libraries");
     println!("assets len: {}", assets.len());
-    RawHtml(Template::render(
+    Ok(RawHtml(Template::render(
         "pages/library/index",
-        context! { assets, libraries, library, page: page + 1 },
-    ))
+        context! { assets, libraries, library, page: page + 1, device },
+    )))
 }
 
 #[get("/<library>/upload")]
@@ -191,7 +208,12 @@ pub async fn create_asset(
 }
 
 #[get("/assets/<uid>/download")]
-pub async fn download(pool: &State<PgPool>, store: &State<ObjectStore>, uid: Uuid) -> Redirect {
+pub async fn download(
+    guard: Guard,
+    pool: &State<PgPool>,
+    store: &State<ObjectStore>,
+    uid: Uuid,
+) -> Redirect {
     let mut conn = pool.acquire().await.unwrap();
     let asset = AssetORM::select()
         .where_("uid = ?")
@@ -206,6 +228,7 @@ pub async fn download(pool: &State<PgPool>, store: &State<ObjectStore>, uid: Uui
 
 #[get("/assets/<uid>/info")]
 pub async fn get_asset(
+    guard: Guard,
     pool: &State<PgPool>,
     store: &State<ObjectStore>,
     uid: Uuid,
@@ -237,6 +260,7 @@ pub async fn delete_asset(
 
 #[get("/assets/<uid>/fetch")]
 pub async fn asset_proxy(
+    guard: Guard,
     store: &State<ObjectStore>,
     pool: &State<PgPool>,
     uid: Uuid,

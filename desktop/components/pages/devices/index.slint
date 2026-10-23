@@ -1,0 +1,27 @@
+import { DeviceCard, OpenFABDevice } from "card.slint";
+import { VerticalBox, ListView } from "std-widgets.slint";
+
+export component ListDevicesPage inherits Rectangle {
+    // Array model passed from Rust via app.set_devices(...)
+    in property <[OpenFABDevice]> devices;
+
+    VerticalBox {
+        padding: 24px;
+        spacing: 16px;
+
+        Text {
+            text: "Connected Devices";
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        // Scrollable list rendering each device item using DeviceCard
+        ListView {
+            for device in root.devices : DeviceCard {
+                device: device;
+                // Add some spacing or constraints if needed
+                height: 190px; 
+            }
+        }
+    }
+}

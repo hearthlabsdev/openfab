@@ -1,18 +1,77 @@
+use crate::errors::OpenFabErr;
 use futures_util::{Stream, StreamExt};
 use openfab::oidc::OidcClaims;
-use rocket::Request;
+use ormlite::postgres::{PgPool, Postgres};
 use rocket::http::{ContentType, Status};
 use rocket::response::{Responder, Response};
+use rocket::{Request, request::FromRequest, request::Outcome};
 use rocket_dyn_templates::tera::Context;
 use rocket_oidc::{OIDCGuard, auth::ApiKeyGuard};
+use serverlib::accounts::User;
+use serverlib::admin::permissions::*;
 use std::io;
 use std::pin::Pin;
 use std::task::{Context as TaskContext, Poll};
 use tokio::io::{AsyncRead, ReadBuf};
 use tokio_util::bytes::Bytes;
+use uuid::Uuid;
 
 pub type ApiGuard = ApiKeyGuard<OidcClaims>;
-pub type Guard = OIDCGuard<crate::accounts::UserID>;
+//pub type Guard = OIDCGuard<crate::accounts::UserID>;
+
+pub struct Guard {
+    user: User,
+    pool: PgPool,
+    pub claims: serverlib::accounts::UserID,
+}
+
+impl Guard {
+    pub async fn check_permission(
+        &self,
+        permission: &str,
+        entity: Option<Uuid>,
+    ) -> Result<&PgPool, OpenFabErr> {
+        check_user_permission(&self.pool, self.user.uid, permission, entity).await?;
+        Ok(&self.pool)
+    }
+    pub fn get_user(&self) -> &User {
+        &self.user
+    }
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Guard {
+    type Error = OpenFabErr;
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let pool = match request.rocket().state::<ormlite::postgres::PgPool>() {
+            Some(pool) => pool,
+            None => {
+                panic!("launching with unamanged state PgPool");
+            }
+        };
+
+        let guard: OIDCGuard<serverlib::accounts::UserID> =
+            match OIDCGuard::from_request(request).await {
+                Outcome::Success(val) => val,
+                Outcome::Forward(status) => return Outcome::Forward(status),
+                Outcome::Error((status, _)) => {
+                    return Outcome::Error((
+                        status,
+                        OpenFabErr::Other("failed to run OIDC guard parsing".into()),
+                    ));
+                }
+            };
+        let user = match User::get_for_subject(pool, &guard.claims.sub).await {
+            Ok(user) => user,
+            Err(_) => return Outcome::Forward(Status::Unauthorized),
+        };
+        Outcome::Success(Guard {
+            pool: pool.clone(),
+            user,
+            claims: guard.claims,
+        })
+    }
+}
 
 pub fn global_context() -> Context {
     Context::new()

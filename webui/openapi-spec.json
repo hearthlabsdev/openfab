@@ -1757,7 +1757,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintCommandResponse"
+                }
+              }
+            }
           },
           "500": {
             "description": "",
@@ -1871,7 +1878,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PrintJobInstance"
+                  "$ref": "#/components/schemas/PrintCommandResponse"
                 }
               }
             }
@@ -1988,7 +1995,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PrintJobInstance"
+                  "$ref": "#/components/schemas/PrintCommandResponse"
                 }
               }
             }
@@ -2193,6 +2200,125 @@
             }
           }
         }
+      }
+    },
+    "/api/devices/{device}/queue": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "get_device_queue",
+        "parameters": [
+          {
+            "name": "device",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrintJob2"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
       }
     },
     "/api/prints/queues/{uid}/jobs": {
@@ -3451,6 +3577,11 @@
             "type": "string",
             "format": "uuid"
           },
+          "library": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "serial": {
             "type": "string"
           },
@@ -3574,6 +3705,29 @@
         },
         "additionalProperties": true
       },
+      "PrintCommandResponse": {
+        "type": "object",
+        "required": [
+          "command",
+          "state"
+        ],
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "instance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrintJobInstance"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
       "PrintJobInstance": {
         "type": "object",
         "required": [
@@ -3592,7 +3746,7 @@
             "$ref": "#/components/schemas/PrintJob"
           },
           "printer": {
-            "$ref": "#/components/schemas/DeviceORM"
+            "$ref": "#/components/schemas/DeviceOrm"
           },
           "instance": {
             "type": "integer",
@@ -3605,22 +3759,425 @@
             }
           },
           "started_at": {
+            "default": null,
             "type": "integer",
             "format": "int64",
             "nullable": true
           },
           "finished_at": {
+            "default": null,
             "type": "integer",
             "format": "int64",
             "nullable": true
           },
           "error": {
+            "default": null,
             "type": "string",
             "nullable": true
           }
         }
       },
       "PrintJob": {
+        "type": "object",
+        "required": [
+          "asset",
+          "created_at",
+          "name",
+          "queue",
+          "state",
+          "uid",
+          "user"
+        ],
+        "properties": {
+          "uid": {
+            "description": "Stable job identifier",
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "description": "Owning user",
+            "type": "string",
+            "format": "uuid"
+          },
+          "queue": {
+            "description": "Target queue (capability-based)",
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "description": "Original filename or description",
+            "type": "string"
+          },
+          "asset": {
+            "description": "the file being printed (PDF, SVG, STL, OBJ, GCODE, etc.)",
+            "type": "string",
+            "format": "uuid"
+          },
+          "estimated_cost": {
+            "description": "Estimated cost (computed at submission)",
+            "default": null,
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "created_at": {
+            "description": "Job creation timestamp",
+            "type": "integer",
+            "format": "int64"
+          },
+          "state": {
+            "description": "Terminal lifecycle state",
+            "type": "string"
+          },
+          "copies": {
+            "default": null,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "priority": {
+            "default": null,
+            "type": "string",
+            "nullable": true
+          },
+          "material": {
+            "default": null,
+            "type": "string",
+            "nullable": true
+          },
+          "nozzle_temp": {
+            "default": null,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bed_temp": {
+            "default": null,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "layer_height": {
+            "default": null,
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "infill": {
+            "default": null,
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "supports": {
+            "default": null,
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "default": null,
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DeviceOrm": {
+        "type": "object",
+        "required": [
+          "driver_id",
+          "driver_version",
+          "enabled",
+          "first_seen",
+          "last_seen",
+          "name",
+          "serial",
+          "status",
+          "uid"
+        ],
+        "properties": {
+          "uid": {
+            "description": "Stable internal identifier",
+            "type": "string",
+            "format": "uuid"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "queue": {
+            "default": null,
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "description": "Human-readable name (from IPP or admin override)",
+            "type": "string"
+          },
+          "first_seen": {
+            "description": "When this printer was first observed",
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_seen": {
+            "description": "Last successful discovery or IPP query",
+            "type": "integer",
+            "format": "int64"
+          },
+          "upload_dir": {
+            "description": "upload directory where gcode is stored",
+            "default": null,
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "description": "Operational status",
+            "type": "string"
+          },
+          "enabled": {
+            "description": "Whether this printer is eligible for job dispatch",
+            "type": "boolean"
+          },
+          "driver_id": {
+            "type": "string"
+          },
+          "driver_version": {
+            "type": "string"
+          },
+          "logs": {
+            "description": "device logs",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceLog2"
+            },
+            "nullable": true
+          },
+          "configs": {
+            "description": "device configuration values",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceConfig"
+            },
+            "nullable": true
+          }
+        }
+      },
+      "DeviceLog2": {
+        "type": "object",
+        "required": [
+          "date",
+          "device",
+          "message",
+          "severity",
+          "uid"
+        ],
+        "properties": {
+          "uid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "device": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "date": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "message": {
+            "type": "string"
+          },
+          "event": {
+            "default": null,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DeviceStatus2"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "DeviceStatus2": {
+        "type": "object",
+        "required": [
+          "bed_temp",
+          "nozzle_temp",
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "bed_temp": {
+            "description": "Current measured temperature of the heated bed in degrees Celsius.",
+            "type": "number",
+            "format": "double"
+          },
+          "target_bed_temp": {
+            "description": "Target temperature of the heated bed, if active.",
+            "default": null,
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "nozzle_temp": {
+            "description": "Current measured temperature of the print head nozzle in degrees Celsius.",
+            "type": "number",
+            "format": "double"
+          },
+          "target_nozzle_temp": {
+            "description": "Target temperature of the print head nozzle, if active.",
+            "default": null,
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "chamber_temp": {
+            "description": "Current measured temperature of the print chamber (if equipped).",
+            "default": null,
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        }
+      },
+      "DeviceConfig": {
+        "type": "object",
+        "required": [
+          "device",
+          "key",
+          "uid",
+          "updated_at",
+          "value"
+        ],
+        "properties": {
+          "uid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "device": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PrintJobEvent": {
+        "type": "object",
+        "required": [
+          "job_instance",
+          "status",
+          "timestamp",
+          "uid"
+        ],
+        "properties": {
+          "uid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "job_instance": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PrintJobStatus"
+          },
+          "error": {
+            "default": null,
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PrintJobStatus": {
+        "type": "object",
+        "required": [
+          "progress",
+          "time_remaining_secs"
+        ],
+        "properties": {
+          "time_remaining_secs": {
+            "description": "Estimated time remaining until job completion, measured in seconds.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "progress": {
+            "description": "Current progress of the print job represented as a percentage (0 to 100).",
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DeviceModelORM": {
+        "type": "object",
+        "required": [
+          "default_materials",
+          "name",
+          "uid",
+          "variants"
+        ],
+        "properties": {
+          "uid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "technology": {
+            "type": "string",
+            "nullable": true
+          },
+          "family": {
+            "type": "string",
+            "nullable": true
+          },
+          "bed_model": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "bed_texture": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "thumbnail": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "default_materials": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PrintJob2": {
         "type": "object",
         "required": [
           "asset",
@@ -3711,109 +4268,6 @@
           "notes": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "PrintJobEvent": {
-        "type": "object",
-        "required": [
-          "job_instance",
-          "status",
-          "timestamp",
-          "uid"
-        ],
-        "properties": {
-          "uid": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "job_instance": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "$ref": "#/components/schemas/PrintJobStatus"
-          },
-          "error": {
-            "type": "string",
-            "nullable": true
-          },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "PrintJobStatus": {
-        "type": "object",
-        "required": [
-          "progress",
-          "time_remaining_secs"
-        ],
-        "properties": {
-          "time_remaining_secs": {
-            "description": "Estimated time remaining until job completion, measured in seconds.",
-            "type": "integer",
-            "format": "int64"
-          },
-          "progress": {
-            "description": "Current progress of the print job represented as a percentage (0 to 100).",
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        "additionalProperties": true
-      },
-      "DeviceModelORM": {
-        "type": "object",
-        "required": [
-          "default_materials",
-          "name",
-          "uid",
-          "variants"
-        ],
-        "properties": {
-          "uid": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "technology": {
-            "type": "string",
-            "nullable": true
-          },
-          "family": {
-            "type": "string",
-            "nullable": true
-          },
-          "bed_model": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "bed_texture": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "thumbnail": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
-          "default_materials": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },

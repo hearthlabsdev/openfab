@@ -2,6 +2,7 @@ use crate::utils;
 use time::{Duration, OffsetDateTime};
 
 use ormlite::Model;
+use ormlite::postgres::PgPool;
 use rocket::FromForm;
 use rocket_oidc::claims::CoreClaims;
 use rocket_oidc::utils::string_or_vec;
@@ -99,6 +100,15 @@ impl User {
 
     pub fn uid(&self) -> Uuid {
         self.uid
+    }
+
+    pub async fn get_for_subject(pool: &PgPool, subject: &str) -> Result<Self, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        Ok(Self::select()
+            .where_("subject = ?")
+            .bind(subject)
+            .fetch_one(&mut *conn)
+            .await?)
     }
 
     pub fn generate_local_user_id(&self, subject: Option<String>) -> UserID {

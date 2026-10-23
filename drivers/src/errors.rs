@@ -36,6 +36,8 @@ pub enum DriverError {
     #[error("unsupported operation: {0}")]
     Unsupported(String),
 
+    #[error("failed to run a command: {0}")]
+    CommandFailure(String),
     /// The requested driver backend could not be found.
     #[error("couldn't find driver")]
     DriverNotFound,

@@ -124,6 +124,7 @@ pub struct DeviceConfig {
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
 pub struct DeviceOrm {
     /// Stable internal identifier
     #[serde(rename = "uid")]

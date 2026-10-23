@@ -3,19 +3,22 @@ use bambu_rs::async_camera::CameraClient;
 use bambu_rs::async_ftp::FtpsClient;
 use bambu_rs::client::LanMqttClient;
 use bambu_rs::config::ResolvedTarget;
+use bambu_rs::core::command::Command;
 use bambu_rs::core::model::Model;
+use bambu_rs::core::session::CommandOutcome;
 use bambu_rs::core::status::PrinterStatus as BambuStatus;
-use bambu_rs::core::status::{DeviceError, GcodeState, Filament, HmsAlert, Ipcam, LightReport};
-use openfab_drivers::{BoxAsyncRead, DeviceDriver};
+use bambu_rs::core::status::{DeviceError, Filament, GcodeState, HmsAlert, Ipcam, LightReport};
 use openfab_drivers::config::{ConfigField, ConfigSchema, DriverMeta};
 use openfab_drivers::errors::{DriverError, JobStatusErr, PrintError, StatusErr};
 use openfab_drivers::events::{CameraEvent, Event, EventHandler, EventType};
 use openfab_drivers::files::FileEntry;
 use openfab_drivers::status::{JobStatus, PrinterStatus, State as PrinterState};
+use openfab_drivers::{BoxAsyncRead, DeviceDriver};
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::io::Cursor;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -169,7 +172,7 @@ impl From<BambuStatus> for BambuExtensions {
 
 pub fn try_from_device_status(status: BambuStatus) -> Result<PrinterStatus, StatusErr> {
     let state = match_state(status.state().expect("failed to get printer state"));
-    
+
     Ok(PrinterStatus::with_extras(
         state,
         status.bed_temper.ok_or(StatusErr::MissingBedTemp)?,
@@ -181,9 +184,22 @@ pub fn try_from_device_status(status: BambuStatus) -> Result<PrinterStatus, Stat
     )?)
 }
 
-pub fn file_entry_convert(v: String) -> openfab_drivers::files::FileEntry {
+pub fn file_entry_convert(dir: &str, v: String) -> Result<openfab_drivers::files::FileEntry, DriverError> {
+    let file = suppaftp::list::ListParser::parse_mlsd(&v)
+        .map_err(|e| DriverError::Custom(e.to_string()))?;
+    let mut path = PathBuf::new();
+    let ts: i64 = file
+        .modified()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|_| DriverError::Custom(format!("failed to get unix epoch")))?
+        .as_secs()
+        .try_into()
+        .map_err(|_| DriverError::Custom(format!("failed to convert to i64")))?;
+
+    path.push(dir);
+    path.push(v.clone());
     //openfab_drivers::files::FileEntry::new(v.name, v.size, )
-    FileEntry::new(v, PathBuf::new(), 0, 0)
+    Ok(FileEntry::new(file.name(), path, file.size() as i64, ts))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -233,10 +249,10 @@ impl EventHandler for Reporter {
     type Status = BambuStatus;
     fn process(&mut self, status: Self::Status) -> Result<Vec<Event>, StatusErr> {
         let mut events = Vec::new();
-        
+
         let last_printer_status = try_from_device_status(self.last.clone())?;
         let printer_status = try_from_device_status(status.clone())?;
-        
+
         let last_job_status =
             try_from_job_status(&self.last).expect("failed to get last job status");
 
@@ -287,7 +303,7 @@ impl EventHandler for Reporter {
         if last_printer_status != printer_status {
             events.push(Event::StatusUpdate(printer_status));
         }
-        
+
         self.last = status;
         Ok(events)
     }
@@ -373,6 +389,21 @@ impl BambuClient {
             camera.disconnect().await;
         }*/
     }
+
+    pub async fn send_command(&self, cmd: &Command) -> Result<(), DriverError> {
+        match self
+            .client
+            .send_and_verify_async(cmd)
+            .await
+            .map_err(|v| DriverError::Device(v.to_string()))?
+        {
+            CommandOutcome::Verified => Ok(()),
+            CommandOutcome::Rejected { reason } => Err(DriverError::CommandFailure(reason)),
+            _ => Err(DriverError::CommandFailure(
+                "command wasn't verified".into(),
+            )),
+        }
+    }
     pub async fn new(resolved: ResolvedTarget) -> Result<Self, DriverError> {
         let client = Arc::new(LanMqttClient::new(resolved.clone()));
         let worker_client = client.clone();
@@ -436,6 +467,17 @@ impl BambuDriver {
         Self {
             clients: HashMap::new(),
         }
+    }
+
+    pub fn get_client(&self, client: &str) -> Result<&BambuClient, DriverError> {
+        Ok(self
+            .clients
+            .get(client)
+            .ok_or(DriverError::DeviceNotFound(client.into()))?)
+    }
+
+    pub async fn send_command(&self, device: &str, command: &Command) -> Result<(), DriverError> {
+        Ok(self.get_client(device)?.send_command(command).await?)
     }
 
     pub fn metadata() -> DriverMeta {
@@ -543,10 +585,32 @@ impl DeviceDriver for BambuDriver {
         self.clients.remove(device);
         Ok(())
     }
-    async fn upload_file(&mut self, _device: &str,
-        _path: &Path,
-        _reader: BoxAsyncRead) -> Result<(), DriverError> {
-        unimplemented!();
+    async fn upload_file(
+        &mut self,
+        device: &str,
+        path: &Path,
+        mut reader: BoxAsyncRead,
+    ) -> Result<(), DriverError> {
+        self.clients
+            .get(device)
+            .ok_or(DriverError::DeviceNotFound(device.into()))?
+            .files
+            .upload_stream(path, &mut reader)
+            .await
+            .map_err(|e| DriverError::Custom(e.to_string()))?;
+        Ok(())
+    }
+    async fn download_bytes(
+        &self,
+        device: &str,
+        path: &Path,
+    ) -> Result<Cursor<Vec<u8>>, DriverError> {
+        Ok(self
+            .get_client(device)?
+            .files
+            .download_bytes(path)
+            .await
+            .map_err(|e| DriverError::Device(e.to_string()))?)
     }
     async fn get_status(&self, device: &str) -> Result<PrinterStatus, DriverError> {
         let event = self
@@ -601,8 +665,30 @@ impl DeviceDriver for BambuDriver {
             .await
             .map_err(|v| DriverError::Custom(v.to_string()))?
             .into_iter()
-            .map(|v| file_entry_convert(v))
+            .map(|v| file_entry_convert(dir, v).expect("failed to parse"))
             .collect::<Vec<FileEntry>>())
+    }
+
+    async fn start_print(&self, device: &str, path: &Path) -> Result<(), DriverError> {
+        let cmd = Command::GcodeFile(path.display().to_string());
+        self.send_command(device, &cmd).await?;
+        Ok(())
+    }
+    async fn pause_print(&self, device: &str) -> Result<(), DriverError> {
+        let cmd = Command::Pause;
+        self.send_command(device, &cmd).await?;
+        Ok(())
+    }
+
+    async fn resume_print(&self, device: &str) -> Result<(), DriverError> {
+        let cmd = Command::Resume;
+        self.send_command(device, &cmd).await?;
+        Ok(())
+    }
+    async fn stop_print(&self, device: &str) -> Result<(), DriverError> {
+        let cmd = Command::Stop;
+        self.send_command(device, &cmd).await?;
+        Ok(())
     }
 }
 

@@ -219,6 +219,17 @@
 
     {% block scripts %}{% endblock scripts %}
     <script>
+    document.addEventListener('click', (event) => {
+        // Find all open dropdowns
+        const openDropdowns = document.querySelectorAll('details.dropdown-container[open]');
+        
+        openDropdowns.forEach((dropdown) => {
+            // Check if the click happened outside the current dropdown
+            if (!dropdown.contains(event.target)) {
+                dropdown.removeAttribute('open');
+            }
+        });
+    });
     document.querySelectorAll(".local-time").forEach(function (element) {
         const unix = Number(element.dataset.unix);
 

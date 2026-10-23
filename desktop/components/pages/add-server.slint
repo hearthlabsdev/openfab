@@ -3,10 +3,14 @@ import { FormBasePage } from "forms.slint";
 
 export component ConnectServerPage inherits FormBasePage {
     page-title: "Connect to server";
+    current-form: "login";
+    callback login(string, string, string);
+    callback use-sso;
+    callback create-account;
 
-    callback submit();
-    callback use-sso();
-    callback create-account();
+    property <string> server: serverText.text;
+    property <string> email: emailText.text;
+    property <string> pwd: passwordText.text;
 
     VerticalBox {
         spacing: 14px;
@@ -18,7 +22,7 @@ export component ConnectServerPage inherits FormBasePage {
                 text: "URL";
             }
 
-            LineEdit {
+            serverText := LineEdit {
                 placeholder-text: "https://server.example.com";
             }
         }
@@ -30,8 +34,8 @@ export component ConnectServerPage inherits FormBasePage {
                 text: "Username";
             }
 
-            LineEdit {
-                placeholder-text: "your-username";
+            emailText := LineEdit {
+                placeholder-text: "email";
             }
         }
 
@@ -42,7 +46,7 @@ export component ConnectServerPage inherits FormBasePage {
                 text: "Password";
             }
 
-            LineEdit {
+            passwordText := LineEdit {
                 placeholder-text: "••••••••";
                 input-type: password;
             }
@@ -69,7 +73,7 @@ export component ConnectServerPage inherits FormBasePage {
             Button {
                 text: "Submit";
                 clicked => {
-                    root.submit();
+                    root.login(root.server, root.email, root.pwd);
                 }
             }
         }

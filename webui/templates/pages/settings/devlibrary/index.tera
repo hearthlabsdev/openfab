@@ -21,7 +21,12 @@
 </div>
 
 {% if device_models is defined and device_models | length > 0 %}
-
+    {% if page is defined %}
+        <div class="page-switch">
+            <a class="btn btn-secondary" href="/settings/devices?page={{ page - 1 }}">Previous</a>
+            <a class="btn btn-secondary" href="/settings/devices?page={{ page + 1 }}">Next</a>
+        </div>
+    {% endif %}
     <div class="device-grid">
 
         {% for model in device_models %}

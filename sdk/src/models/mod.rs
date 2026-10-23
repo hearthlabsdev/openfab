@@ -7,6 +7,9 @@ pub use prints::*;
 mod library;
 pub use library::*;
 
+mod auth;
+pub use auth::*;
+
 pub mod error_response;
 pub use error_response::*;
 

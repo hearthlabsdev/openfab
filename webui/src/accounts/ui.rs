@@ -77,31 +77,38 @@ pub async fn register(
     config: &State<AccountConfig>,
     pool: &State<PgPool>,
     register_form: Form<RegisterForm>,
-) -> Redirect {
+) -> Result<Redirect, OpenFabErr> {
     if !config.allow_registration() {
         panic!("registration is disabled");
     }
     let mut conn = pool.acquire().await.unwrap();
     // Handle login logic here
-    register_form
-        .into_inner()
+    let registration = register_form.into_inner();
+
+    if let Ok(user) = User::select()
+        .where_("email = ?")
+        .bind(&registration.email)
+        .fetch_one(&mut *conn)
+        .await
+    {
+        return Err(OpenFabErr::AuthErr(AuthErr::EmailInUse(
+            registration.email.clone(),
+        )));
+    };
+
+    registration
         .register()
         .unwrap()
         .insert(&mut *conn)
         .await
         .unwrap();
-    Redirect::to(format!("/"))
+    Ok(Redirect::to(format!("/")))
 }
 
 #[get("/dashboard")]
 pub async fn user_dashboard(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
-    let user = User::select()
-        .where_("subject = ?")
-        .bind(guard.claims.sub)
-        .fetch_one(&mut *conn)
-        .await
-        .unwrap();
+    let user = guard.get_user();
 
     RawHtml(Template::render(
         "pages/accounts/dashboard",
@@ -112,12 +119,7 @@ pub async fn user_dashboard(guard: Guard, pool: &State<PgPool>) -> RawHtml<Templ
 #[get("/profile")]
 pub async fn edit_profile(guard: Guard, pool: &State<PgPool>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
-    let user = User::select()
-        .where_("subject = ?")
-        .bind(guard.claims.sub)
-        .fetch_one(&mut *conn)
-        .await
-        .unwrap();
+    let user = guard.get_user();
 
     RawHtml(Template::render(
         "pages/accounts/profile",

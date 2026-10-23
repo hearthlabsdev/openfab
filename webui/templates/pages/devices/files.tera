@@ -6,13 +6,42 @@
 
 {% block content %}
 
-<div class="container">
+<div class="container page">
 
     <div class="page-header flex-between">
         <h1 class="title">Device Files</h1>
+
+        <details class="dropdown-container">
+            <summary class="btn btn-secondary btn-sm">Select Action</summary>
+            <div class="dropdown-menu">
+                {% if library is defined %}
+                    <a class="dropdown-item" href="/library/{{ library.uid }}?device={{ device.uid }}">
+                        Add Asset
+                    </a>
+                {% elif libraries is defined and libraries | length > 0 %}
+                    <select name="library" class="dropdown-item">
+                        <option disabled>select a library...</option>
+                        {% for library in libraries %}
+                            <option onchange="if (this.value) window.location.href = this.value;" value="/library/{{ library.uid }}?device={{ device.uid }}">{{ library.name }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <a class="dropdown-item" href="/library?device={{ device.uid }}">
+                        Add Asset
+                    </a>
+                {% endif %}
+                <a class="dropdown-item" href="/devices/{{ device.uid }}/files/actions/local-upload">
+                    Upload File
+                </a>
+                <a class="dropdown-item" href="/devices/{{ device.uid }}/files/actions/backup">
+                    Backup Files
+                </a>
+
+            </div>
+        </details>
     </div>
 
-    <table class="result-table">
+    <table class="page result-table">
         <thead class="result-table__head">
             <tr class="result-table__row">
                 <th class="result-table__header result-table__header--name">
@@ -33,17 +62,61 @@
                     <tr class="result-table__row">
 
                         <td class="result-table__cell result-table__cell--name">
-                            {{ file.name }}
+                            {{ file.path }}
                         </td>
 
                         <td class="result-table__cell result-table__cell--size">
                             {% if file.size is defined and file.size is not none %}
-                                {{ file.size }} bytes
+                                {{ file.size | bytes }}
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
                         </td>
 
+                        <td class="result-table__cell result-table__cell--action">
+                            <details class="dropdown-container">
+                                <summary class="btn btn-secondary btn-sm">Select Action</summary>
+                                <div class="dropdown-menu">
+                                    
+                                    <!-- 1. Download Action -->
+                                    <a class="dropdown-item" href="/devices/{{ device.uid }}/files/{{ file.uid }}/download" download>
+                                        Download
+                                    </a>
+
+                                    <!-- 2. Print Locally Action -->
+                                    <form action="/devices/{{ device.uid }}/start-local" method="POST" class="dropdown-form">
+                                        <input type="hidden" name="file" value="{{ file.path }}"/>
+                                        <button class="dropdown-item dropdown-item-btn" type="submit">Print Locally</button>
+                                    </form>
+
+                                    <!-- 3. Conditional Upload / View Asset Action -->
+                                    {% if file.uploaded is defined and file.uploaded and file.asset is defined and file.asset is not none %}
+                                        <a class="dropdown-item" href="/library/assets/{{ file.asset }}/info">
+                                            View Asset
+                                        </a>
+                                    {% elif file.uploaded is defined and file.uploaded %}
+
+                                    {% else %}
+                                        <form action="/devices/{{ device.uid }}/files/{{ file.uid }}/upload" method="POST" class="dropdown-form">
+                                            {% if library is defined %}
+                                                <input type="hidden" name="library" value="{{ library.uid }}"/>
+                                            {% elif libraries is defined and libraries | length > 0 %}
+                                                <select name="library">
+                                                    <option disabled>select a library...</option>
+                                                    {% for library in libraries %}
+                                                        <option value="{{ library.uid }}">{{ library.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            {% else %}
+                                                <input type="text" name="library" placeholder="00000000-0000-0000-000000000000" />
+                                            {% endif %}
+                                            <button class="dropdown-item dropdown-item-btn" type="submit">Upload Asset</button>
+                                        </form>
+                                    {% endif %}
+
+                                </div>
+                            </details>
+                        </td>
                     </tr>
 
                 {% endfor %}

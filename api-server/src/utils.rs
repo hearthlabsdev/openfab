@@ -68,7 +68,7 @@ impl<'r> FromRequest<'r> for ApiGuard {
             }
         };
 
-        let key = match ApiKeyORM::get_by_key(&mut *conn, authorization).await {
+        let key = match ApiKeyORM::get_by_key(pool, authorization).await {
             Ok(key) => key,
             Err(e) => {
                 #[cfg(debug_assertions)]

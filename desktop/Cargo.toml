@@ -5,6 +5,9 @@ edition = "2024"
 
 [dependencies]
 slint = { version = "1.18.1", features = ["backend-winit", "renderer-software"]}
-
+openfab-sdk = { path = "../sdk" }
+async-compat = "0.2.6"
+chrono = "0.4.45"
+structopt = "0.3.26"
 [build-dependencies]
 slint-build = "1.18.1"

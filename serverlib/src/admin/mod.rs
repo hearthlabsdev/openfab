@@ -8,6 +8,7 @@ use crate::accounts::User;
 use ormlite::Model;
 use ormlite::model::Join;
 use ormlite::model::JoinMeta;
+use ormlite::postgres::PgPool;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -26,4 +27,21 @@ pub struct ActivationCodeORM {
     used: bool,
     invalidated: bool,
     invalidation_reason: Option<String>,
+}
+
+impl ActivationCodeORM {
+    pub async fn get_code(pool: &PgPool, uid: Uuid) -> Result<ActivationCodeORM, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        Ok(Self::select()
+            .where_("uid = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?)
+    }
+    pub async fn delete_code(pool: &PgPool, code: Uuid) -> Result<(), ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        let code = Self::get_code(pool, code).await?;
+        code.delete(&mut *conn).await?;
+        Ok(())
+    }
 }

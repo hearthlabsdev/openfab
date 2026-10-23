@@ -149,6 +149,7 @@ use serde::{Deserialize, Serialize};
 
 use std::path::Path;
 use std::pin::Pin;
+use std::io::Cursor;
 
 /// Boxed async reader type used for object-safe upload_file signature.
 pub type BoxAsyncRead = Pin<Box<dyn AsyncRead + Send + Unpin>>;
@@ -182,7 +183,7 @@ pub trait DeviceDriver: Send + Sync {
 
     /// Uploads a print or fabrication file to the device storage.
     async fn upload_file(&mut self, device: &str, path: &Path, reader: BoxAsyncRead) -> Result<(), DriverError>;
-
+    async fn download_bytes(&self, device: &str, path: &Path) -> Result<Cursor<Vec<u8>>, DriverError>;
     async fn upload_bytes(&mut self, device: &str, path: &Path, file: Vec<u8>) -> Result<usize, DriverError> {
         let len = file.len();
         self.upload_file(device, path, Box::pin(std::io::Cursor::new(file))).await?;

@@ -7,6 +7,7 @@ use openfab_drivers::files::FileEntry;
 use openfab_drivers::status::{JobStatus, PrinterStatus, State as PrinterState};
 use openfab_drivers::{BoxAsyncRead, DeviceDriver};
 use std::net::IpAddr;
+use std::io::Cursor;
 use suppaftp::tokio::AsyncRustlsConnector;
 //use suppaftp::types::FtpError;
 use tokio::sync::Mutex;
@@ -482,6 +483,9 @@ impl DeviceDriver for VirtualDriver {
             .await?;
         Ok(())
     }
+    async fn download_bytes(&self, _device: &str, _path: &Path) -> Result<Cursor<Vec<u8>>, DriverError> {
+        unimplemented!();
+    }
     async fn shutdown(&self) -> Result<(), DriverError> {
         /*let keys = self.clients.iter().map(|(k, _)| k.to_string()).collect::<Vec<String>>();
         for key in keys.into_iter() {
@@ -538,7 +542,7 @@ impl DeviceDriver for VirtualDriver {
                     .map_err(|_| DriverError::Custom(format!("failed to convert to i64")))?;
 
                 path.push(dir);
-                path.push(v.clone());
+                path.push(file.name());
                 Ok(FileEntry::new(file.name(), path, file.size() as i64, ts))
             })
             .collect::<Result<Vec<FileEntry>, DriverError>>()?)

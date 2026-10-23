@@ -1,7 +1,8 @@
 //! This module handles listing available printers based on discovery, manual add, and user permissions.
 
 use crate::errors::{FileMatchErr, OpenFabErr};
-use crate::library::AssetORM;
+use crate::library::{AssetORM, ObjectStore};
+use crate::prints::PrintJob;
 use crate::prints::{PrintJobORM, PrintQueueORM};
 use crate::utils::{FileID, unix_epoch_seconds};
 use openfab_drivers::files::FileEntry;
@@ -18,6 +19,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
+
 use uuid::Uuid;
 
 pub enum FileStatus {
@@ -35,6 +37,8 @@ pub struct DeviceFileORM {
     /// the device that this file is on
     pub device: Uuid,
 
+    pub name: Option<String>,
+    pub asset: Option<Uuid>,
     /// path to the file on the printer
     pub path: String,
 
@@ -58,6 +62,14 @@ pub struct DeviceFileORM {
 }
 
 impl DeviceFileORM {
+    pub async fn get_file(pool: &PgPool, file: Uuid) -> Result<Self, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        Ok(Self::select()
+            .where_("uid = ?")
+            .bind(file)
+            .fetch_one(&mut *conn)
+            .await?)
+    }
     /// this is a shallow check
     pub fn check_against_device(&self, file: &FileEntry) -> Result<&Self, FileMatchErr> {
         if file.size != self.size {
@@ -86,6 +98,8 @@ impl DeviceFileORM {
         let record = Self {
             uid: Uuid::new_v4(),
             device,
+            asset: Some(asset.uid),
+            name: Some(asset.name.to_string()),
             path: upload_dir.display().to_string(),
             hash: asset.hash.clone(),
             hash_alg: asset.hash_alg.clone(),
@@ -169,10 +183,8 @@ impl DeviceFileORM {
             .flatten()?)
     }
 
-    pub async fn list_files(
-        device: Uuid,
-        conn: &mut PgConnection,
-    ) -> Result<Vec<Self>, ormlite::Error> {
+    pub async fn list_files(device: Uuid, pool: &PgPool) -> Result<Vec<Self>, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
         Ok(Self::select()
             .where_("device = ?")
             .bind(device)
@@ -181,16 +193,29 @@ impl DeviceFileORM {
     }
 
     /// returns a placeholder so that the user can quickly view files while the reconciler does it's thing.
-    fn placeholder(entry: &FileEntry) -> Self {
-        unimplemented!();
+    fn placeholder(device: Uuid, entry: &FileEntry) -> Self {
+        DeviceFileORM {
+            uid: Uuid::new_v4(),
+            device,
+            asset: None,
+            name: Some(entry.name.to_string()),
+            path: entry.path.display().to_string(),
+            hash: "".into(),
+            hash_alg: "".into(),
+            size: entry.size,
+            modified: entry.modified,
+            first_seen: unix_epoch_seconds(),
+            uploaded: false,
+        }
     }
 
     pub async fn reconcile<R: DriverRuntime>(
         rt: &R,
         device: Uuid,
-        conn: &mut PgConnection,
+        pool: &PgPool,
     ) -> Result<Vec<Self>, OpenFabErr> {
         // grab device to get driver_id, and serial number
+        let mut conn = pool.acquire().await?;
         let device = DeviceORM::select()
             .where_("devices.uid = ?")
             .bind(device)
@@ -200,12 +225,13 @@ impl DeviceFileORM {
         // list files for the given device
         let files = rt
             .list_entries(&device.driver_id, &device.serial, "/")
-            .await?
+            .await
+            .expect("entry parsing failure")
             .into_iter()
             .map(|v| (v.path.display().to_string(), v))
             .collect::<HashMap<String, FileEntry>>();
-
-        let entries = Self::list_files(device.uid, conn)
+        println!("files: {:?}", files);
+        let entries = Self::list_files(device.uid, pool)
             .await?
             .into_iter()
             .map(|v| (v.path.clone(), v))
@@ -213,6 +239,8 @@ impl DeviceFileORM {
         let mut results = Vec::with_capacity(files.len());
 
         for (key, val) in files.iter() {
+            #[cfg(debug_assertions)]
+            eprintln!("{key}:{:?}", val);
             match entries.get(key) {
                 Some(entry) => {
                     // file is found in database, perform check
@@ -223,14 +251,15 @@ impl DeviceFileORM {
                             #[cfg(debug_assertions)]
                             eprintln!("files didn't match in shallow reconcilaton: {}", e);
                             // download and rehash asyncronously.
-                            let placeholder = Self::placeholder(&val);
+                            let placeholder = Self::placeholder(device.uid, &val);
                             results.push(placeholder);
                         }
                     }
                 }
                 None => {
                     // entry not found in the database, launch a download + hash
-                    let placeholder = Self::placeholder(&val);
+                    let placeholder = Self::placeholder(device.uid, &val);
+                    let placeholder = placeholder.insert(&mut *conn).await?;
                     results.push(placeholder);
                 }
             }
@@ -294,7 +323,7 @@ pub struct DeviceORM {
     /// Stable internal identifier
     #[ormlite(primary_key)]
     pub uid: Uuid,
-
+    pub library: Option<Uuid>,
     pub serial: String,
     pub queue: Option<Uuid>,
     /// Human-readable name (from IPP or admin override)
@@ -321,7 +350,7 @@ pub struct DeviceORM {
 }
 
 impl DeviceORM {
-    pub async fn list(pool: &PgPool) -> Result<Vec<Self>, OpenFabErr> {
+    pub async fn list_devices(pool: &PgPool) -> Result<Vec<Self>, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         let devices = DeviceORM::select().fetch_all(&mut *conn).await?;
         Ok(devices)
@@ -353,7 +382,7 @@ impl DeviceORM {
         Ok(config_to_json(&schema, &configs)?)
     }
 
-    pub async fn get_device(pool: &PgPool, uid: Uuid) -> Result<Self, OpenFabErr> {
+    pub async fn get_device(pool: &PgPool, uid: Uuid) -> Result<Self, ormlite::Error> {
         let mut conn = pool.acquire().await?;
         let device = DeviceORM::select()
             .where_("devices.uid = ?")
@@ -392,6 +421,52 @@ impl DeviceORM {
             Ok(device) => Ok(Some(device)),
             _ => Ok(None),
         }
+    }
+
+    pub async fn get_device_queue(
+        pool: &PgPool,
+        device: Uuid,
+    ) -> Result<Vec<PrintJob>, ormlite::Error> {
+        let device = DeviceORM::get_device(pool, device).await?;
+        let queue = match device.queue {
+            Some(queue) => queue,
+            None => return Ok(Vec::new()),
+        };
+        Ok(PrintQueueORM::list_prints(pool, queue).await?)
+    }
+    pub async fn upload_file<R: DriverRuntime>(
+        &self,
+        rt: &R,
+        store: &ObjectStore,
+        pool: &PgPool,
+        asset: &AssetORM,
+    ) -> Result<DeviceFileORM, OpenFabErr> {
+        // make sure it is safe to upload the asset to the print
+        // this also should return a status indicating if the file needs to be uploaded to the printer or not
+        // fixed to use FileStatus
+        let record = DeviceFileORM::check_upload_safety(rt, &asset, &self, pool)
+            .await
+            .expect("upload safety verification failure");
+        // now the file needs to be uploaded
+        let file = match record {
+            FileStatus::Matched(record) => {
+                // file is matched, print can begin as is
+                #[cfg(debug_assertions)]
+                eprintln!("file matched: {:?}", record);
+                record
+            }
+            FileStatus::NotFound(record) => {
+                // file needs to be uploaded to the device
+                let data = asset.download_bytes(store).await?;
+                rt.upload_bytes(&self.driver_id, &self.serial, &record.path, data)
+                    .await?;
+                record
+            }
+            FileStatus::Conflict(_, _) => {
+                panic!("this shouldn't happen with how the code is written rn")
+            }
+        };
+        Ok(file)
     }
 }
 

@@ -26,7 +26,7 @@ async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, 
         .fetch_one(&mut *conn)
         .await?;
 
-    let keys = ApiKeyORM::list_for_owner(&mut *conn, user.uid()).await?;
+    let keys = ApiKeyORM::list_for_owner(pool, user.uid()).await?;
 
     Ok(RawHtml(Template::render(
         "pages/admin/keys/index",
@@ -43,10 +43,32 @@ async fn create_access_key_page(
 }
 
 #[post("/keys/create")]
-async fn create_access_key(guard: Guard, pool: &State<PgPool>) -> Redirect {
-    Redirect::to("/admin/keys")
+async fn create_access_key(guard: Guard, pool: &State<PgPool>) -> Result<Redirect, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let user = User::select()
+        .where_("subject = ?")
+        .bind(guard.claims.sub.to_string())
+        .fetch_one(&mut *conn)
+        .await?;
+    ApiKeyORM::generate_for_user(pool, &user).await?;
+    Ok(Redirect::to("/admin/keys"))
+}
+
+#[post("/keys/<key>/delete")]
+async fn delete_api_key(
+    guard: Guard,
+    pool: &State<PgPool>,
+    key: Uuid,
+) -> Result<Redirect, OpenFabErr> {
+    ApiKeyORM::delete_key(pool, key).await?;
+    Ok(Redirect::to("/admin/keys"))
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![create_access_key, create_access_key_page, index]
+    routes![
+        create_access_key,
+        delete_api_key,
+        create_access_key_page,
+        index
+    ]
 }

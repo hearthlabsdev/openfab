@@ -1,18 +1,13 @@
-use crate::devices::DeviceLogORM;
 use crate::devices::PrinterDiscoveryEventORM;
 use crate::devices::forms::DeviceUploadForm;
-use crate::devices::{DeviceConfigORM, DeviceORM};
 use crate::errors::OpenFabErr;
-use serverlib::setup::NativeManager;
 use crate::utils::{Guard, unix_epoch_seconds};
-use ormlite::model::ModelBuilder;
-use serverlib::prints::{PrintJobORM, PrintQueueORM};
-
 use openfab_drivers::events::Event;
 use openfab_drivers::native::NativeRuntime;
 use openfab_drivers::runtime::DriverRuntime;
 use openfab_drivers::utils::config_to_json;
 use ormlite::Model;
+use ormlite::model::ModelBuilder;
 use ormlite::postgres::PgPool;
 use rocket::State;
 use rocket::form::FromForm;
@@ -23,6 +18,13 @@ use rocket::response::content::RawHtml;
 use rocket::{Route, form::Form, get, post, response::Redirect, routes};
 use rocket_dyn_templates::{Template, context};
 use rocket_ws::{Channel, Stream, WebSocket};
+use serverlib::devices::DeviceFileORM;
+use serverlib::devices::DeviceLogORM;
+use serverlib::devices::{DeviceConfigORM, DeviceORM};
+use serverlib::library::{AssetORM, LibraryORM, ObjectStore};
+use serverlib::prints::{PrintJobORM, PrintQueueORM};
+use serverlib::setup::NativeManager;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::task::Poll;
 use tokio::sync::Mutex;
@@ -32,7 +34,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 #[get("/")]
-pub async fn index(pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+pub async fn index(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
     let mut conn = pool.acquire().await?;
     let devices = DeviceORM::select().fetch_all(&mut *conn).await?;
 
@@ -104,11 +106,13 @@ async fn create(
     let device = DeviceORM {
         uid: Uuid::new_v4(),
         queue: queue_opt,
+        library: None,
         name,
         first_seen: unix_epoch_seconds(),
         last_seen: unix_epoch_seconds(),
         status: "active".to_string(),
         enabled: true,
+        upload_dir: None,
         serial: form
             .get("serial")
             .ok_or(OpenFabErr::MissingConfigOption(
@@ -136,7 +140,7 @@ async fn create(
 }
 
 #[get("/<uid>/info")]
-pub async fn device(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
+pub async fn device(guard: Guard, uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
     let device = DeviceORM::select()
@@ -153,7 +157,7 @@ pub async fn device(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
 }
 
 #[get("/<uid>/queue")]
-pub async fn device_queue(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
+pub async fn device_queue(guard: Guard, uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
     let device = DeviceORM::select()
@@ -264,7 +268,7 @@ pub async fn device_config(
 }
 
 #[get("/<uid>/captures")]
-pub async fn device_captures(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
+pub async fn device_captures(guard: Guard, uid: Uuid, pool: &State<PgPool>) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
     let device = DeviceORM::select()
@@ -282,10 +286,69 @@ pub async fn device_captures(uid: Uuid, pool: &State<PgPool>) -> RawHtml<Templat
 
 #[get("/<uid>/files")]
 pub async fn device_files(
+    guard: Guard,
     rt: &State<NativeManager>,
     uid: Uuid,
     pool: &State<PgPool>,
-) -> RawHtml<Template> {
+) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await.unwrap();
+    // I need to query device, configs, get print queue, and lookup connected prints.
+    let device = DeviceORM::select()
+        .where_("uid = ?")
+        .bind(uid)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+    let mut library = None;
+    if let Some(devlib) = device.library {
+        library = Some(LibraryORM::get_library(pool, devlib).await?);
+    }
+    let vals = DeviceFileORM::reconcile(rt.runtime(), device.uid, pool)
+        .await
+        .expect("failed to list using reconciliaton");
+    Ok(RawHtml(Template::render(
+        "pages/devices/files",
+        context! { device, library, files: vals },
+    )))
+}
+/*
+#[get("/<device>/files/<file>/asset")]
+pub async fn asset_match(pool: &State<PgPool>, device: Uuid, file: Uuid) -> Result<Redirect, OpenFabErr> {
+    let file = DeviceFileORM::get_file(pool, file).await?;
+    let asset = LibraryORM::get_asset_by_hash(pool, &file.hash_alg, &file.hash).await?;
+    let route = format!("/library/assets/{}", asset.uid);
+    Ok(Redirect::to(route))
+}*/
+
+#[get("/<device>/files/add-to-device?<asset>")]
+pub async fn add_asset_to_device(
+    guard: Guard,
+    rt: &State<NativeManager>,
+    store: &State<ObjectStore>,
+    pool: &State<PgPool>,
+    device: Uuid,
+    asset: Uuid,
+) -> Result<Redirect, OpenFabErr> {
+    let device = DeviceORM::get_device(pool, device).await?;
+    let asset = LibraryORM::get_asset(pool, asset).await?;
+    let mut file = device
+        .upload_file(rt.runtime(), store, pool, &asset)
+        .await?;
+    let mut conn = pool.acquire().await?;
+    file.uploaded = true;
+    file.update_all_fields(&mut *conn).await?;
+    let route = format!("/devices/{}/files", device.uid);
+    Ok(Redirect::to(route))
+}
+
+/*
+#[get("/<uid>/files/<file>/download")]
+pub async fn download_device_file(
+    rt: &State<NativeManager>,
+    uid: Uuid,
+    file: Uuid,
+    pool: &State<PgPool>,
+) -> Result<(), OpenFabErr> {
     let mut conn = pool.acquire().await.unwrap();
     // I need to query device, configs, get print queue, and lookup connected prints.
     let device = DeviceORM::select()
@@ -295,17 +358,54 @@ pub async fn device_files(
         .await
         .unwrap();
 
-    let files = rt
-        .runtime()
-        .list_entries(&device.driver_id, &device.serial, "/")
-        .await
-        .expect("failed to list files");
+    let vals = DeviceFileORM::reconcile(rt.runtime(), device.uid, pool).await.expect("failed to list using reconciliaton");
     RawHtml(Template::render(
         "pages/devices/files",
-        context! { device, files },
+        context! { device, files: vals },
     ))
+}*/
+
+#[derive(FromForm)]
+pub struct LocalPrintForm {
+    file: String,
 }
 
+#[post("/<uid>/start-local", data = "<form>")]
+pub async fn start_local_print(
+    guard: Guard,
+    rt: &State<NativeManager>,
+    pool: &State<PgPool>,
+    uid: Uuid,
+    form: Form<LocalPrintForm>,
+) -> Result<Redirect, OpenFabErr> {
+    let device = DeviceORM::get_device(pool, uid).await?;
+    let file = form.into_inner().file;
+    let mut path = PathBuf::new();
+    path.push(file);
+    rt.runtime()
+        .get_driver(&device.driver_id)?
+        .lock()
+        .await
+        .start_print(&device.serial, &path)
+        .await
+        .expect("failed to start print");
+    Ok(Redirect::to(format!("/devices/{}/status", device.uid)))
+}
+/*
+#[derive(Debug, Clone, FromForm)]
+pub struct DeviceFileUpload {
+    library: Uuid,
+}
+
+#[post("/<uid>/files/<file>/upload", data = "<upload>")]
+pub async fn upload_to_library(rt: &State<NativeManager>, pool: &State<PgPool>, uid: Uuid, file: Uuid, upload: Form<DevceFileUpload>) -> Result<Redirect, OpenFabErr> {
+    //let file_orm = DeviceORM::get_file(pool, &rt.runtime(), uid).await?;
+    // Download the files contents + metadata
+    // rt.download_file()
+    //file.uploaded = true;
+    Ok(Redirect::to(format!("/devices/files")))
+}
+*/
 #[get("/<uid>/logs")]
 pub async fn device_logs(
     guard: Guard,
@@ -336,6 +436,7 @@ use rocket::http::Status;
 
 #[get("/<uid>/status")]
 pub async fn live_status(
+    guard: Guard,
     pool: &State<PgPool>,
     manager: &State<NativeManager>,
     socket: WebSocket,
@@ -419,5 +520,8 @@ pub fn get_routes() -> Vec<Route> {
         live_status,
         device_logs,
         edit_device_config,
+        start_local_print,
+        add_asset_to_device,
+        //asset_match,
     ]
 }

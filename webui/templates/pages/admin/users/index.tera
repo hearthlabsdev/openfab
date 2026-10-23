@@ -85,7 +85,13 @@
 
                         <td class="result-table__cell result-table__cell--groups">
                             {% if user.groups is defined and user.groups | length > 0 %}
-                                {{ user.groups }}
+                                {% for group in user.groups %}
+                                    <a href="/admin/groups/{{ group.uid }}" class="group-badge">
+                                    {{ group.name }}
+                                    </a>
+                                {% else %}
+                                    <span class="no-groups">No groups</span>
+                                {% endfor %}
                             {% else %}
                                 <span class="result-table__muted">
                                     None
@@ -95,39 +101,46 @@
 
                         <td class="result-table__cell result-table__cell--actions">
                             <div class="result-table__actions">
-                                <a
-                                    href="/admin/users/{{ user.uid }}/edit"
-                                    class="btn btn-sm btn-primary"
-                                >
-                                    Edit
-                                </a>
+                                <details class="dropdown-container">
+                                <summary class="btn btn-secondary btn-sm">Select Action</summary>
+                                <div class="dropdown-menu">
+                        
+                                        <a
+                                            href="/admin/users/{{ user.uid }}/edit"
+                                            class="btn btn-sm btn-primary dropdown-item"
+                                        >
+                                            Edit
+                                        </a>
 
-                                <form
-                                    action="/admin/users/{{ user.uid }}/delete"
-                                    method="POST"
-                                    class="result-table__action-form"
-                                >
-                                    <button
-                                        type="submit"
-                                        class="btn btn-sm btn-danger"
-                                    >
-                                        Delete
-                                    </button>
-                                </form>
-                                <form
-                                    action="/admin/activation-codes"
-                                    method="POST"
-                                    class="result-table__action-form"
-                                >
-                                    <input type="hidden" value="{{ user.uid }}" name="user"/>
-                                    <button
-                                        type="submit"
-                                        class="btn btn-sm btn-primary"
-                                    >
-                                        Generate Activation Code
-                                    </button>
-                                </form>
-                            </div>
+                                        <form
+                                            action="/admin/users/{{ user.uid }}/delete"
+                                            method="POST"
+                                            class="result-table__action-form"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-sm btn-danger dropdown-item"
+                                            >
+                                                Delete
+                                            </button>
+                                        </form>
+                                        <form
+                                            action="/admin/activation-codes"
+                                            method="POST"
+                                            class="result-table__action-form"
+                                        >
+                                            <input type="hidden" value="{{ user.uid }}" name="user"/>
+                                            <button
+                                                type="submit"
+                                                class="btn btn-sm btn-primary dropdown-item"
+                                            >
+                                                Generate Activation Code
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </details>
+                                
                         </td>
 
                     </tr>

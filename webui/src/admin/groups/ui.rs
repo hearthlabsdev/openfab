@@ -1,13 +1,21 @@
 use crate::admin::groups::forms::GroupForm;
+use crate::errors::OpenFabErr;
+use ormlite::{Model, postgres::PgPool};
 use rocket::{
     State, form::Form, get, post, response::Redirect, response::content::RawHtml, routes,
 };
 use rocket_dyn_templates::{Template, context};
+use serverlib::admin::groups::GroupORM;
 
 #[get("/groups")]
-pub fn index() -> RawHtml<Template> {
-    let context = context! {};
-    RawHtml(Template::render("pages/admin/groups/index", &context))
+pub async fn index(pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+    let mut conn = pool.acquire().await?;
+    let groups = GroupORM::select().fetch_all(&mut *conn).await?;
+    let context = context! { groups };
+    Ok(RawHtml(Template::render(
+        "pages/admin/groups/index",
+        &context,
+    )))
 }
 
 #[get("/groups/create")]

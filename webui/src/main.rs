@@ -22,13 +22,54 @@ use rocket_oidc::{
     auth::AuthState, client::LocalClient, config::OIDCConfig, config::WorkingConfig,
     sign::OidcSigner,
 };
+use serverlib::setup::RuntimeManager;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use webui::accounts::AccountConfig;
 use webui::library::ObjectStoreConfig;
-use serverlib::setup::RuntimeManager;
 #[macro_use]
 extern crate rocket;
+
+pub fn format_bytes(
+    value: &tera::Value,
+    _: &std::collections::HashMap<String, tera::Value>,
+) -> tera::Result<tera::Value> {
+    // Extract the numeric value from Tera's Value enum
+    let bytes = match value.as_u64() {
+        Some(v) => v,
+        None => match value.as_i64() {
+            Some(v) if v >= 0 => v as u64,
+            _ => {
+                return Err(tera::Error::msg(
+                    "format_bytes filter expects an unsigned integer",
+                ));
+            }
+        },
+    };
+
+    const UNIT: u64 = 1024;
+    if bytes < UNIT {
+        return Ok(tera::Value::String(format!("{} B", bytes)));
+    }
+
+    let units = ["KB", "MB", "GB", "TB", "PB", "EB"];
+    let mut u: usize = 0;
+    let mut Nxh: f64 = bytes as f64;
+
+    while Nxh >= (UNIT as f64) && u < units.len() - 1 {
+        Nxh /= UNIT as f64;
+        u += 1;
+    }
+
+    // Format to 1 decimal place if it's not a whole number, or clean integer style
+    let formatted = if Nxh.fract() == 0.0 {
+        format!("{:.0} {}", Nxh, units[u])
+    } else {
+        format!("{:.1} {}", Nxh, units[u])
+    };
+
+    Ok(tera::Value::String(formatted))
+}
 
 #[get("/")]
 fn index() -> RawHtml<Template> {
@@ -145,6 +186,8 @@ async fn rocket() -> rocket::Rocket<rocket::Build> {
                     })
                 },
             );
+
+            engine.tera.register_filter("bytes", format_bytes);
         }))
         .manage(accounts)
         .manage(pool)

@@ -1,0 +1,87 @@
+import { VerticalBox, HorizontalBox, ListView } from "std-widgets.slint";
+
+// Re-stating the SlintDevice struct for context
+export struct OpenFABDevice {
+    uid: string,
+    serial: string,
+    queue: string,
+    name: string,
+    first_seen: string,
+    last_seen: string,
+    upload_dir: string,
+    status: string,
+    enabled: bool,
+    driver_id: string,
+    driver_version: string,
+}
+
+// Component to display a single device's details
+export component DeviceCard inherits Rectangle {
+    in property <OpenFABDevice> device;
+
+    background: #ffffff;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #e2e8f0;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 8px;
+
+        // Header: Name and Status Badge
+        HorizontalBox {
+            Text {
+                text: device.name;
+                font-size: 18px;
+                font-weight: 700;
+                horizontal-stretch: 1;
+            }
+            
+            // Status text/indicator
+            Rectangle {
+                background: device.status == "online" ? #dcfce7 : #fee2e2;
+                border-radius: 4px;
+                padding-left: 8px;
+                padding-right: 8px;
+                height: 24px;
+                
+                Text {
+                    text: device.status;
+                    color: device.status == "online" ? #166534 : #991b1b;
+                    font-weight: 600;
+                    font-size: 12px;
+                }
+            }
+        }
+
+        // Details grid / key-value rows
+        HorizontalBox {
+            Text { text: "Serial:"; width: 110px; font-weight: 600; color: #64748b; }
+            Text { text: device.serial; color: #1e293b; }
+        }
+        HorizontalBox {
+            Text { text: "Driver:"; width: 110px; font-weight: 600; color: #64748b; }
+            Text { text: device.driver_id + " (v" + device.driver_version + ")"; color: #1e293b; }
+        }
+        HorizontalBox {
+            Text { text: "Queue:"; width: 110px; font-weight: 600; color: #64748b; }
+            Text { text: device.queue == "" ? "None" : device.queue; color: #1e293b; }
+        }
+        HorizontalBox {
+            Text { text: "Upload Dir:"; width: 110px; font-weight: 600; color: #64748b; }
+            Text { text: device.upload_dir == "" ? "Default" : device.upload_dir; color: #1e293b; }
+        }
+        HorizontalBox {
+            Text { text: "Last Seen:"; width: 110px; font-weight: 600; color: #64748b; }
+            Text { text: device.last_seen; font-size: 12px; color: #475569; }
+        }
+        HorizontalBox {
+            Text { text: "Enabled:"; width: 110px; font-weight: 600; color: #64748b; }
+            Text { 
+                text: device.enabled ? "Yes" : "No"; 
+                color: device.enabled ? #16a34a : #dc2626; 
+                font-weight: 600;
+            }
+        }
+    }
+}

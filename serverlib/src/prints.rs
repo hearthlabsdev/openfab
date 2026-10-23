@@ -474,7 +474,7 @@ impl PrintQueueORM {
             .await?)
     }
 
-    pub async fn list_prints(pool: &PgPool, queue: Uuid) -> Result<Vec<PrintJob>, OpenFabErr> {
+    pub async fn list_prints(pool: &PgPool, queue: Uuid) -> Result<Vec<PrintJob>, ormlite::Error> {
         Ok(Self::admin_list_prints(pool, queue)
             .await?
             .into_iter()
@@ -484,14 +484,16 @@ impl PrintQueueORM {
     pub async fn admin_list_prints(
         pool: &PgPool,
         queue: Uuid,
-    ) -> Result<Vec<PrintJobORM>, OpenFabErr> {
+    ) -> Result<Vec<PrintJobORM>, ormlite::Error> {
         let mut conn = pool.acquire().await?;
         Ok(PrintJobORM::select()
             .join(PrintJobORM::user())
             .join(PrintJobORM::asset())
             .where_("queue = ?")
+            .order_desc("print_jobs.created_at")
             .bind(queue)
             .fetch_all(&mut *conn)
-            .await?)
+            .await
+            .expect("ex"))
     }
 }

@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-
+use std::io::Cursor;
 use tokio::sync::broadcast::{Receiver, Sender, channel};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
@@ -301,6 +301,11 @@ impl DeviceDriver for PrusaDriver {
         }
         Ok(())
     }
+
+    async fn download_bytes(&self, _device: &str, _path: &Path) -> Result<Cursor<Vec<u8>>, DriverError> {
+        unimplemented!();
+    }
+
     async fn upload_file(
         &mut self,
         _device: &str,
@@ -309,6 +314,7 @@ impl DeviceDriver for PrusaDriver {
     ) -> Result<(), DriverError> {
         unimplemented!();
     }
+    
     async fn shutdown(&self) -> Result<(), DriverError> {
         /*let keys = self.clients.iter().map(|(k, _)| k.to_string()).collect::<Vec<String>>();
         for key in keys.into_iter() {

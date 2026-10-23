@@ -1,12 +1,14 @@
 use crate::errors::ErrorResponse;
 use crate::utils::ApiGuard;
+
 use ormlite::postgres::PgPool;
 use rocket::{State, delete, get, post, put, serde::json::Json};
 use rocket_okapi::{openapi, openapi_get_routes_spec};
 use serverlib::devices::{DeviceLog, DeviceLogORM, DeviceModelORM, DeviceORM, DeviceStatus};
-use serverlib::prints::PrintJobInstance;
+use serverlib::prints::{PrintJobInstance, PrintJob};
 use serverlib::setup::NativeManager;
 use openfab_drivers::runtime::DriverRuntime;
+use openfab_sdk::models::PrintCommandResponse;
 use uuid::Uuid;
 
 #[openapi(tag = "Devices")]
@@ -25,7 +27,7 @@ pub(crate) async fn list_devices(
     pool: &State<PgPool>,
     page: Option<i64>,
 ) -> Result<Json<Vec<DeviceORM>>, ErrorResponse> {
-    Ok(Json(DeviceORM::list(pool).await?))
+    Ok(Json(DeviceORM::list_devices(pool).await?))
 }
 
 #[openapi(tag = "Devices")]
@@ -69,6 +71,12 @@ pub(crate) async fn delete_device(uid: Uuid) -> Result<Json<DeviceORM>, ErrorRes
     Err(ErrorResponse::unimplemented("delete_device"))
 }
 
+#[openapi(tag = "Devices")]
+#[get("/<device>/queue")]
+pub(crate) async fn get_device_queue(guard: ApiGuard, pool: &State<PgPool>, device: Uuid) -> Result<Json<Vec<PrintJob>>, ErrorResponse>{
+    Ok(Json(DeviceORM::get_device_queue(pool, device).await.expect("failed to get device jobs")))
+}
+
 /// pauses the current print on the machine
 #[openapi(tag = "Devices")]
 #[put("/<uid>/pause")]
@@ -77,7 +85,7 @@ pub(crate) async fn pause_print(
     rt: &State<NativeManager>,
     pool: &State<PgPool>,
     uid: Uuid,
-) -> Result<(), ErrorResponse> {
+) -> Result<Json<PrintCommandResponse>, ErrorResponse> {
     let device = DeviceORM::get_device(pool, uid)
         .await
         .expect("failed to get device");
@@ -89,7 +97,7 @@ pub(crate) async fn pause_print(
         .pause_print(&device.serial)
         .await
         .expect("failed to stop print");
-    Err(ErrorResponse::unimplemented("stop_print"))
+    Ok(Json(PrintCommandResponse::pause()))
 }
 
 /// pauses the current print on the machine.
@@ -100,7 +108,7 @@ pub(crate) async fn resume_print(
     rt: &State<NativeManager>,
     pool: &State<PgPool>,
     uid: Uuid,
-) -> Result<Json<PrintJobInstance>, ErrorResponse> {
+) -> Result<Json<PrintCommandResponse>, ErrorResponse> {
     let device = DeviceORM::get_device(pool, uid)
         .await
         .expect("failed to get device");
@@ -112,7 +120,7 @@ pub(crate) async fn resume_print(
         .resume_print(&device.serial)
         .await
         .expect("failed to stop print");
-    Err(ErrorResponse::unimplemented("stop_print"))
+    Ok(Json(PrintCommandResponse::resume()))
 }
 
 /// stops the current print on the machine
@@ -123,7 +131,7 @@ pub(crate) async fn stop_print(
     rt: &State<NativeManager>,
     pool: &State<PgPool>,
     uid: Uuid,
-) -> Result<Json<PrintJobInstance>, ErrorResponse> {
+) -> Result<Json<PrintCommandResponse>, ErrorResponse> {
     let device = DeviceORM::get_device(pool, uid)
         .await
         .expect("failed to get device");
@@ -135,7 +143,7 @@ pub(crate) async fn stop_print(
         .stop_print(&device.serial)
         .await
         .expect("failed to stop print");
-    Err(ErrorResponse::unimplemented("stop_print"))
+    Ok(Json(PrintCommandResponse::stop()))
 }
 
 pub fn get_routes() -> (Vec<rocket::Route>, okapi::openapi3::OpenApi) {
@@ -150,5 +158,6 @@ pub fn get_routes() -> (Vec<rocket::Route>, okapi::openapi3::OpenApi) {
         resume_print,
         stop_print,
         list_device_models,
+        get_device_queue,
     ]
 }

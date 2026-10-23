@@ -12,6 +12,7 @@ pub enum SDKError {
     MissingArgument(String),
     #[error("io error: {0}")]
     IOError(#[from] std::io::Error),
+
     #[error("other error occured: {0}")]
     Other(String),
 }

@@ -53,14 +53,14 @@
                         <div class="result-table__actions">
 
                             <a
-                                href="/admin/groups/{{ group.id }}/edit"
+                                href="/admin/groups/{{ group.uid }}/edit"
                                 class="btn btn-sm btn-primary"
                             >
                                 Edit
                             </a>
 
                             <form
-                                action="/admin/groups/{{ group.id }}/delete"
+                                action="/admin/groups/{{ group.uid }}/delete"
                                 method="POST"
                                 class="result-table__action-form"
                             >

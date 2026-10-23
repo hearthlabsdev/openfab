@@ -2,7 +2,8 @@ import { HorizontalBox, VerticalBox, Palette } from "std-widgets.slint";
 
 export component FormBasePage inherits VerticalBox {
     in property <string> page-title: "Form";
-
+    in property <string> current-form: "login";
+    
     padding: 24px;
     spacing: 18px;
     min-width: 420px;

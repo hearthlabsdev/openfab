@@ -10,8 +10,54 @@
 
 use crate::models;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "schema")]
+use rocket_okapi::okapi::{schemars, schemars::JsonSchema};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
+pub struct PrintCommandResponse {
+    pub command: String,
+    pub state: String,
+    pub instance: Option<PrintJobInstance>,
+}
+
+impl PrintCommandResponse {
+    pub fn start() -> Self {
+        Self {
+            command: "start".into(),
+            state: "printing".into(),
+            instance: None, 
+        }
+    }
+    pub fn stop() -> Self {
+        Self {
+            command: "stop".into(),
+            state: "stopped".into(),
+            instance: None, 
+        }
+    }
+    pub fn pause() -> Self {
+        Self {
+            command: "pause".into(),
+            state: "paused".into(),
+            instance: None, 
+        }
+    }
+    pub fn resume() -> Self {
+        Self {
+            command: "resume".into(),
+            state: "printing".into(),
+            instance: None, 
+        }
+    }
+    pub fn instance(mut self, instance: PrintJobInstance) -> Self {
+        self.instance = Some(instance);
+        self
+    }
+}
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
 pub struct PrintJobEvent {
     #[serde(rename = "uid")]
     pub uid: uuid::Uuid,
@@ -53,6 +99,7 @@ impl PrintJobEvent {
  */
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
 pub struct PrintJobInstance {
     #[serde(rename = "uid")]
     pub uid: uuid::Uuid,
@@ -104,6 +151,7 @@ impl PrintJobInstance {
  */
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
 pub struct PrintJob {
     /// Stable job identifier
     #[serde(rename = "uid")]
@@ -192,6 +240,7 @@ impl PrintJob {
  */
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(JsonSchema))]
 pub struct PrintJobStatus {
     /// Estimated time remaining until job completion, measured in seconds.
     #[serde(rename = "time_remaining_secs")]

@@ -56,13 +56,20 @@ impl CreateStyleForm {
     }
 }
 
-#[get("/devices")]
-pub async fn devices(pool: &State<PgPool>, store: &State<ObjectStore>) -> RawHtml<Template> {
+#[get("/devices?<page>")]
+pub async fn devices(
+    guard: Guard,
+    pool: &State<PgPool>,
+    store: &State<ObjectStore>,
+    page: Option<isize>,
+) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     let mut devices = Vec::new();
-
+    let page_size: usize = 20;
+    let page: usize = (page.unwrap_or(1) - 1).abs().try_into().unwrap_or(0);
     for orm in DeviceModelORM::select()
         .limit(20)
+        .offset(page * page_size)
         .fetch_all(&mut *conn)
         .await
         .unwrap()
@@ -77,12 +84,13 @@ pub async fn devices(pool: &State<PgPool>, store: &State<ObjectStore>) -> RawHtm
 
     RawHtml(Template::render(
         "pages/settings/devlibrary/index",
-        context! { device_models: devices },
+        context! { device_models: devices, page: page + 1 },
     ))
 }
 
 #[get("/devices/<uid>")]
 pub async fn device(
+    guard: Guard,
     pool: &State<PgPool>,
     store: &State<ObjectStore>,
     uid: Uuid,
@@ -106,7 +114,11 @@ pub async fn device(
 }
 
 #[get("/materials/filaments?<page>")]
-pub async fn filaments(pool: &State<PgPool>, page: Option<usize>) -> RawHtml<Template> {
+pub async fn filaments(
+    guard: Guard,
+    pool: &State<PgPool>,
+    page: Option<usize>,
+) -> RawHtml<Template> {
     let page_size = 100;
     let page = (page.unwrap_or(1) - 1);
     let mut conn = pool.acquire().await.unwrap();
@@ -125,7 +137,7 @@ pub async fn filaments(pool: &State<PgPool>, page: Option<usize>) -> RawHtml<Tem
 }
 
 #[get("/materials/filaments/<uid>")]
-pub async fn filament(pool: &State<PgPool>, uid: Uuid) -> RawHtml<Template> {
+pub async fn filament(guard: Guard, pool: &State<PgPool>, uid: Uuid) -> RawHtml<Template> {
     let mut conn = pool.acquire().await.unwrap();
     let filament = FilamentORM::select()
         .where_("uid = ?")
@@ -141,12 +153,12 @@ pub async fn filament(pool: &State<PgPool>, uid: Uuid) -> RawHtml<Template> {
 }
 
 #[get("/")]
-pub async fn index() -> RawHtml<Template> {
+pub async fn index(guard: Guard) -> RawHtml<Template> {
     RawHtml(Template::render("pages/settings/index", context! {}))
 }
 
 #[get("/styles")]
-pub async fn styles(pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
+pub async fn styles(guard: Guard, pool: &State<PgPool>) -> Result<RawHtml<Template>, OpenFabErr> {
     let mut conn = pool.acquire().await?;
     let themes = ThemeORM::select().fetch_all(&mut *conn).await?;
 
@@ -166,6 +178,7 @@ pub async fn create_style_page(guard: Guard) -> Result<RawHtml<Template>, OpenFa
 
 #[post("/styles/create", data = "<form>")]
 pub async fn create_style(
+    guard: Guard,
     pool: &State<PgPool>,
     form: Form<CreateStyleForm>,
 ) -> Result<Redirect, OpenFabErr> {
@@ -191,7 +204,11 @@ pub async fn apply_style(
 }
 
 #[get("/styles/<uid>")]
-pub async fn get_style(pool: &State<PgPool>, uid: Uuid) -> Result<RawHtml<Template>, OpenFabErr> {
+pub async fn get_style(
+    guard: Guard,
+    pool: &State<PgPool>,
+    uid: Uuid,
+) -> Result<RawHtml<Template>, OpenFabErr> {
     let mut conn = pool.acquire().await?;
     let theme = ThemeORM::select()
         .where_("uid = ?")

@@ -116,6 +116,9 @@ pub enum OpenFabErr {
     /// JSON Serialization or Deserializaton error
     #[error("json serialization error: {0}")]
     JsonErr(#[from] serde_json::Error),
+
+    #[error("other internal server error: {0}")]
+    Other(String),
 }
 
 impl OpenFabErr {
@@ -133,6 +136,11 @@ impl OpenFabErr {
                         Status::InternalServerError,
                         "api key creation failed".into(),
                     ),
+                    AuthErr::PermissionDenied(permission) => (
+                        Status::Forbidden,
+                        format!("permission denied: {}", permission),
+                    ),
+                    _ => (Status::InternalServerError, "database error".into()),
                 }
             }
             OpenFabErr::UuidParseErr(_) => (Status::BadRequest, "failed to parse uuid".into()),
@@ -211,15 +219,29 @@ pub enum AuthErr {
     /// password hash didn't verify
     #[error("invalid password entry")]
     InvalidPassword,
+
     /// user was not found
     #[error("user not found in database")]
     UserNotFound,
+
     #[error("api key not found in database")]
     ApiKeyNotFound,
+
     #[error("api key has expired")]
     ApiKeyExpired,
+
     #[error("api key is invalid")]
     ApiKeyInvalid,
+
     #[error("api key creation failed")]
     ApiKeyCreationFailed,
+
+    #[error("failed to register user email already in use: {0}")]
+    EmailInUse(String),
+
+    #[error("internal server error: {0}")]
+    SQLXError(#[from] ormlite::SqlxError),
+
+    #[error("permission {0}")]
+    PermissionDenied(String),
 }

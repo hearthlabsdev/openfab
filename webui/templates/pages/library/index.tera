@@ -17,9 +17,15 @@
             <select onchange="if (this.value) window.location.href = this.value;">
                 <option value="">Select a library...</option>
                 {% for lib in libraries %}
-                    <option value="/library/{{ lib.uid }}" {% if library is defined and library == lib.uid %}selected{% endif %}>
-                        {{ lib.name }}
-                    </option>
+                    {% if device is defined and device is not none %}
+                        <option value="/library/{{ lib.uid }}?device={{ device.uid }}" {% if library is defined and library == lib.uid %}selected{% endif %}>
+                            {{ lib.name }}
+                        </option>
+                    {% else %}
+                        <option value="/library/{{ lib.uid }}" {% if library is defined and library == lib.uid %}selected{% endif %}>
+                            {{ lib.name }}
+                        </option>
+                    {% endif %}
                 {% endfor %}
             </select>
         {% endif %}
@@ -85,7 +91,7 @@
                 <div class="asset-card-meta">
                     <span>{{ asset.mime }}</span>
                     <span>•</span>
-                    <span>{{ asset.size }} bytes</span>
+                    <span>{{ asset.size | bytes }}</span>
                 </div>
 
                 {% if asset.license is defined %}
@@ -98,36 +104,59 @@
                 <div class="asset-card-footer">
 
                     <div class="asset-date">
-                        Added {{ asset.created_at }}
+                        <time
+                                class="result-table__time local-time"
+                                datetime="{{ asset.created_at }}"
+                                data-unix="{{ asset.created_at }}"
+                            >
+                                Added {{ asset.created_at }}
+                            </time>
                     </div>
 
                     <div class="asset-card-actions">
+                        
+                        <details class="dropdown-container">
+                        <summary class="btn btn-secondary btn-sm">Select Action</summary>
+                        <div class="dropdown-menu">
+                
                         <a
                             href="/library/assets/{{ asset.uid }}/info"
-                            class="btn btn-secondary"
+                            class="btn btn-secondary dropdown-item"
                         >
                             View
                         </a>
-
                         <a
                             href="/library/assets/{{ asset.uid }}/download"
-                            class="btn btn-primary"
+                            class="btn btn-primary dropdown-item"
                         >
                             Download
                         </a>
                         <a 
                             href="/prints/create?asset={{ asset.uid }}"
-                            class="btn btn-primary"    
+                            class="btn btn-primary dropdown-item"   
                         >
                             Print
                         </a>
                         <a
                             onclick="return confirm('Are you sure you want to delete this asset?');"
                             href="/library/assets/{{ asset.uid }}/delete"
-                            class="btn btn-danger"
+                            class="btn btn-danger dropdown-item"
                         >
                             Delete
                         </a>
+                        {% if device is defined and device is not none %}
+                            <a class="btn btn-primary dropdown-item" href="/devices/{{ device.uid }}/files/add-to-device?asset={{ asset.uid }}">Send to Device</a>
+                        {% elif devices is defined and devices | length > 0 %}
+                            {% for device in devices %}
+                                <select>
+                                    <option onchange="if (this.value) window.location.href = this.value;" value="/devices/{{ device.uid }}/files/add-to-device?asset={{ asset.uid }}">{{ device.name }}</option>
+                                </select>
+                            {% endfor %}
+                        {% else %}
+                            
+                        {% endif %}
+                        </div>
+                    </details>                        
                     </div>
 
                 </div>

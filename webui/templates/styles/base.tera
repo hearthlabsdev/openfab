@@ -4,6 +4,7 @@
 
 :root {
     --background: {{ theme.background }};
+    --background-danger: {% if theme.danger is defined and theme.danger is not none %}{{ theme.danger }}{% else %}#9F6571{% endif %};
     --surface: {{ theme.surface }};
     --surface-hover: {{ theme.surface_hover }};
     --surface-header: {{ theme.surface_header }};
@@ -250,7 +251,6 @@ body {
 .main {
     display: flex;
     flex: 1;
-    overflow: hidden;
 }
 
 .content {
@@ -258,13 +258,11 @@ body {
     background: var(--background);
     flex: 1;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .page {
     flex: 1;
     padding: 20px;
-    overflow-y: auto;
 }
 
 
@@ -447,7 +445,14 @@ body {
     padding: 10px 16px;
     background: var(--accent);
     border: none;
-    color: #ffffff;
+    color: var(--text-strong);
+}
+
+.btn-danger {
+    padding: 10px 16px;
+    background: var(--background-danger);
+    border: none;
+    color: var(--text-strong);
 }
 
 .btn-primary:hover {
@@ -596,7 +601,7 @@ details[open] .advanced-summary {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    overflow: hidden;
+
     background: var(--surface);
     border: 1px solid var(--border-subtle);
     border-radius: 10px;
@@ -753,12 +758,17 @@ details[open] .advanced-summary {
 
 .asset-card-title,
 .device-card-title {
-    overflow: hidden;
     color: var(--text);
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+.asset-card:has(details[open]),
+.device-card:has(details[open]) {
+    z-index: 10;
+    position: relative; /* Required for z-index to take effect on grid items */
 }
 
 .asset-card-meta,
@@ -772,11 +782,9 @@ details[open] .advanced-summary {
 }
 
 .asset-card-meta {
-    overflow: hidden;
 }
 
 .asset-card-meta span {
-    overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
@@ -796,7 +804,6 @@ details[open] .advanced-summary {
 
 .device-card-meta span:last-child {
     min-width: 0;
-    overflow: hidden;
     color: var(--text-muted);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -849,7 +856,6 @@ details[open] .advanced-summary {
 
 .asset-date {
     min-width: 0;
-    overflow: hidden;
     color: var(--text-muted);
     font-size: 11px;
     white-space: nowrap;
@@ -857,7 +863,7 @@ details[open] .advanced-summary {
 }
 
 .asset-card-actions {
-    display: flex;
+    display: contents;
     align-items: center;
     flex-shrink: 0;
     gap: 6px;
@@ -1025,7 +1031,6 @@ details[open] .advanced-summary {
 
 .asset-detail-field dd {
     min-width: 0;
-    overflow: hidden;
     color: var(--text);
     font-size: 14px;
     word-break: break-word;
@@ -1135,7 +1140,6 @@ details[open] .advanced-summary {
 
 .device-detail-field dd {
     min-width: 0;
-    overflow: hidden;
     color: var(--text);
     font-size: 14px;
     line-height: 1.5;
@@ -1370,7 +1374,6 @@ details[open] .advanced-summary {
 
 .dashboard-card {
     min-width: 0;
-    overflow: hidden;
     background: var(--surface);
     border: 1px solid var(--border-subtle);
     border-radius: 10px;
@@ -1397,11 +1400,13 @@ details[open] .advanced-summary {
 }
 
 .dashboard-profile {
+    overflow: hidden;
     padding: 20px;
 }
 
 .dashboard-profile-header {
     display: flex;
+    overflow: hidden;
     align-items: center;
     gap: 16px;
 }
@@ -1413,7 +1418,6 @@ details[open] .advanced-summary {
     flex-shrink: 0;
     width: 64px;
     height: 64px;
-    overflow: hidden;
     background: var(--surface-hover);
     border: 1px solid var(--border);
     border-radius: 50%;
@@ -1438,7 +1442,7 @@ details[open] .advanced-summary {
 }
 
 .dashboard-profile-name h2 {
-    overflow: hidden;
+    
     color: var(--text-strong);
     font-size: 18px;
     font-weight: 600;
@@ -1449,7 +1453,6 @@ details[open] .advanced-summary {
 
 .dashboard-profile-name p {
     margin-top: 4px;
-    overflow: hidden;
     color: var(--text-muted);
     font-size: 13px;
     text-overflow: ellipsis;
@@ -1490,7 +1493,6 @@ details[open] .advanced-summary {
 
 .dashboard-field dd {
     min-width: 0;
-    overflow: hidden;
     color: var(--text);
     font-size: 14px;
     line-height: 1.5;
@@ -1502,3 +1504,108 @@ details[open] .advanced-summary {
     font-size: 12px !important;
     color: var(--text-muted) !important;
 }
+
+.dropdown-container {
+    position: relative;
+    background: var(--background);
+}
+.dropdown-container summary {
+    list-style: none;
+    cursor: pointer;
+}
+.dropdown-container summary::-webkit-details-marker {
+    display: none;
+}
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    min-width: 140px;
+    padding: 4px 0;
+}
+.dropdown-item, .dropdown-item-btn {
+    z-index: 50;
+    display: block;
+    padding: 8px 12px;
+    text-align: left;
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+}
+.dropdown-item:hover, .dropdown-item-btn:hover {
+    background-color: var(--surface-hover);
+}
+.dropdown-form {
+    margin: 0;
+}
+
+.bugreport-container {
+    color: var(--text);
+    background: var(--background);
+}
+.error-banner {
+    border: 1px solid red;
+    background: #ffdddd;
+    color: red;
+    padding: 10px;
+}
+.error_desc {
+    rows: 200;
+    cols: 50;
+}
+
+.group-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem; /* 6px spacing between badges */
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .group-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.25;
+    color: #374151; /* Dark grey text */
+    background-color: #f3f4f6; /* Light grey pill background */
+    border: 1px solid #e5e7eb;
+    border-radius: 9999px; /* Pill shape */
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+  }
+
+  /* Interactive Hover State */
+  .group-badge:hover {
+    color: #1d4ed8; /* Darker blue on hover */
+    background-color: #eff6ff; /* Soft blue fill on hover */
+    border-color: #bfdbfe;
+    text-decoration: none;
+    transform: translateY(-1px); /* Slight lift */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .group-badge:active {
+    transform: translateY(0);
+  }
+
+  /* Optional: Placeholder state when user belongs to no groups */
+  .no-groups {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-style: italic;
+  }

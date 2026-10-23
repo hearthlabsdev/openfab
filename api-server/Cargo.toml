@@ -16,3 +16,4 @@ okapi = "0.7.0"
 thiserror = "2.0.21"
 openfab-drivers = { path = "../drivers" }
 openfab-sdk = { path = "../sdk", features = ["schema"] }
+sqlx-core = "0.9.0"

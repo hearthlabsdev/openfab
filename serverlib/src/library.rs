@@ -1,4 +1,5 @@
 use crate::errors::{DownloadErr, OpenFabErr, UploadErr};
+use crate::prints::PrintJobORM;
 use crate::utils::unix_epoch_seconds;
 use crate::utils::{FileID, ResultStream};
 
@@ -83,6 +84,27 @@ impl LibraryORM {
     pub async fn get_asset(pool: &PgPool, uid: Uuid) -> Result<AssetORM, OpenFabErr> {
         let mut conn = pool.acquire().await?;
         Ok(AssetORM::select()
+            .where_("uid = ?")
+            .bind(uid)
+            .fetch_one(&mut *conn)
+            .await?)
+    }
+    pub async fn get_asset_by_hash(
+        pool: &PgPool,
+        hash: &str,
+        hash_alg: &str,
+    ) -> Result<AssetORM, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        Ok(AssetORM::select()
+            .where_("hash = ? and hash_alg = ?")
+            .bind(hash)
+            .bind(hash_alg)
+            .fetch_one(&mut *conn)
+            .await?)
+    }
+    pub async fn get_library(pool: &PgPool, uid: Uuid) -> Result<Self, ormlite::Error> {
+        let mut conn = pool.acquire().await?;
+        Ok(Self::select()
             .where_("uid = ?")
             .bind(uid)
             .fetch_one(&mut *conn)
@@ -176,7 +198,15 @@ impl AssetORM {
             .bind(uid)
             .fetch_one(&mut *conn)
             .await?;
-
+        for job in PrintJobORM::select()
+            .where_("asset = ?")
+            .bind(asset.uid)
+            .fetch_all(&mut *conn)
+            .await?
+            .into_iter()
+        {
+            job.delete(&mut *conn).await?;
+        }
         store.delete_object(&asset.key).await?;
         asset.clone().delete(&mut *conn).await?;
         Ok(asset)
@@ -280,7 +310,7 @@ impl ObjectStore {
     }
 
     pub async fn delete_object(&self, key: &str) -> Result<(), OpenFabErr> {
-        Ok(self.client.remove_object(&self.bucket, key).await?)   
+        Ok(self.client.remove_object(&self.bucket, key).await?)
     }
 
     /// Upload raw bytes (server‑side upload).

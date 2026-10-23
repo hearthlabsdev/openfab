@@ -8,7 +8,7 @@ use rocket_okapi::util::add_schema_response;
 use rocket_okapi::{JsonSchema, OpenApiError};
 use rocket_okapi::{r#gen::OpenApiGenerator, response::OpenApiResponderInner};
 use serde::{Deserialize, Serialize};
-use serverlib::errors::OpenFabErr;
+use serverlib::errors::{OpenFabErr, AuthErr};
 use thiserror::Error;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Error)]
@@ -46,6 +46,15 @@ impl From<ormlite::Error> for ErrorResponse {
         ErrorResponse {
             message: err.to_string(),
             status: 500,
+        }
+    }
+}
+
+impl From<AuthErr> for ErrorResponse {
+    fn from(err: AuthErr) -> Self {
+        ErrorResponse {
+            message: err.to_string(),
+            status: 403,
         }
     }
 }
